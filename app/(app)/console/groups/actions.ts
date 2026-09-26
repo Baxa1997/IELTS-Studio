@@ -41,6 +41,9 @@ export interface InviteFormState {
   error?: string;
   email?: string;
   inviteUrl?: string;
+  /** What happened to the email carrying the link — shown beside the link, so
+   *  a send that failed is visible and the link can still be passed on. */
+  emailNote?: string;
 }
 
 export interface AddStudentState {
@@ -758,10 +761,18 @@ export async function inviteMember(
     process.env.NEXT_PUBLIC_SITE_URL ??
     `https://${headerList.get("host")}`;
 
+  const emailNote = await sendInviteEmail({
+    supabase,
+    organizationId: profile.organization_id,
+    to: email,
+    role,
+    token,
+  });
+
   revalidatePath("/console");
   revalidatePath("/console/groups");
   if (groupId) revalidatePath(`/console/groups/${groupId}`);
-  return { email, inviteUrl: `${origin}/accept-invite?token=${token}` };
+  return { email, inviteUrl: `${origin}/accept-invite?token=${token}`, emailNote };
 }
 
 /**
@@ -821,10 +832,21 @@ export async function refreshInvite(
       accepted_at: null,
     })
     .eq("id", inviteId)
-    .select("email")
+    .select("email, role, organization_id")
     .maybeSingle();
   if (error) return { error: error.message };
   if (!data) return { error: "That invite is no longer yours to renew." };
+
+  // ⚠️ Re-sent, not optional: the new token kills the old one, so the link the
+  // first email carried is dead the moment this returns. Renewing without
+  // re-sending would leave the invitee holding a link that no longer works.
+  const emailNote = await sendInviteEmail({
+    supabase,
+    organizationId: data.organization_id as string,
+    to: data.email as string,
+    role: data.role as string,
+    token,
+  });
 
   const headerList = await headers();
   const origin =
@@ -834,7 +856,7 @@ export async function refreshInvite(
 
   revalidatePath("/console");
   revalidatePath("/console/groups");
-  return { email: data.email as string, inviteUrl: `${origin}/accept-invite?token=${token}` };
+  return { email: data.email as string, inviteUrl: `${origin}/accept-invite?token=${token}`, emailNote };
 }
 
 /**
@@ -1893,6 +1915,55 @@ export async function addTeacherAccount(
     created: { name: fullName, login, email: contactEmail, password },
     emailNote: emailNote ?? undefined,
   };
+}
+
+/**
+ * Email an invite link to the address it was issued for.
+ *
+ * THE FORM ASKED FOR AN EMAIL AND THEN SENT NOTHING TO IT. The panel said so in
+ * small print — "(no email is sent)" — and the staffer had to copy the link into
+ * some other channel by hand, so an invite typed in and forgotten simply never
+ * reached anybody. The link is still returned and shown: sending is best-effort,
+ * and a failed send must leave the staffer able to pass it on themselves.
+ *
+ * The emailed link is built on `outboundSiteUrl`, not the request origin: the
+ * token lives in the one production database, and a link to a dev machine's
+ * localhost is dead in anybody else's inbox.
+ */
+async function sendInviteEmail(args: {
+  supabase: RlsClient;
+  organizationId: string;
+  to: string;
+  role: string;
+  token: string;
+}): Promise<string> {
+  const { data: org } = await args.supabase
+    .from("organizations")
+    .select("name")
+    .eq("id", args.organizationId)
+    .maybeSingle();
+  const centerName = (org?.name as string | null) ?? "your center";
+  const url = `${serverEnv.outboundSiteUrl}/accept-invite?token=${args.token}`;
+  const as = args.role === "student" ? "a student" : args.role === "teacher" ? "a teacher" : "an administrator";
+
+  const result = await sendEmail({
+    to: args.to,
+    subject: `You're invited to ${centerName} on EngProgress`,
+    text:
+      `Hi,\n\n` +
+      `${centerName} has invited you to join them on EngProgress as ${as}.\n\n` +
+      `Accept the invite and set your password here:\n${url}\n\n` +
+      `The link works for 7 days. If you weren't expecting this, you can ignore it.\n\n— EngProgress`,
+    html:
+      `<p>Hi,</p>` +
+      `<p><strong>${escapeHtml(centerName)}</strong> has invited you to join them on EngProgress as ${as}.</p>` +
+      `<p><a href="${url}">Accept the invite</a> and set your password.</p>` +
+      `<p>The link works for 7 days. If you weren't expecting this, you can ignore it.</p><p>— EngProgress</p>`,
+  });
+
+  return result.sent
+    ? `Invite emailed to ${args.to}.`
+    : `Couldn't email it (${result.detail}) — share the link below instead.`;
 }
 
 /** Email a new student their sign-in details. Returns a line for the teacher

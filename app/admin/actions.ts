@@ -3,12 +3,13 @@
 import { revalidatePath } from "next/cache";
 
 import { recordAdminAction } from "@/lib/admin/audit";
-import { requireSuperAdmin } from "@/lib/auth";
+import { isOrgOwner, requireSuperAdmin, type AppRole } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 import { sendEmail } from "@/lib/email/send";
 import { serverEnv } from "@/lib/env";
 import { getUsageSummary } from "@/lib/quota";
 import { isLiveSubscription } from "@/lib/billing/lifecycle";
+import { notifyPlanActivated, notifyPlanRevoked } from "@/lib/billing/notify-expiry";
 import { decideApplication, recordPayout } from "@/lib/referrals/admin";
 import type { ReviewDecision } from "@/lib/referrals/types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -168,6 +169,12 @@ export async function setAccountPlan(
     return { error: "Limits must be whole numbers, or blank for the plan default." };
   }
 
+  // Blank = no end date, which is how every hand-granted plan worked before.
+  const until = grantEndFromDate(String(formData.get("until") ?? ""));
+  if (until === "bad") return { error: "That end date is not a date." };
+  if (until && plan === "trial") return { error: "An end date only applies to a paid plan." };
+  if (until && Date.parse(until) <= Date.now()) return { error: "The end date has to be in the future." };
+
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
@@ -196,6 +203,22 @@ export async function setAccountPlan(
     };
   }
 
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("status, current_period_end, provider, external_subscription_id")
+    .eq("organization_id", profile.organization_id)
+    .maybeSingle();
+  const manualRow = sub?.provider === "manual";
+
+  // Refused BEFORE anything is written. A provider that is being paid decides
+  // when its plan ends; an end date from here would overwrite that row and cut
+  // the link its next renewal webhook needs.
+  if (until && sub && !manualRow && isLiveSubscription(sub)) {
+    return {
+      error: `This account has a live ${String(sub.provider)} subscription, which decides when the plan ends. Leave the end date blank.`,
+    };
+  }
+
   const { error } = await admin
     .from("organizations")
     .update({
@@ -207,28 +230,71 @@ export async function setAccountPlan(
     .select("id"); // RLS-filtered writes report success without this
   if (error) return { error: error.message };
 
-  /* A PLAN SET BY HAND OUTRANKS A SUBSCRIPTION NOBODY IS PAYING FOR.
-     This action only ever wrote `organizations`. So comping somebody who once
-     paid through Payme or Click left their old subscription row behind, still
-     open, with a date in the past — and the nightly job and the quota reader
-     both read that row as "lapsed" and put them straight back on trial. The
-     grant would have lasted until the next morning.
-
-     A LIVE subscription is left alone: somebody is paying for it, the provider
-     still governs it, and its next renewal would restore the paid state anyway. */
-  if (before?.plan !== plan) {
-    const { data: sub } = await admin
+  /* A HAND-GRANTED PLAN WITH AN END DATE IS A 'manual' SUBSCRIPTION ROW, so it
+     ends the way a Payme or Click plan does: the nightly job reminds a week
+     before, downgrades on the date and emails, and the quota reader stops
+     honouring it the moment the date passes. `external_subscription_id` is
+     cleared because a Stripe id left on this row would make that dead
+     subscription's late events look like they are about this grant. */
+  if (until) {
+    const { error: grantError } = await admin
       .from("subscriptions")
-      .select("status, current_period_end, provider, external_subscription_id")
+      .upsert(
+        {
+          organization_id: profile.organization_id,
+          provider: "manual",
+          plan,
+          status: "active",
+          current_period_end: until,
+          external_subscription_id: null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "organization_id" },
+      )
+      .select("organization_id");
+    if (grantError) {
+      return { error: `The plan changed, but its end date was not saved: ${grantError.message}` };
+    }
+  } else if (
+    /* A PLAN SET BY HAND OUTRANKS A SUBSCRIPTION NOBODY IS PAYING FOR.
+       Comping somebody who once paid through Payme or Click used to leave their
+       old row open with a date in the past — and the nightly job and the quota
+       reader both read it as "lapsed" and put them straight back on trial. The
+       grant lasted until the next morning. A live PAID row is left alone:
+       somebody is paying and its provider still governs it.
+
+       ⚠️ A 'manual' row is closed whenever the end date is left blank, even with
+       the plan unchanged — blank means "no end date", and an open manual row
+       would still end the plan on its old date. */
+    sub &&
+    sub.status !== "canceled" &&
+    (manualRow || (before?.plan !== plan && !isLiveSubscription(sub)))
+  ) {
+    await admin
+      .from("subscriptions")
+      .update({ status: "canceled", updated_at: new Date().toISOString() })
       .eq("organization_id", profile.organization_id)
-      .maybeSingle();
-    if (sub && sub.status !== "canceled" && !isLiveSubscription(sub)) {
-      await admin
-        .from("subscriptions")
-        .update({ status: "canceled", updated_at: new Date().toISOString() })
-        .eq("organization_id", profile.organization_id)
-        .neq("status", "canceled")
-        .select("organization_id");
+      .neq("status", "canceled")
+      .select("organization_id");
+  }
+
+  /* TELL THEM. A plan changed by hand used to be the one plan change nobody
+     heard about — Stripe, Payme and Click each announce a start, a renewal and
+     an end, and a comp or a withdrawal from here said nothing, so a learner
+     moved to free discovered it at the quota wall. Only a real change of plan
+     mails; editing the limits alone does not. Between two paid tiers it is a
+     new plan starting, so that is what they are told. Both notices swallow
+     their own failures, so the plan change above can never be undone by SMTP. */
+  const previousEnd = manualRow && sub?.status !== "canceled" ? Date.parse(String(sub?.current_period_end)) : NaN;
+  const endMoved = until !== null && Date.parse(until) !== previousEnd;
+  if (before?.plan && (before.plan !== plan || endMoved)) {
+    const at = new Date().toISOString();
+    if (plan === "trial") {
+      await notifyPlanRevoked(profile.organization_id as string, String(before.plan), at);
+    } else {
+      // An extension is announced too — "this period runs until …" is the
+      // thing that changed.
+      await notifyPlanActivated(profile.organization_id as string, plan, until, at);
     }
   }
 
@@ -242,6 +308,7 @@ export async function setAccountPlan(
       to: plan,
       gradingLimit,
       generationLimit,
+      until,
       // Named so the log tells you a change hit a whole centre, not one person.
       members,
     },
@@ -251,12 +318,30 @@ export async function setAccountPlan(
   revalidatePath("/admin/users");
   revalidatePath("/admin");
   revalidatePath("/admin/health");
+  const untilLabel = until
+    ? ` until ${new Date(until).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Tashkent" })}`
+    : "";
   return {
     notice:
       members > 1
-        ? `${PLAN_TIERS[plan as OrgPlan].name} applied to all ${members} members.`
-        : `${profile.full_name ?? "Account"} is now on ${PLAN_TIERS[plan as OrgPlan].name}.`,
+        ? `${PLAN_TIERS[plan as OrgPlan].name} applied to all ${members} members${untilLabel}.`
+        : `${profile.full_name ?? "Account"} is now on ${PLAN_TIERS[plan as OrgPlan].name}${untilLabel}.`,
   };
+}
+
+/**
+ * The moment a hand-granted plan ends, from the dialog's `YYYY-MM-DD`.
+ *
+ * The END of the chosen day, in Tashkent — "Pro until the 26th" means the 26th
+ * is still paid for, and the owner and nearly every learner are on UTC+5. A
+ * midnight-UTC reading would have ended it at 05:00 local on the day itself.
+ */
+function grantEndFromDate(raw: string): string | null | "bad" {
+  const day = raw.trim();
+  if (!day) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return "bad";
+  const end = Date.parse(`${day}T23:59:59+05:00`);
+  return Number.isFinite(end) ? new Date(end).toISOString() : "bad";
 }
 
 function escapeHtml(s: string): string {
@@ -313,7 +398,7 @@ export async function setAccountSuspended(
 
   const { data: org } = await admin
     .from("organizations")
-    .select("id, name, kind, status")
+    .select("id, name, kind, status, contact_email")
     .eq("id", targetOrg)
     .maybeSingle();
   if (!org) return { error: "That workspace no longer exists." };
@@ -359,13 +444,91 @@ export async function setAccountSuspended(
   revalidatePath(`/admin/centers/${targetOrg}`);
   revalidatePath("/admin/health");
 
-  return {
-    notice: suspend
-      ? members > 1
-        ? `${label} suspended — all ${members} members are locked out.`
-        : `${label} is suspended and cannot sign in.`
-      : `${label} is active again.`,
-  };
+  const mail = await sendStatusEmail({
+    organizationId: targetOrg,
+    isCenter: org.kind === "center",
+    centerName: org.name as string,
+    centerEmail: (org.contact_email as string | null) ?? null,
+    suspended: suspend,
+  });
+
+  const done = suspend
+    ? members > 1
+      ? `${label} suspended — all ${members} members are locked out.`
+      : `${label} is suspended and cannot sign in.`
+    : `${label} is active again.`;
+  return { notice: `${done} ${mail}` };
+}
+
+/**
+ * Tell the account's owner they have been locked out, or let back in.
+ *
+ * A SUSPENSION USED TO ARRIVE AS A SIGN-IN THAT STOPPED WORKING, which reads as
+ * a broken site rather than a decision — and a reinstatement was invisible
+ * until somebody happened to try again. Returns a line for the admin, the same
+ * contract as the approval email above: sending never blocks the decision.
+ *
+ * WHO. A centre's owner, at the address the centre applied with; a learner, at
+ * their own. Never every member of a centre — the students did not do anything,
+ * and their teacher can tell them. Never a synthetic students.engprogress.com
+ * address, which goes nowhere.
+ *
+ * ⚠️ The copy invites no reply. Inbound mail to engprogress.com is dead (see
+ * EMAIL-SETUP.md), so "reply to this email" would be a promise nobody can keep.
+ */
+async function sendStatusEmail(args: {
+  organizationId: string;
+  isCenter: boolean;
+  centerName: string;
+  centerEmail: string | null;
+  suspended: boolean;
+}): Promise<string> {
+  const admin = createAdminClient();
+  const { data: members } = await admin
+    .from("profiles")
+    .select("id, full_name, contact_email, role")
+    .eq("organization_id", args.organizationId);
+  const owner = args.isCenter
+    ? (members ?? []).find((m) => isOrgOwner(m.role as AppRole))
+    : (members ?? [])[0];
+
+  let to = (args.isCenter ? args.centerEmail : null) ?? owner?.contact_email ?? "";
+  if (!to && owner) {
+    const { data: user } = await admin.auth.admin.getUserById(String(owner.id));
+    to = user?.user?.email ?? "";
+  }
+  to = to.trim();
+  if (!to || !to.includes("@") || to.endsWith("students.engprogress.com")) {
+    return "No email sent — there is no real address on file.";
+  }
+
+  const name = args.isCenter ? args.centerName : ((owner?.full_name as string | null)?.split(" ")[0] ?? "there");
+  const what = args.isCenter ? `${args.centerName} on EngProgress` : "your EngProgress account";
+  const signInUrl = `${serverEnv.outboundSiteUrl}/sign-in`;
+  const kept = "Nothing has been deleted — every essay, test, band and piece of feedback is kept exactly as it was.";
+  const lead = args.suspended
+    ? `We've suspended ${what}, so ${args.isCenter ? "nobody at the centre" : "you"} can sign in for now. ${kept}`
+    : `${args.isCenter ? args.centerName : "Your EngProgress account"} is active again, and signing in works as before. ${kept}`;
+
+  const result = await sendEmail({
+    to,
+    subject: args.suspended
+      ? args.isCenter
+        ? `${args.centerName} is suspended on EngProgress`
+        : "Your EngProgress account is suspended"
+      : args.isCenter
+        ? `${args.centerName} is active again on EngProgress`
+        : "Your EngProgress account is active again",
+    text:
+      `Hi ${name},\n\n${lead}\n\n` +
+      (args.suspended ? "" : `Sign in: ${signInUrl}\n\n`) +
+      `— The EngProgress team`,
+    html:
+      `<p>Hi ${escapeHtml(name)},</p><p>${escapeHtml(lead)}</p>` +
+      (args.suspended ? "" : `<p><a href="${signInUrl}">Sign in</a></p>`) +
+      `<p>— The EngProgress team</p>`,
+  });
+  return result.sent ? `Email sent to ${to}.` : `The email was NOT sent: ${result.detail}`;
 }
 
 /**
@@ -381,7 +544,15 @@ export async function setAccountSuspended(
  */
 export async function loadAccountUsage(
   profileId: string,
-): Promise<{ gradeUsed: number; gradeLimit: number | null; practiceUsed: number; practiceLimit: number | null } | null> {
+): Promise<{
+  gradeUsed: number;
+  gradeLimit: number | null;
+  practiceUsed: number;
+  practiceLimit: number | null;
+  /** The open hand-granted end date, as `YYYY-MM-DD` in Tashkent, for the
+   *  dialog's date field; null when the plan has none. */
+  grantEndsOn: string | null;
+} | null> {
   await requireSuperAdmin();
   if (!profileId) return null;
 
@@ -393,12 +564,24 @@ export async function loadAccountUsage(
     .maybeSingle();
   if (!profile) return null;
 
-  const usage = await getUsageSummary(profile.organization_id as string);
+  const [usage, { data: sub }] = await Promise.all([
+    getUsageSummary(profile.organization_id as string),
+    admin
+      .from("subscriptions")
+      .select("provider, status, current_period_end")
+      .eq("organization_id", profile.organization_id)
+      .maybeSingle(),
+  ]);
+  const open = sub?.provider === "manual" && sub.status !== "canceled" && sub.current_period_end;
   return {
     gradeUsed: usage.grade.used,
     gradeLimit: usage.grade.limit,
     practiceUsed: usage.generate.used,
     practiceLimit: usage.generate.limit,
+    // en-CA formats as YYYY-MM-DD, which is what <input type="date"> takes.
+    grantEndsOn: open
+      ? new Date(String(sub.current_period_end)).toLocaleDateString("en-CA", { timeZone: "Asia/Tashkent" })
+      : null,
   };
 }
 

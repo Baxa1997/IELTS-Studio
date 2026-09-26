@@ -79,7 +79,7 @@ export async function loadRevenue(): Promise<RevenueSnapshot> {
 
   const [orgsRes, subsRes] = await Promise.all([
     admin.from("organizations").select("id, plan, kind, status, billing_enforced"),
-    admin.from("subscriptions").select("organization_id, plan, status, created_at, current_period_end"),
+    admin.from("subscriptions").select("organization_id, plan, status, provider, created_at, current_period_end"),
   ]);
 
   const orgs = (orgsRes.data ?? []) as {
@@ -89,12 +89,17 @@ export async function loadRevenue(): Promise<RevenueSnapshot> {
     status: string;
     billing_enforced: boolean;
   }[];
-  const subs = (subsRes.data ?? []) as {
+  const subs = ((subsRes.data ?? []) as {
     organization_id: string;
     plan: OrgPlan;
     status: string;
+    provider: string | null;
     created_at: string;
-  }[];
+  }[])
+    // ⚠️ A 'manual' row is a plan granted by hand with an end date — a comp, not
+    // a customer. Counted here it would add its list price to MRR and call the
+    // account "paying" (migration 20260926140000).
+    .filter((s) => s.provider !== "manual");
 
   const activeSubs = subs.filter((s) => s.status === "active" || s.status === "trialing");
   // "trialing" is a live Stripe subscription that has not billed yet, so it

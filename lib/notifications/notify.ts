@@ -30,6 +30,9 @@ export type NotificationType =
   | "billing_expired"
   | "billing_renewed"
   | "billing_payment_failed"
+  /** Needs migration 20260926120000 — until it is applied the insert fails,
+   *  which `notify` logs and swallows. */
+  | "billing_activated"
   /** A center-wide message from the center admin. */
   | "announcement";
 

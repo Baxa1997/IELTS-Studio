@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { downgradeToFree } from "./downgrade";
 import { hasLapsed } from "./lifecycle";
-import { notifyPlanRenewed } from "./notify-expiry";
+import { notifyPlanActivated, notifyPlanRenewed } from "./notify-expiry";
 import {
   isAboutAnotherSubscription,
   orgEffect,
@@ -14,6 +14,10 @@ import {
 } from "./lifecycle";
 import { isValidPlan, planTier, type OrgPlan } from "./plans";
 import type { BillingProviderId, PlanChange, SubscriptionStatus } from "./types";
+
+/** The shortest period any tier sells is a month; anything moving the end by
+ *  less than this is a correction of the same period, not a new one. */
+const MIN_RENEWAL_ADVANCE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Billing orchestration shared by all providers. Webhooks normalize their event
@@ -73,14 +77,35 @@ export async function applyPlanChange(
       .eq("id", change.organizationId);
     if (organizationError) throw new Error(`could not apply organization plan: ${organizationError.message}`);
 
+    /* STARTED, RENEWED, OR NEITHER — and exactly one email for each.
+       "Was paying" reads the STATUS, not `isLiveSubscription`: a Stripe row
+       whose renewal webhook went missing looks lapsed by date, and when the
+       nightly job fetches the renewal that is a renewal, not a new start. A
+       replayed event finds the row this call's first run already made active,
+       so it announces nothing twice. */
+    // A hand-granted 'manual' row is a comp: the first real payment after one
+    // is a plan starting, not a renewal of something nobody paid for.
+    const wasPaying =
+      existing?.provider !== "manual" && (existing?.status === "active" || existing?.status === "trialing");
     const previousEnd = existing?.current_period_end ? Date.parse(existing.current_period_end) : NaN;
     const nextEnd = change.currentPeriodEnd ? Date.parse(change.currentPeriodEnd) : NaN;
+    // ⚠️ A renewal moves the end by a whole period. A checkout writes an end
+    // derived from the tier and Stripe's own subscription event then corrects
+    // it by seconds — without a floor that correction was a "renewed" email
+    // arriving minutes after the first payment.
     const isRenewal =
-      Boolean(existing && (existing.status === "active" || existing.status === "trialing")) &&
+      wasPaying &&
       Number.isFinite(previousEnd) &&
       Number.isFinite(nextEnd) &&
-      nextEnd > previousEnd;
-    if (isRenewal && change.currentPeriodEnd) {
+      nextEnd - previousEnd >= MIN_RENEWAL_ADVANCE_MS;
+    if (!wasPaying) {
+      await notifyPlanActivated(
+        change.organizationId,
+        change.plan,
+        change.currentPeriodEnd ?? null,
+        new Date(now).toISOString(),
+      );
+    } else if (isRenewal && change.currentPeriodEnd) {
       await notifyPlanRenewed(change.organizationId, change.plan, change.currentPeriodEnd);
     }
   } else if (effect !== "none") {

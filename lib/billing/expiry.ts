@@ -65,12 +65,13 @@ export async function expireLapsedSubscriptions(): Promise<{
         // `incomplete` row is an abandoned checkout with nothing to take away.
         const claimsPaid = row.status === "active" || row.status === "trialing" || row.status === "past_due";
         if (!claimsPaid) continue;
-        if (row.current_period_end) {
-          const end = Date.parse(row.current_period_end);
-          if (Number.isFinite(end) && end > now && end <= reminderWindow) {
-            await notifyPlanExpiring(organizationId, String(row.plan), row.current_period_end);
-          }
-        }
+        /* ⚠️ NO "ENDS SOON" EMAIL ON THIS BRANCH. Stripe renews by itself, and
+           nothing here knows whether the customer cancelled — `cancel_at_period_end`
+           is never stored, and there is no in-app way to cancel. So every Stripe
+           subscriber was told "your plan ends on … renew before then" a week
+           before each automatic renewal: a false alarm that invites a customer
+           to go looking for how to pay twice. If a cancel flow is ever built,
+           store the flag and remind only when it is set. */
         if (row.current_period_end && !hasLapsed(row, now)) continue;
 
         const live = await fetchLiveStripeSubscription({

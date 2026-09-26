@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { expireLapsedSubscriptions } from "@/lib/billing/expiry";
+import { sendQuotaWarnings } from "@/lib/billing/quota-warnings";
 import { serverEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -46,13 +47,23 @@ export async function POST(req: Request): Promise<Response> {
 
   const { expired, reconciled, errors } = await expireLapsedSubscriptions();
 
+  /* THE ALLOWANCE WARNINGS RIDE THE SAME NIGHTLY RUN, after expiry on purpose:
+     an org downgraded a minute ago is then measured against its NEW, smaller
+     allowance, which is the one it will actually meet tomorrow. A second cron
+     entry would have been the tidier file and the worse schedule — this one is
+     already authorised, already daily, and already about billing. Independent
+     of the expiry result: a failure there must not silence these. */
+  const quota = await sendQuotaWarnings();
+  errors.push(...quota.errors.map((e) => `quota ${e}`));
+
   // Successful orgs are idempotent, so a non-zero result should be visible to
   // Vercel and retried rather than silently marking a partial pass as healthy.
+  const body = { expired, reconciled, quotaChecked: quota.checked, quotaEmailed: quota.emailed, errors: errors.length };
   if (errors.length > 0) {
-    console.error("[billing] expiry pass had failures:", errors);
-    return NextResponse.json({ expired, reconciled, errors: errors.length }, { status: 500 });
+    console.error("[billing] nightly pass had failures:", errors);
+    return NextResponse.json(body, { status: 500 });
   }
-  return NextResponse.json({ expired, reconciled, errors: errors.length });
+  return NextResponse.json(body);
 }
 
 function isAuthorized(req: Request, secret: string): boolean {

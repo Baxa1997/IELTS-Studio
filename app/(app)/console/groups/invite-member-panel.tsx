@@ -104,9 +104,10 @@ export function InviteMemberPanel({
 
       {state.inviteUrl ? (
         <div className="bg-muted/40 space-y-2 rounded-md border p-3">
-          <p className="text-sm">
-            Invite link for <span className="font-medium">{state.email}</span> — share it with them
-            (no email is sent):
+          {state.emailNote ? <p className="text-sm">{state.emailNote}</p> : null}
+          <p className="text-muted-foreground text-sm">
+            Invite link for <span className="font-medium">{state.email}</span> — you can also share
+            it yourself:
           </p>
           <div className="flex items-center gap-2">
             <Input readOnly value={state.inviteUrl} className="font-mono text-xs" />

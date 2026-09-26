@@ -305,6 +305,29 @@ export function ManageModal({
             </div>
           </div>
 
+          {/* An end date turns a comp into something that finishes by itself —
+              a reminder a week before, the downgrade on the day, and an email
+              both times, exactly as a Payme plan ends. Blank keeps it open-ended.
+              Keyed on the loaded value: it arrives after the dialog opens, and
+              an uncontrolled field only reads its default once. */}
+          <div style={{ marginBottom: 12 }}>
+            <label
+              htmlFor="plan_until"
+              style={{ fontSize: 12, color: MUTED, display: "block", marginBottom: 6 }}
+            >
+              Paid until <span style={{ color: FAINT }}>(optional — blank never ends)</span>
+            </label>
+            <input
+              key={`${target.profileId}:${usage?.grantEndsOn ?? ""}`}
+              id="plan_until"
+              name="until"
+              type="date"
+              defaultValue={usage?.grantEndsOn ?? ""}
+              disabled={plan === "trial"}
+              style={{ ...field, opacity: plan === "trial" ? 0.5 : 1 }}
+            />
+          </div>
+
           <div
             style={{
               background: WELL,

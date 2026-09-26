@@ -40,7 +40,7 @@ export async function LearnerBillingSection({ organizationId }: { organizationId
             <div style={{ fontSize: 14, color: MUTED, marginTop: 2 }}>
               {STATUS[sub.status] ?? sub.status}
               {sub.currentPeriodEnd
-                ? ` · ${sub.status === "canceled" ? "ended" : "renews"} ${date(sub.currentPeriodEnd)}`
+                ? ` · ${sub.status === "canceled" ? "ended" : sub.provider === "stripe" ? "renews" : "ends"} ${date(sub.currentPeriodEnd)}`
                 : ""}
             </div>
           </div>

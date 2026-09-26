@@ -140,6 +140,10 @@ function InviteRow({ invite, first }: { invite: PendingInvite; first: boolean })
         </div>
       ) : null}
 
+      {refreshState.emailNote ? (
+        <p style={{ marginTop: 6, fontSize: 12.5, color: MUTED }}>{refreshState.emailNote}</p>
+      ) : null}
+
       {error ? (
         <p style={{ marginTop: 6, fontSize: 12.5, color: WARM_RED }} role="alert">
           {error}

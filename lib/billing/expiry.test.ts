@@ -219,12 +219,16 @@ describe("a plan granted by hand is not undone the next morning", () => {
     expect(grant).toMatch(/status: "canceled"/);
   });
 
-  it("leaves a live subscription alone", () => {
-    expect(grant).toMatch(/sub\.status !== "canceled" && !isLiveSubscription\(sub\)/);
+  it("leaves a live PAID subscription alone, but always closes a hand-granted one", () => {
+    expect(grant).toMatch(/sub\.status !== "canceled" &&\s*\(manualRow \|\| \(before\?\.plan !== plan && !isLiveSubscription\(sub\)\)\)/);
   });
 
   it("closes it only after the plan itself was written", () => {
-    expect(grant.indexOf('.from("organizations")')).toBeLessThan(grant.indexOf("isLiveSubscription(sub)"));
+    // Bounded on the UPDATE — an earlier version of this test matched the READ
+    // of organizations at the top of the function and passed whatever the order.
+    const write = grant.indexOf(".update({\n      plan,");
+    expect(write).toBeGreaterThan(-1);
+    expect(write).toBeLessThan(grant.indexOf("(manualRow || (before?.plan !== plan"));
   });
 });
 
@@ -246,5 +250,139 @@ describe("what the learner is told", () => {
 
   it("cannot fail the downgrade it is announcing", () => {
     expect(notify).toMatch(/catch \(err\)/);
+  });
+});
+
+/*
+ * EVERY PLAN CHANGE IS ANNOUNCED — ONCE, TRUTHFULLY, TO THE RIGHT PERSON.
+ *
+ * The audit of 2026-09-26 found the gaps these pin: a first payment and a plan
+ * set by hand in /admin were silent, every auto-renewing Stripe customer was
+ * told weekly-before-renewal that their plan was ending, and a centre's
+ * billing mail would have gone to every student in it.
+ */
+describe("who hears about billing", () => {
+  const people = fn(notify, "planOwners");
+
+  it("writes to the owner, and to the learner only when there is no owner", () => {
+    expect(people).toMatch(/isOrgOwner\(m\.role\)/);
+    expect(people).toMatch(/owners\.length > 0 \? owners :/);
+  });
+
+  it("never lumps students in with the owner roles", () => {
+    expect(code("./notify-expiry.ts")).not.toMatch(/m\.role === "student" \|\|/);
+  });
+});
+
+describe("Stripe customers are not told a renewing plan is ending", () => {
+  const pass = fn(expiry, "expireLapsedSubscriptions");
+
+  it("sends no 'ends soon' reminder on the Stripe branch", () => {
+    expect(block(pass, 'if (row.provider === "stripe")')).not.toMatch(/notifyPlanExpiring\(/);
+  });
+
+  it("still reminds Payme and Click, which never renew", () => {
+    const stripeBranch = block(pass, 'if (row.provider === "stripe")');
+    const afterStripe = pass.slice(pass.indexOf(stripeBranch) + stripeBranch.length);
+    expect(afterStripe).toMatch(/notifyPlanExpiring\(/);
+  });
+});
+
+describe("a plan starting is announced, and a renewal is a whole period", () => {
+  const apply = fn(service, "applyPlanChange");
+
+  it("announces a start when the org was not already paying", () => {
+    expect(apply).toMatch(/if \(!wasPaying\) \{\s*await notifyPlanActivated\(/);
+  });
+
+  it("decides 'was paying' by status, so a missed renewal webhook is still a renewal", () => {
+    expect(apply).toMatch(/\(existing\?\.status === "active" \|\| existing\?\.status === "trialing"\)/);
+    expect(apply).not.toMatch(/wasPaying = isLiveSubscription/);
+  });
+
+  it("does not count a hand-granted plan as paying, so a comp's first payment is a start", () => {
+    expect(apply).toMatch(/const wasPaying =\s*existing\?\.provider !== "manual" &&/);
+  });
+
+  it("does not call a correction of seconds a renewal", () => {
+    expect(apply).toMatch(/nextEnd - previousEnd >= MIN_RENEWAL_ADVANCE_MS/);
+    expect(service).toMatch(/const MIN_RENEWAL_ADVANCE_MS = 7 \* 24 \* 60 \* 60 \* 1000/);
+  });
+});
+
+describe("a plan changed by hand is announced", () => {
+  const grant = fn(actions, "setAccountPlan");
+
+  it("tells them when a plan is taken away, and when one is given or extended", () => {
+    expect(grant).toMatch(/if \(plan === "trial"\) \{\s*await notifyPlanRevoked\(/);
+    expect(grant).toMatch(/await notifyPlanActivated\(profile\.organization_id as string, plan, until, at\)/);
+  });
+
+  it("only after the plan itself was written, and only when something changed", () => {
+    expect(grant.indexOf(".update({\n      plan,")).toBeLessThan(grant.indexOf("notifyPlanRevoked("));
+    expect(grant).toMatch(/if \(before\?\.plan && \(before\.plan !== plan \|\| endMoved\)\)/);
+  });
+
+  it("keys each hand-made notice to its own moment, so the second is not swallowed", () => {
+    // The delivery table is unique per (org, recipient, kind, period_end) and a
+    // hand-granted plan has no period end.
+    expect(fn(notify, "notifyPlanRevoked")).toMatch(/deliveryKey: eventKey/);
+    expect(fn(notify, "notifyPlanActivated")).toMatch(/deliveryKey: periodEnd \?\? eventKey/);
+    expect(fn(notify, "notifyBillingPeople")).toMatch(/periodEnd: input\.deliveryKey \?\? input\.periodEnd/);
+  });
+
+  it("never says a plan ran out of what was paid for — a comp ends through the same words", () => {
+    expect(code("./notify-expiry.ts")).not.toMatch(/end of what was paid for/);
+    expect(notify).toMatch(/`Your \$\{planName\} plan has ended/);
+  });
+});
+
+describe("a suspension is announced to the owner", () => {
+  const suspend = fn(actions, "setAccountSuspended");
+
+  it("emails after the status change landed, and reports the result", () => {
+    const send = suspend.indexOf("const mail = await sendStatusEmail(");
+    expect(send).toBeGreaterThan(suspend.indexOf(".update({ status: next })"));
+    expect(suspend).toMatch(/notice: `\$\{done\} \$\{mail\}`/);
+  });
+
+  it("writes to the owner, never to every member, and never to a synthetic address", () => {
+    const send = fn(actions, "sendStatusEmail");
+    expect(send).toMatch(/isOrgOwner\(/);
+    expect(send).toMatch(/students\.engprogress\.com/);
+    expect(send).not.toMatch(/for \(const/);
+  });
+});
+
+describe("a plan granted by hand can carry an end date", () => {
+  const grant = fn(actions, "setAccountPlan");
+  const revenue = code("../admin/revenue.ts");
+  const settings = read("../../app/(app)/settings/sections/billing.tsx");
+
+  it("is stored as a 'manual' subscription row, so the nightly job ends it like Payme", () => {
+    const upsert = block(grant, "if (until)");
+    expect(upsert).toMatch(/provider: "manual"/);
+    expect(upsert).toMatch(/current_period_end: until/);
+    // A leftover Stripe id would make a dead subscription's events look like this grant's.
+    expect(upsert).toMatch(/external_subscription_id: null/);
+  });
+
+  it("refuses an end date over a live paid subscription, before writing anything", () => {
+    const refuse = grant.indexOf("if (until && sub && !manualRow && isLiveSubscription(sub))");
+    expect(refuse).toBeGreaterThan(-1);
+    expect(refuse).toBeLessThan(grant.indexOf(".update({\n      plan,"));
+  });
+
+  it("ends at the close of the chosen day in Tashkent, not at UTC midnight", () => {
+    expect(fn(actions, "grantEndFromDate")).toMatch(/T23:59:59\+05:00/);
+  });
+
+  it("is never counted as revenue", () => {
+    expect(fn(revenue, "loadRevenue")).toMatch(/\.filter\(\(s\) => s\.provider !== "manual"\)/);
+    expect(revenue).toMatch(/select\("organization_id, plan, status, provider,/);
+  });
+
+  it("does not tell a learner their plan 'renews' unless Stripe renews it", () => {
+    expect(settings).toMatch(/sub\.provider === "stripe" \? "renews" : "ends"/);
   });
 });
