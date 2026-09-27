@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { A, B, Cta, Faq, LI, P, PageTitle, Related, Sec, UL } from "../_components/marketing";
+import { A, B, Cta, Faq, FromTheBlog, LI, P, PageTitle, Related, Sec, UL } from "../_components/marketing";
 
 export const metadata: Metadata = {
   title: "IELTS Listening Practice — Full 4-Part Tests with Original Audio",
@@ -69,6 +69,8 @@ export default function IeltsListeningPracticePage() {
           band against your target — see <A href="/ielts-practice">all four together</A>.
         </P>
       </Sec>
+
+      <FromTheBlog skill="listening" />
 
       <Faq
         items={[

@@ -27,14 +27,16 @@ import {
   POSTS,
   readingMinutes,
   relatedPosts,
+  SKILL_TOPIC,
   wordCount,
   type BlogPost,
 } from "@/lib/blog";
 import { translator } from "@/lib/i18n";
 import { HTML_LANG, SOURCE_LOCALE } from "@/lib/i18n/locales";
-import { absoluteUrl, PREVIEW_IMAGE, SITE_NAME } from "@/lib/seo";
+import { absoluteUrl, SITE_NAME } from "@/lib/seo";
 
-import { ArticleBody } from "./_components/article-body";
+import { blogAlternates } from "../_lib/metadata";
+import { ArticleBody, KeyPoints, Questions } from "./_components/article-body";
 
 /**
  * /blog/[slug] — one article, laid out for reading: headline, standfirst,
@@ -63,13 +65,14 @@ export async function generateMetadata({
   const post = getPost((await params).slug);
   if (!post) return {};
   const path = `/blog/${post.slug}`;
-  const image = post.image
-    ? { url: post.image.src, alt: post.image.alt }
-    : { url: PREVIEW_IMAGE, width: 1200, height: 630, alt: post.title };
+  /* NO `images` HERE, ON PURPOSE. `opengraph-image.tsx` beside this page draws
+     a card with the headline, and file-based metadata overrides this object
+     anyway — an image listed here would be dead config that looks live. X
+     falls back to og:image when there is no twitter:image. */
   return {
     title: post.title,
     description: post.standfirst,
-    alternates: { canonical: path },
+    alternates: blogAlternates(path),
     openGraph: {
       type: "article",
       url: path,
@@ -79,13 +82,11 @@ export async function generateMetadata({
       publishedTime: post.published,
       modifiedTime: post.updated ?? post.published,
       section: t(CATEGORY_LABEL[post.category]),
-      images: [image],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.standfirst,
-      images: [image.url],
     },
   };
 }
@@ -95,22 +96,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   if (!post) notFound();
 
   const url = absoluteUrl(`/blog/${post.slug}`);
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: post.title,
-    description: post.standfirst,
-    datePublished: post.published,
-    dateModified: post.updated ?? post.published,
-    inLanguage: "en",
-    articleSection: t(CATEGORY_LABEL[post.category]),
-    wordCount: wordCount(post),
-    url,
-    mainEntityOfPage: url,
-    image: absoluteUrl(post.image?.src ?? PREVIEW_IMAGE),
-    author: { "@type": "Organization", name: post.author, url: absoluteUrl("/") },
-    publisher: { "@type": "Organization", name: SITE_NAME, url: absoluteUrl("/") },
-  };
+  const structuredData = articleGraph(post, url);
 
   return (
     <div style={{ padding: "clamp(28px,4.5vw,56px) clamp(16px,4vw,28px) 72px" }}>
@@ -189,7 +175,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         </figure>
 
         <div className="bl-col" style={{ marginTop: "clamp(28px,4vw,40px)" }}>
+          <KeyPoints points={post.summary} title={t("blog.inShort")} />
           <ArticleBody blocks={post.body} />
+          {post.faq?.length ? <Questions faq={post.faq} title={t("blog.faqTitle")} /> : null}
           {post.cta ? <PracticeCta cta={post.cta} /> : null}
           <p
             style={{
@@ -229,6 +217,71 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       </section>
     </div>
   );
+}
+
+/**
+ * The page's structured data, as one graph: the article, the breadcrumb trail
+ * above it, and — when the post has them — its questions.
+ *
+ * ⚠️ `@id`S ARE HOW THE PIECES JOIN UP. The author and publisher point at
+ * `/#organization`, the node the landing page already publishes, and the post
+ * points at the blog's `/blog#blog`. That is what lets a search engine or an
+ * answer engine treat EngProgress, its blog and this article as one entity
+ * rather than three strings that happen to match.
+ *
+ * FAQPage no longer earns a rich result in Google for a site like ours (it is
+ * reserved for government and health sites since 2023). It is here for the
+ * engines that DO read it — Bing, which feeds ChatGPT search and Copilot, and
+ * the answer engines that parse Q&A — and it mirrors the visible questions
+ * exactly.
+ */
+function articleGraph(post: BlogPost, url: string) {
+  const site = absoluteUrl("/").replace(/\/$/, "");
+  const org = { "@type": "Organization", "@id": `${site}/#organization`, name: SITE_NAME, url: site };
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        "@id": `${url}#article`,
+        headline: post.title,
+        description: post.standfirst,
+        abstract: post.summary.join(" "),
+        datePublished: post.published,
+        dateModified: post.updated ?? post.published,
+        inLanguage: "en",
+        articleSection: t(CATEGORY_LABEL[post.category]),
+        ...(post.skill ? { about: { "@type": "Thing", name: SKILL_TOPIC[post.skill] } } : {}),
+        wordCount: wordCount(post),
+        url,
+        mainEntityOfPage: url,
+        image: `${url}/opengraph-image`,
+        author: org,
+        publisher: org,
+        isPartOf: { "@type": "Blog", "@id": `${site}/blog#blog`, name: t("blog.indexTitle"), url: `${site}/blog` },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: t("blog.home"), item: `${site}/` },
+          { "@type": "ListItem", position: 2, name: t("blog.name"), item: `${site}/blog` },
+          { "@type": "ListItem", position: 3, name: post.title, item: url },
+        ],
+      },
+      ...(post.faq?.length
+        ? [
+            {
+              "@type": "FAQPage",
+              mainEntity: post.faq.map((f) => ({
+                "@type": "Question",
+                name: f.q,
+                acceptedAnswer: { "@type": "Answer", text: f.a },
+              })),
+            },
+          ]
+        : []),
+    ],
+  };
 }
 
 /**

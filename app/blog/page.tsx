@@ -7,6 +7,8 @@ import { translator } from "@/lib/i18n";
 import { HTML_LANG, SOURCE_LOCALE } from "@/lib/i18n/locales";
 import { absoluteUrl, PREVIEW_IMAGE, SITE_NAME } from "@/lib/seo";
 
+import { blogAlternates } from "./_lib/metadata";
+
 /**
  * /blog — the front page: the lead story wide across the top, then every other
  * post, newest first, in a grid that turns into a list of rows on a phone.
@@ -22,7 +24,7 @@ const LANG = HTML_LANG[SOURCE_LOCALE];
 export const metadata: Metadata = {
   title: t("blog.metaTitle"),
   description: t("blog.metaDesc"),
-  alternates: { canonical: "/blog" },
+  alternates: blogAlternates("/blog"),
   openGraph: {
     type: "website",
     url: "/blog",
@@ -41,21 +43,37 @@ export const metadata: Metadata = {
 export default function BlogIndexPage() {
   const lead = leadPost();
   const rest = otherPosts();
+  const site = absoluteUrl("/").replace(/\/$/, "");
+  /* `@id`s match the ones the landing page and every article publish, so the
+     organisation, this blog and its posts resolve as one set of entities. */
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "Blog",
-    name: t("blog.indexTitle"),
-    description: t("blog.metaDesc"),
-    url: absoluteUrl("/blog"),
-    inLanguage: "en",
-    publisher: { "@type": "Organization", name: SITE_NAME, url: absoluteUrl("/") },
-    blogPost: POSTS.map((p) => ({
-      "@type": "BlogPosting",
-      headline: p.title,
-      url: absoluteUrl(`/blog/${p.slug}`),
-      datePublished: p.published,
-      dateModified: p.updated ?? p.published,
-    })),
+    "@graph": [
+      {
+        "@type": "Blog",
+        "@id": `${site}/blog#blog`,
+        name: t("blog.indexTitle"),
+        description: t("blog.metaDesc"),
+        url: `${site}/blog`,
+        inLanguage: "en",
+        publisher: { "@type": "Organization", "@id": `${site}/#organization`, name: SITE_NAME, url: site },
+        blogPost: POSTS.map((p) => ({
+          "@type": "BlogPosting",
+          "@id": `${absoluteUrl(`/blog/${p.slug}`)}#article`,
+          headline: p.title,
+          url: absoluteUrl(`/blog/${p.slug}`),
+          datePublished: p.published,
+          dateModified: p.updated ?? p.published,
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: t("blog.home"), item: `${site}/` },
+          { "@type": "ListItem", position: 2, name: t("blog.name"), item: `${site}/blog` },
+        ],
+      },
+    ],
   };
 
   return (

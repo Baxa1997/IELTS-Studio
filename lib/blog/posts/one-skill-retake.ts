@@ -17,6 +17,26 @@ export const oneSkillRetake: BlogPost = {
   published: "2026-09-26",
   author: "EngProgress team",
   cover: { kicker: "1 skill" },
+  summary: [
+    "IELTS One Skill Retake lets a candidate resit one of the four skills instead of the whole test, at test centres that offer it.",
+    "The retake is taken on computer, within a limited window after the original test, and can be used once for each original test.",
+    "Not every university, employer or visa authority accepts One Skill Retake results, so acceptance should be checked before booking.",
+    "A retake is most worthwhile when only one skill is below target and the reason for the low score is known.",
+  ],
+  faq: [
+    {
+      q: "What is IELTS One Skill Retake?",
+      a: "It is an option to retake one of the four IELTS skills, Listening, Reading, Writing or Speaking, instead of sitting the whole test again. It is available at test centres that offer it.",
+    },
+    {
+      q: "Is IELTS One Skill Retake accepted by universities?",
+      a: "Not by all of them. Check with the university, employer or visa authority you are applying to before you book, as well as the current rules on the official IELTS website.",
+    },
+    {
+      q: "When is it worth using One Skill Retake?",
+      a: "When only one skill is below your target and you know what held it back. If several skills are low, or you do not know why, a retake tends to produce the same score again.",
+    },
+  ],
   body: [
     {
       type: "p",

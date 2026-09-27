@@ -16,6 +16,26 @@ export const whatsNewAtEngProgress: BlogPost = {
   published: "2026-09-26",
   author: "EngProgress team",
   cover: { kicker: "What's new" },
+  summary: [
+    "EngProgress offers practice for all four IELTS skills: Writing, Reading, Listening and Speaking.",
+    "EngProgress has a practice track for Uzbekistan's CEFR Multilevel (DTM) exam, covering the Reading and Writing papers.",
+    "The EngProgress interface is available in Uzbek, English and Russian, while exam content stays in English.",
+    "The EngProgress grader works from the official public band descriptors and gives the lower band when a script sits between two.",
+  ],
+  faq: [
+    {
+      q: "What does EngProgress offer?",
+      a: "Practice for all four IELTS skills with AI feedback, a practice track for the Uzbekistan CEFR Multilevel exam, and tools for education centres to set homework and follow each student's progress.",
+    },
+    {
+      q: "Is EngProgress available in Uzbek?",
+      a: "Yes. The interface is available in Uzbek, which is the default, as well as English and Russian. Exam content and feedback stay in English, as in the real exam.",
+    },
+    {
+      q: "Can I try EngProgress for free?",
+      a: "Yes. The free IELTS writing checker works without an account, and a free account includes a monthly allowance of practice in all four skills.",
+    },
+  ],
   body: [
     {
       type: "p",

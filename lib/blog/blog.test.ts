@@ -22,15 +22,20 @@ import {
   CATEGORY_LABEL,
   formatPostDate,
   getPost,
+  headingId,
   leadPost,
   otherPosts,
   POSTS,
+  postsForSkill,
   readingMinutes,
   relatedPosts,
+  SKILL_TOPIC,
   type Block,
   type BlogPost,
+  type BlogSkill,
 } from ".";
 import { parseInline, plainText } from "./inline";
+import { postToMarkdown } from "./markdown";
 
 /** Every string in a post that goes through `parseInline`. */
 function inlineStrings(post: BlogPost): string[] {
@@ -64,6 +69,8 @@ function allText(post: BlogPost): string[] {
     ...post.body.flatMap((b) => (b.type === "example" ? b.rows.map((r) => r.label) : [])),
     ...post.body.flatMap((b) => (b.type === "quote" && b.cite ? [b.cite] : [])),
     ...(post.cta ? [post.cta.title, post.cta.text, post.cta.label] : []),
+    ...post.summary,
+    ...(post.faq ?? []).flatMap((f) => [f.q, f.a]),
   ].map(plainText);
 }
 
@@ -215,6 +222,80 @@ describe("the posts", () => {
   });
 });
 
+describe("written to be found — by searchers and by answer engines", () => {
+  const MARKUP = /\*|\]\(/;
+
+  it("summarise every post in two to five self-contained sentences", () => {
+    /* An answer engine lifts ONE point and quotes it alone. A point that opens
+       by leaning on the one before — "This is why…", "It also…" — becomes a
+       sentence about nothing once it is lifted. */
+    for (const p of POSTS) {
+      expect(p.summary.length, p.slug).toBeGreaterThanOrEqual(2);
+      expect(p.summary.length, p.slug).toBeLessThanOrEqual(5);
+      for (const pt of p.summary) {
+        expect(pt, `${p.slug}: a summary point is a whole sentence`).toMatch(/^[A-Z].*[.!?]$/);
+        expect(pt.length, `${p.slug}: "${pt}"`).toBeLessThanOrEqual(220);
+        expect(pt, `${p.slug}: summary points are plain text`).not.toMatch(MARKUP);
+        expect(pt, `${p.slug}: "${pt}" leans on the point before it`).not.toMatch(
+          /^(This|That|These|Those|It|They|He|She|Also|And|But|So)\b/,
+        );
+      }
+    }
+  });
+
+  it("ask real questions and answer them in plain text", () => {
+    for (const p of POSTS) {
+      const faq = p.faq ?? [];
+      expect(new Set(faq.map((f) => f.q)).size, `${p.slug}: repeated question`).toBe(faq.length);
+      for (const f of faq) {
+        expect(f.q, p.slug).toMatch(/\?$/);
+        // FAQPage data carries the answer as-is; markup would print literally.
+        expect(f.a, `${p.slug}: answers are plain text`).not.toMatch(MARKUP);
+        expect(f.a.length, `${p.slug}: "${f.q}" — keep the answer quotable`).toBeLessThanOrEqual(450);
+      }
+    }
+  });
+
+  it("give every section heading a unique anchor", () => {
+    for (const p of POSTS) {
+      // "questions" is the anchor of the FAQ section the page adds itself.
+      const ids = [
+        ...p.body.flatMap((b) => (b.type === "h2" ? [headingId(b.text)] : [])),
+        ...(p.faq?.length ? ["questions"] : []),
+      ];
+      for (const id of ids) expect(id, p.slug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+      expect(new Set(ids).size, `${p.slug}: two headings share an anchor`).toBe(ids.length);
+    }
+  });
+
+  it("makes anchors from the words, not the markup", () => {
+    expect(headingId("Minute 1: find **every** question")).toBe("minute-1-find-every-question");
+    expect(headingId("Čapek's *R.U.R.*")).toBe("capek-s-r-u-r");
+  });
+
+  it("lists each post under its skill and nowhere else", () => {
+    for (const skill of Object.keys(SKILL_TOPIC) as BlogSkill[]) {
+      expect(postsForSkill(skill).every((p) => p.skill === skill)).toBe(true);
+    }
+    const tagged = POSTS.filter((p) => p.skill);
+    const listed = (Object.keys(SKILL_TOPIC) as BlogSkill[]).flatMap(postsForSkill);
+    expect(listed.length).toBe(tagged.length);
+  });
+
+  it("exports as Markdown with absolute links only", () => {
+    // Relative links mean nothing once the text is inside an answer engine.
+    const abs = (path: string) => `https://example.test${path}`;
+    for (const p of POSTS) {
+      const md = postToMarkdown(p, abs);
+      expect(md).toContain(`# ${p.title}`);
+      expect(md).toContain(abs(`/blog/${p.slug}`));
+      for (const pt of p.summary) expect(md).toContain(pt);
+      for (const f of p.faq ?? []) expect(md).toContain(f.a);
+      expect(md, `${p.slug}: a relative link survived`).not.toMatch(/\]\(\//);
+    }
+  });
+});
+
 describe("the front page and related stories", () => {
   it("lead with the featured post, and never repeat it below", () => {
     const featured = POSTS.find((p) => p.featured);
@@ -255,6 +336,7 @@ describe("derived values", () => {
     published: "2026-01-01",
     author: "x",
     cover: { kicker: "x" },
+    summary: [],
     body: [{ type: "p", text: Array(words).fill("word").join(" ") }],
   });
 

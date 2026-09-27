@@ -310,6 +310,10 @@ export const ru: Messages = {
   "blog.latest": "Свежие статьи",
   "blog.related": "Читайте также",
   "blog.shareTelegram": "Поделиться в Telegram",
+  "blog.inShort": "Коротко",
+  "blog.faqTitle": "Вопросы читателей",
+  "blog.rss": "Блог EngProgress — RSS-лента",
+  "blog.home": "Главная",
   "blog.metaTitle": "Блог — советы по IELTS, истории английского и новости",
   "blog.metaDesc":
     "Практичные стратегии IELTS, истории английских слов и новости EngProgress. Каждая статья написана на английском — читать её тоже практика.",

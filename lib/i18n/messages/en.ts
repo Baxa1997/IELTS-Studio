@@ -334,6 +334,10 @@ export const en = {
   "blog.latest": "Latest stories",
   "blog.related": "Read next",
   "blog.shareTelegram": "Share on Telegram",
+  "blog.inShort": "In short",
+  "blog.faqTitle": "Questions readers ask",
+  "blog.rss": "EngProgress blog — RSS feed",
+  "blog.home": "Home",
   "blog.metaTitle": "Blog — IELTS tips, English stories and news",
   "blog.metaDesc":
     "Practical IELTS strategy, the stories behind English words, and news from EngProgress. Every article is written in English, so reading it is practice too.",

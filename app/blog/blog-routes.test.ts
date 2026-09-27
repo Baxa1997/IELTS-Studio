@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import sitemap from "@/app/sitemap";
-import { POSTS } from "@/lib/blog";
+import { POSTS, SKILL_TOPIC, type BlogSkill } from "@/lib/blog";
 import { absoluteUrl } from "@/lib/seo";
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
@@ -35,5 +35,22 @@ describe("reaching the blog", () => {
     const page = read("app/blog/[slug]/page.tsx");
     expect(page).toMatch(/export const dynamicParams = false/);
     expect(page).toMatch(/generateStaticParams/);
+  });
+});
+
+describe("the skill pages link to the blog", () => {
+  /* Every skill's marketing page carries the block, including skills with no
+     article yet — it renders nothing until one is published, and then the link
+     is there without anyone remembering to add it. */
+  const PAGE: Record<BlogSkill, string> = {
+    writing: "app/(marketing)/ielts-writing-practice/page.tsx",
+    reading: "app/(marketing)/ielts-reading-practice/page.tsx",
+    listening: "app/(marketing)/ielts-listening-practice/page.tsx",
+    speaking: "app/(marketing)/ielts-speaking-practice/page.tsx",
+    cefr: "app/(marketing)/cefr-multilevel-practice/page.tsx",
+  };
+
+  it.each(Object.keys(SKILL_TOPIC) as BlogSkill[])("%s", (skill) => {
+    expect(read(PAGE[skill])).toContain(`<FromTheBlog skill="${skill}" />`);
   });
 });

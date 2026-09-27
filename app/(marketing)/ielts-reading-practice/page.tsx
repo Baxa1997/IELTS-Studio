@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { A, B, Cta, Faq, LI, P, PageTitle, Related, Sec, UL } from "../_components/marketing";
+import { A, B, Cta, Faq, FromTheBlog, LI, P, PageTitle, Related, Sec, UL } from "../_components/marketing";
 
 export const metadata: Metadata = {
   title: "IELTS Reading Practice — Every Question Type, With Trap Explanations",
@@ -84,6 +84,8 @@ export default function IeltsReadingPracticePage() {
           <A href="/cefr-multilevel-practice">practise the real thing</A>.
         </P>
       </Sec>
+
+      <FromTheBlog skill="reading" />
 
       <Faq
         items={[

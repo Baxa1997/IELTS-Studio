@@ -9,6 +9,26 @@ export const whyEnglishSpellingIsStrange: BlogPost = {
   published: "2026-09-26",
   author: "EngProgress team",
   cover: { kicker: "knight" },
+  summary: [
+    "English spelling often records how words were pronounced centuries ago, before sounds such as the k in knight disappeared from speech.",
+    "The Great Vowel Shift, roughly between 1400 and 1700, changed the pronunciation of English long vowels while spellings were becoming fixed.",
+    "Some silent letters were added on purpose by scholars, such as the b in debt and doubt, to show a Latin origin.",
+    "In IELTS Listening and Reading a misspelt answer is marked wrong, and British and American spellings are both accepted if used consistently.",
+  ],
+  faq: [
+    {
+      q: "Why does English have so many silent letters?",
+      a: "Many silent letters were once pronounced, like the k in knight, and stayed in the spelling after the sound was lost. Others, like the b in debt, were added by scholars to show a word's Latin origin.",
+    },
+    {
+      q: "Does spelling matter in the IELTS exam?",
+      a: "Yes. In Listening and Reading a misspelt answer is marked wrong. In Writing, spelling errors count under Lexical Resource.",
+    },
+    {
+      q: "Can I use American spelling in IELTS?",
+      a: "Yes. British and American spellings are both accepted. Choose one and use it consistently.",
+    },
+  ],
   body: [
     {
       type: "p",

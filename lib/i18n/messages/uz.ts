@@ -315,6 +315,10 @@ export const uz: Messages = {
   "blog.latest": "Soʻnggi maqolalar",
   "blog.related": "Keyingi maqolalar",
   "blog.shareTelegram": "Telegramda ulashish",
+  "blog.inShort": "Qisqacha",
+  "blog.faqTitle": "Oʻquvchilar beradigan savollar",
+  "blog.rss": "EngProgress blogi — RSS lenta",
+  "blog.home": "Bosh sahifa",
   "blog.metaTitle": "Blog — IELTS maslahatlari, ingliz tili hikoyalari va yangiliklar",
   "blog.metaDesc":
     "Amaliy IELTS strategiyalari, ingliz soʻzlari ortidagi hikoyalar va EngProgress yangiliklari. Har bir maqola ingliz tilida yozilgan — uni oʻqish ham mashq.",

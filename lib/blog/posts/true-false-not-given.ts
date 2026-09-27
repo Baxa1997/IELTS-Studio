@@ -10,6 +10,27 @@ export const trueFalseNotGiven: BlogPost = {
   author: "EngProgress team",
   cover: { kicker: "T / F / NG" },
   featured: true,
+  skill: "reading",
+  summary: [
+    "In IELTS Reading, a True / False / Not Given statement is judged only against what the passage says, not against what is true in the world.",
+    "A statement is Not Given when the passage discusses the topic but never makes that specific claim.",
+    "Qualifiers such as some, most, usually and only often decide whether a statement is True or False.",
+    "Yes / No / Not Given questions use the same logic, applied to the writer's opinions instead of facts.",
+  ],
+  faq: [
+    {
+      q: "What is the difference between False and Not Given in IELTS Reading?",
+      a: "False means the passage says the opposite of the statement, or something that cannot be true at the same time. Not Given means the passage does not say either way, even if it discusses the same topic.",
+    },
+    {
+      q: "Can I use my own knowledge to answer True / False / Not Given questions?",
+      a: "No. Answer only from the passage. A statement that is true in real life is still Not Given if the passage never says it.",
+    },
+    {
+      q: "Do True / False / Not Given answers follow the order of the passage?",
+      a: "Yes. The statements follow the order of the text, so the answer to the previous statement tells you roughly where to look for the next one.",
+    },
+  ],
   body: [
     {
       type: "p",

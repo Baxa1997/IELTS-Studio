@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { A, B, Cta, Faq, LI, P, PageTitle, Related, Sec, UL } from "../_components/marketing";
+import { A, B, Cta, Faq, FromTheBlog, LI, P, PageTitle, Related, Sec, UL } from "../_components/marketing";
 
 export const metadata: Metadata = {
   title: "IELTS Writing Practice — Task 1 & Task 2 with Real Band Feedback",
@@ -99,6 +99,8 @@ export default function IeltsWritingPracticePage() {
           <A href="/for-education-centers">Assign essays and read the reports</A>.
         </P>
       </Sec>
+
+      <FromTheBlog skill="writing" />
 
       <Faq
         items={[

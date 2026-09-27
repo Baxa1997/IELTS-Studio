@@ -9,6 +9,27 @@ export const planTask2InFiveMinutes: BlogPost = {
   published: "2026-09-26",
   author: "EngProgress team",
   cover: { kicker: "Task 2" },
+  skill: "writing",
+  summary: [
+    "IELTS Writing Task 2 counts for twice as much as Task 1 and needs at least 250 words, so it deserves about 40 of the 60 minutes.",
+    "Spending the first five minutes of Task 2 on a plan keeps the essay's position consistent from introduction to conclusion.",
+    "An essay that answers only one part of a two-part Task 2 question is capped on Task Response, however good its English.",
+    "Two well-developed ideas, each with an explanation and an example, are stronger than four ideas that are only mentioned.",
+  ],
+  faq: [
+    {
+      q: "How long should I spend planning an IELTS Task 2 essay?",
+      a: "About five minutes. Use them to identify the question type, decide your position, choose two main ideas with examples, and check the plan against every part of the prompt.",
+    },
+    {
+      q: "How many words should an IELTS Task 2 essay have?",
+      a: "At least 250 words. Task 2 counts for twice as much as Task 1, so it should get about 40 of the 60 minutes in the Writing test.",
+    },
+    {
+      q: "Do memorised templates help in IELTS Writing Task 2?",
+      a: "No. Sentences that could open any essay add no ideas about the question you were given, and a response built mostly from memorised material is marked down on Task Response.",
+    },
+  ],
   body: [
     {
       type: "p",

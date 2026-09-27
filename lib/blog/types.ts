@@ -19,6 +19,10 @@
 
 export type BlogCategory = "ielts" | "english" | "stories" | "engprogress";
 
+/** The practice area a post is about — it links the post from that area's
+ *  marketing page ("From the blog") and names it in the structured data. */
+export type BlogSkill = "writing" | "reading" | "listening" | "speaking" | "cefr";
+
 /**
  * One block of an article body.
  *
@@ -62,6 +66,23 @@ export interface BlogPost {
   /** The lead story on the landing section and the blog front page. At most
    *  one post may set it; without one, the newest leads. */
   featured?: boolean;
+  skill?: BlogSkill;
+  /**
+   * "In short": two to five complete sentences, each true on its own, shown in
+   * a box above the body.
+   *
+   * ⚠️ WRITTEN FOR ANSWER ENGINES AS MUCH AS FOR SKIMMERS. ChatGPT, Perplexity
+   * and Google's AI answers lift self-contained factual sentences; a point that
+   * leans on the one before it ("This is why…") cannot be quoted alone. So
+   * every point must stand by itself, with its own subject.
+   */
+  summary: string[];
+  /**
+   * The questions a searcher would actually type, answered in two or three
+   * plain sentences — shown as "Questions readers ask" and published as
+   * FAQPage data. Answers are plain text: no inline markup.
+   */
+  faq?: { q: string; a: string }[];
   body: Block[];
   /** The panel after the last paragraph — where to practise what was read. */
   cta?: { title: string; text: string; href: string; label: string };

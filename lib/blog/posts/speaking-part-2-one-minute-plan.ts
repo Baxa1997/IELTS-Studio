@@ -9,6 +9,27 @@ export const speakingPart2OneMinutePlan: BlogPost = {
   published: "2026-09-26",
   author: "EngProgress team",
   cover: { kicker: "Part 2" },
+  skill: "speaking",
+  summary: [
+    "In IELTS Speaking Part 2 you get one minute to prepare, with paper and a pencil, and then speak for up to two minutes.",
+    "The best use of the preparation minute is a map of keywords, one line per prompt, rather than full sentences.",
+    "Adding one extra line to your notes, such as a story or a comparison, gives you something to say when the prompts run out.",
+    "Part 2 is marked on the same four criteria as the rest of the Speaking test: Fluency and Coherence, Lexical Resource, Grammatical Range and Accuracy, and Pronunciation.",
+  ],
+  faq: [
+    {
+      q: "How long do you have to prepare in IELTS Speaking Part 2?",
+      a: "One minute. You are given paper and a pencil to make notes, and then you speak for up to two minutes before the examiner stops you.",
+    },
+    {
+      q: "What should I write in the one-minute preparation for Part 2?",
+      a: "Write keywords, not sentences: one short line for each prompt on the card, plus one extra idea such as a story or a comparison to use if you run out of things to say.",
+    },
+    {
+      q: "Should I memorise answers for IELTS Speaking Part 2?",
+      a: "No. Rehearsed answers are easy to recognise and rarely fit the card you are actually given. Practise speaking from notes with a timer instead.",
+    },
+  ],
   body: [
     {
       type: "p",

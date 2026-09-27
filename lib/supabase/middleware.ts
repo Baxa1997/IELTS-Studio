@@ -45,6 +45,8 @@ const PUBLIC_PATHS = [
   // The plain-text summary for answer engines. A crawler has no session, so
   // without this it would read a redirect to /sign-in instead of the file.
   "/llms.txt",
+  // Its companion: every blog article in full, for the same readers.
+  "/llms-full.txt",
   // A shared lesson. The token in the path is the whole credential, and a
   // student opening a teacher's link has no account to be redirected to.
   "/p",

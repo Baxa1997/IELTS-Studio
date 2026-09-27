@@ -8,9 +8,9 @@ import { trueFalseNotGiven } from "./posts/true-false-not-given";
 import { whatsNewAtEngProgress } from "./posts/whats-new-at-engprogress";
 import { whyEnglishSpellingIsStrange } from "./posts/why-english-spelling-is-strange";
 import { wordsWithSurprisingPasts } from "./posts/words-with-surprising-pasts";
-import type { Block, BlogCategory, BlogPost } from "./types";
+import type { Block, BlogCategory, BlogPost, BlogSkill } from "./types";
 
-export type { Block, BlogCategory, BlogPost } from "./types";
+export type { Block, BlogCategory, BlogPost, BlogSkill } from "./types";
 
 /**
  * Every published post. To publish one: add a file under `posts/`, import it
@@ -71,6 +71,40 @@ export function relatedPosts(post: BlogPost, count = 3): BlogPost[] {
   return [...same, ...rest].slice(0, count);
 }
 
+/** What a post is `about` in its structured data — the names searchers and
+ *  answer engines use for the topic. English on purpose: it is metadata about
+ *  an English article. */
+export const SKILL_TOPIC: Record<BlogSkill, string> = {
+  writing: "IELTS Writing",
+  reading: "IELTS Reading",
+  listening: "IELTS Listening",
+  speaking: "IELTS Speaking",
+  cefr: "CEFR Multilevel exam (Uzbekistan)",
+};
+
+/** Posts about one practice area, newest first — the "From the blog" list on
+ *  that area's marketing page. */
+export function postsForSkill(skill: BlogSkill): BlogPost[] {
+  return POSTS.filter((p) => p.skill === skill);
+}
+
+/**
+ * The anchor for a section heading: `Minute 1: find every question` →
+ * `minute-1-find-every-question`.
+ *
+ * ⚠️ THESE ARE PUBLIC ADDRESSES. Google shows them as "Jump to" links and answer
+ * engines cite them, so rewording a heading moves its anchor — fine for a
+ * typo, worth a second thought on a post that is already being linked to.
+ */
+export function headingId(text: string): string {
+  return plainText(text)
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function blockText(b: Block): string {
   switch (b.type) {
     case "p":
@@ -89,7 +123,14 @@ function blockText(b: Block): string {
 
 /** Words in the body as a reader sees them — the JSON-LD `wordCount`. */
 export function wordCount(post: BlogPost): number {
-  const text = [post.standfirst, ...post.body.map(blockText)].map(plainText).join(" ");
+  const text = [
+    post.standfirst,
+    ...post.summary,
+    ...post.body.map(blockText),
+    ...(post.faq ?? []).flatMap((f) => [f.q, f.a]),
+  ]
+    .map(plainText)
+    .join(" ");
   return text.split(/\s+/).filter(Boolean).length;
 }
 

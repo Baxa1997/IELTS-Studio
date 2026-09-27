@@ -9,6 +9,26 @@ export const wordsWithSurprisingPasts: BlogPost = {
   published: "2026-09-26",
   author: "EngProgress team",
   cover: { kicker: "clue" },
+  summary: [
+    "The word quarantine comes from the Venetian quaranta giorni, meaning forty days, the waiting period for ships during plague outbreaks.",
+    "The word muscle comes from the Latin musculus, meaning little mouse.",
+    "The word clue comes from clew, a ball of thread, after the thread Theseus used to escape the labyrinth in the Greek myth.",
+    "Learning the origin of a word gives it a story, and a story makes new vocabulary easier to remember.",
+  ],
+  faq: [
+    {
+      q: "Where does the word quarantine come from?",
+      a: "From the Venetian quaranta giorni, meaning forty days: the period ships from plague-hit places had to wait before anyone could come ashore.",
+    },
+    {
+      q: "What did the word nice originally mean?",
+      a: "It comes from the Latin nescius, meaning not knowing, and in the 1300s it meant foolish. Over the centuries it passed through meanings such as shy, fussy and precise before it came to mean pleasant.",
+    },
+    {
+      q: "Does learning word origins help with IELTS vocabulary?",
+      a: "It helps you remember words and use them precisely, which is what the Lexical Resource criterion rewards. Etymology itself is not tested.",
+    },
+  ],
   body: [
     {
       type: "p",

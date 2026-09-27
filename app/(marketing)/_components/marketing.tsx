@@ -7,7 +7,10 @@
 
 import Link from "next/link";
 
+import { postsForSkill, type BlogSkill } from "@/lib/blog";
 import { CONTACT_EMAIL } from "@/lib/contact";
+import { translator } from "@/lib/i18n";
+import { SOURCE_LOCALE } from "@/lib/i18n/locales";
 
 import {
   BODY,
@@ -126,6 +129,38 @@ export function Faq({ items }: { items: { q: string; a: string }[] }) {
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+/**
+ * The blog's articles on this page's skill — links from the marketing page to
+ * the posts, which already link back through their call to action.
+ *
+ * WHY BOTH DIRECTIONS. These pages are older and already indexed; a new
+ * article linked from one is found and ranked faster than one reachable only
+ * from /blog, and a skill page that links to a topic's articles reads to a
+ * search engine as the hub for that topic. Derived from each post's `skill`,
+ * so publishing a reading article adds it here with no edit. Renders nothing
+ * for a skill with no posts yet.
+ */
+export function FromTheBlog({ skill }: { skill: BlogSkill }) {
+  const posts = postsForSkill(skill);
+  if (!posts.length) return null;
+  const t = translator(SOURCE_LOCALE);
+  return (
+    <section style={{ marginBottom: 32 }}>
+      <h2 style={{ margin: 0, fontFamily: SERIF, fontSize: 23, fontWeight: 600, letterSpacing: "-.01em", color: INK }}>{t("blog.eyebrow")}</h2>
+      <ul style={{ listStyle: "none", margin: "14px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+        {posts.map((p) => (
+          <li key={p.slug} style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 12, padding: "14px 16px" }}>
+            <Link href={`/blog/${p.slug}`} style={{ fontSize: 16, fontWeight: 700, color: ACCENT, textDecoration: "none" }}>
+              {p.title} →
+            </Link>
+            <p style={{ margin: "6px 0 0", fontSize: 14.5, lineHeight: 1.6, color: BODY }}>{p.standfirst}</p>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

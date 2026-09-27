@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/_components/design-chrome";
 import { BLOG_CSS } from "@/app/_landing/_lib/blog-css";
 import { INK, PANEL, SANS } from "@/app/_landing/_lib/design";
@@ -17,6 +19,23 @@ import { landingManrope, landingSora } from "@/app/_landing/_lib/fonts";
  * Uzbek pronunciation. The header and footer sit outside and keep following
  * the visitor's language, as they do on every other marketing page.
  */
+/**
+ * Permission for search engines to show a LARGE image and a full snippet.
+ *
+ * Without `max-image-preview:large`, Google Discover — the feed on Android
+ * phones, and a real source of article traffic — shows a post with a thumbnail
+ * at most, and it gets far fewer clicks than a full-width card. Articles are
+ * the pages Discover picks up, so the whole blog opts in. No page under it sets
+ * `robots`, so nothing overrides this.
+ */
+export const metadata: Metadata = {
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  },
+};
+
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
   return (
     <div

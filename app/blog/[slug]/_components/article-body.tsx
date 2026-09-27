@@ -1,8 +1,19 @@
 import Link from "next/link";
 
-import { BRAND, BRAND_TINT, BRAND_TINT_LINE, DISPLAY, INK, LINE, MUTED, WELL } from "@/app/_landing/_lib/design";
+import {
+  BRAND,
+  BRAND_TINT,
+  BRAND_TINT_LINE,
+  DISPLAY,
+  INK,
+  LINE,
+  MUTED,
+  STRONG,
+  WELL,
+  eyebrow,
+} from "@/app/_landing/_lib/design";
+import { headingId, type Block, type BlogPost } from "@/lib/blog";
 import { parseInline } from "@/lib/blog/inline";
-import type { Block } from "@/lib/blog";
 
 /**
  * A post's body, block by block. Typography lives in `.bl-prose` (blog-css.ts)
@@ -28,8 +39,10 @@ function BlockView({ block: b }: { block: Block }) {
         </p>
       );
     case "h2":
+      // An id on every section heading: Google's "Jump to" links and the
+      // anchors answer engines cite. `blog.test.ts` keeps them unique per post.
       return (
-        <h2>
+        <h2 id={headingId(b.text)}>
           <Inline text={b.text} />
         </h2>
       );
@@ -133,6 +146,83 @@ function BlockView({ block: b }: { block: Block }) {
         </figure>
       );
   }
+}
+
+/**
+ * "In short" — the post's summary points, in a box between the cover and the
+ * body. A reader who stops here has the article; an answer engine that lifts
+ * one line gets a sentence that stands on its own (see `summary` in
+ * lib/blog/types.ts).
+ */
+export function KeyPoints({ points, title }: { points: string[]; title: string }) {
+  return (
+    <aside
+      aria-label={title}
+      style={{
+        margin: "0 0 36px",
+        border: `1px solid ${LINE}`,
+        borderTop: `3px solid ${BRAND}`,
+        borderRadius: 16,
+        padding: "18px 22px 20px",
+        background: WELL,
+      }}
+    >
+      <div style={{ ...eyebrow(true), color: BRAND }}>{title}</div>
+      <ul
+        style={{
+          margin: "12px 0 0",
+          padding: 0,
+          listStyle: "none",
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+        }}
+      >
+        {points.map((pt) => (
+          <li
+            key={pt}
+            style={{ display: "flex", gap: 12, fontSize: 16.5, lineHeight: 1.55, color: STRONG }}
+          >
+            <span aria-hidden style={{ color: BRAND, fontWeight: 700 }}>
+              →
+            </span>
+            <span>{pt}</span>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
+/**
+ * "Questions readers ask" — each question a heading, each answer a paragraph,
+ * so the page shows exactly what the FAQPage data says. Structured data that
+ * does not match visible text is what search engines are told to ignore.
+ */
+export function Questions({ faq, title }: { faq: NonNullable<BlogPost["faq"]>; title: string }) {
+  return (
+    <section className="bl-prose" aria-labelledby="questions">
+      <h2 id="questions">{title}</h2>
+      {faq.map((f) => (
+        <div key={f.q} style={{ padding: "16px 0", borderTop: `1px solid ${LINE}` }}>
+          <h3
+            style={{
+              fontFamily: DISPLAY,
+              fontWeight: 600,
+              fontSize: 18.5,
+              lineHeight: 1.35,
+              letterSpacing: "-0.01em",
+              color: INK,
+              margin: 0,
+            }}
+          >
+            {f.q}
+          </h3>
+          <p style={{ margin: "8px 0 0" }}>{f.a}</p>
+        </div>
+      ))}
+    </section>
+  );
 }
 
 /** `**bold**`, `*italic*` and `[label](href)` — see `lib/blog/inline.ts`. */

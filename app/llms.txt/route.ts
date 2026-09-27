@@ -76,6 +76,8 @@ export function GET(): Response {
     "",
     ...POSTS.map((p) => `- [${p.title}](${absoluteUrl(`/blog/${p.slug}`)}): ${p.standfirst}`),
     "",
+    `The full text of every article, as Markdown: ${absoluteUrl("/llms-full.txt")}`,
+    "",
     "## Optional",
     "",
     ...about.map((r) => `- [${r.label}](${absoluteUrl(r.path)})`),
