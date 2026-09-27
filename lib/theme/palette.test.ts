@@ -140,18 +140,24 @@ describe("the runtime palette", () => {
 
   /* The blog covers set the post's kicker in white on BOTH stops, and a cover
      is the same picture in both themes — so unlike the pairs above, light has
-     to pass too. */
-  it.each(
-    ["ielts", "english", "stories"].flatMap((c) =>
-      (["a", "b"] as const).flatMap((stop) =>
-        (["light", "dark"] as const).map((theme) => [`--mk-cover-${c}-${stop}`, theme] as const),
-      ),
-    ),
-  )("keeps white legible on the blog cover %s in %s", (token, theme) => {
-    const hex = vars(theme)[token];
-    expect(hex, `${token} has no ${theme} value`).toBeTruthy();
-    expect(contrast(hex, "#ffffff"), `${token} (${hex}) vs white`).toBeGreaterThanOrEqual(AA);
+     to pass too. The stops are FOUND in the stylesheet, not listed here: a new
+     category's colours are checked the moment they are declared, with nobody
+     having to remember this file. */
+  const COVER_STOPS = Object.keys(vars("light")).filter((n) => /^--mk-cover-[a-z]+-[ab]$/.test(n));
+
+  it("finds the blog cover stops it is meant to be checking", () => {
+    // ielts, multilevel, english, stories — two stops each.
+    expect(COVER_STOPS.length).toBeGreaterThanOrEqual(8);
   });
+
+  it.each(COVER_STOPS.flatMap((t) => (["light", "dark"] as const).map((theme) => [t, theme] as const)))(
+    "keeps white legible on the blog cover %s in %s",
+    (token, theme) => {
+      const hex = vars(theme)[token];
+      expect(hex, `${token} has no ${theme} value`).toBeTruthy();
+      expect(contrast(hex, "#ffffff"), `${token} (${hex}) vs white`).toBeGreaterThanOrEqual(AA);
+    },
+  );
 
   it.each([
     ["--tk-panel", "the card it sits on"],

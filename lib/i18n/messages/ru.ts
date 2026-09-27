@@ -301,6 +301,7 @@ export const ru: Messages = {
   "blog.updated": "Обновлено {date}",
   "blog.photo": "Фото: {credit}",
   "blog.catIelts": "IELTS",
+  "blog.catMultilevel": "Multilevel",
   "blog.catEnglish": "Английский",
   "blog.catStories": "Истории",
   "blog.catEngprogress": "Новости EngProgress",

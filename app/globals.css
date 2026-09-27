@@ -1053,6 +1053,8 @@
   --mk-cover-dot: rgba(255, 255, 255, 0.13);
   --mk-cover-ielts-a: #0e5f5b;
   --mk-cover-ielts-b: #062f2d;
+  --mk-cover-multilevel-a: #1b6a45;
+  --mk-cover-multilevel-b: #0a2a1a;
   --mk-cover-english-a: #2f3a8f;
   --mk-cover-english-b: #151a47;
   --mk-cover-stories-a: #8a4a0c;
@@ -1065,6 +1067,8 @@
   --mk-cover-dot: rgba(255, 255, 255, 0.13);
   --mk-cover-ielts-a: #0d4d4a;
   --mk-cover-ielts-b: #052523;
+  --mk-cover-multilevel-a: #17573a;
+  --mk-cover-multilevel-b: #07200f;
   --mk-cover-english-a: #283276;
   --mk-cover-english-b: #10143a;
   --mk-cover-stories-a: #74400c;

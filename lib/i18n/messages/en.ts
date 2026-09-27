@@ -325,6 +325,7 @@ export const en = {
   "blog.updated": "Updated {date}",
   "blog.photo": "Photo: {credit}",
   "blog.catIelts": "IELTS",
+  "blog.catMultilevel": "Multilevel",
   "blog.catEnglish": "English",
   "blog.catStories": "Stories",
   "blog.catEngprogress": "EngProgress news",

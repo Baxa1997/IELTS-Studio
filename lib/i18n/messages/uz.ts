@@ -306,6 +306,7 @@ export const uz: Messages = {
   "blog.updated": "Yangilangan: {date}",
   "blog.photo": "Surat: {credit}",
   "blog.catIelts": "IELTS",
+  "blog.catMultilevel": "Multilevel",
   "blog.catEnglish": "Ingliz tili",
   "blog.catStories": "Hikoyalar",
   "blog.catEngprogress": "EngProgress yangiliklari",

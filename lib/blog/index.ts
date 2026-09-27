@@ -1,6 +1,7 @@
 import type { MessageKey } from "@/lib/i18n";
 
 import { plainText } from "./inline";
+import { multilevelExamExplained } from "./posts/multilevel-exam-explained";
 import { oneSkillRetake } from "./posts/one-skill-retake";
 import { planTask2InFiveMinutes } from "./posts/plan-task-2-in-five-minutes";
 import { speakingPart2OneMinutePlan } from "./posts/speaking-part-2-one-minute-plan";
@@ -21,6 +22,7 @@ export type { Block, BlogCategory, BlogPost, BlogSkill } from "./types";
  * newest first and keeps this order within a day.
  */
 const ALL: BlogPost[] = [
+  multilevelExamExplained,
   trueFalseNotGiven,
   whatsNewAtEngProgress,
   speakingPart2OneMinutePlan,
@@ -36,10 +38,11 @@ export const POSTS: readonly BlogPost[] = [...ALL].sort((a, b) =>
   b.published.localeCompare(a.published),
 );
 
-export const CATEGORIES: readonly BlogCategory[] = ["ielts", "english", "stories", "engprogress"];
+export const CATEGORIES: readonly BlogCategory[] = ["ielts", "multilevel", "english", "stories", "engprogress"];
 
 export const CATEGORY_LABEL: Record<BlogCategory, MessageKey> = {
   ielts: "blog.catIelts",
+  multilevel: "blog.catMultilevel",
   english: "blog.catEnglish",
   stories: "blog.catStories",
   engprogress: "blog.catEngprogress",

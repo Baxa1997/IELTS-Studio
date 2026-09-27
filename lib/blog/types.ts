@@ -17,7 +17,7 @@
  * does not read as English.
  */
 
-export type BlogCategory = "ielts" | "english" | "stories" | "engprogress";
+export type BlogCategory = "ielts" | "multilevel" | "english" | "stories" | "engprogress";
 
 /** The practice area a post is about — it links the post from that area's
  *  marketing page ("From the blog") and names it in the structured data. */

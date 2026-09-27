@@ -138,6 +138,7 @@ export const GREEN_TINT = "var(--mk-green-tint)";
  */
 export const BLOG_COVER: Record<BlogCategory, { a: string; b: string }> = {
   ielts: { a: "var(--mk-cover-ielts-a)", b: "var(--mk-cover-ielts-b)" },
+  multilevel: { a: "var(--mk-cover-multilevel-a)", b: "var(--mk-cover-multilevel-b)" },
   english: { a: "var(--mk-cover-english-a)", b: "var(--mk-cover-english-b)" },
   stories: { a: "var(--mk-cover-stories-a)", b: "var(--mk-cover-stories-b)" },
   engprogress: { a: HERO_B, b: HERO_A },

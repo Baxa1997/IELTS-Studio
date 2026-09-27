@@ -23,6 +23,7 @@ for (const b of css.matchAll(/(^|\n):root\s*\{([^}]*)\}/g)) {
 
 const SOURCE: Record<keyof typeof OG_COVER, [string, string]> = {
   ielts: ["--mk-cover-ielts-a", "--mk-cover-ielts-b"],
+  multilevel: ["--mk-cover-multilevel-a", "--mk-cover-multilevel-b"],
   english: ["--mk-cover-english-a", "--mk-cover-english-b"],
   stories: ["--mk-cover-stories-a", "--mk-cover-stories-b"],
   engprogress: ["--mk-hero-b", "--mk-hero-a"],

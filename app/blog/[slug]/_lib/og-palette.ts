@@ -12,6 +12,7 @@ import type { BlogCategory } from "@/lib/blog";
  */
 export const OG_COVER: Record<BlogCategory, { a: string; b: string }> = {
   ielts: { a: "#0e5f5b", b: "#062f2d" }, // --mk-cover-ielts-a / -b
+  multilevel: { a: "#1b6a45", b: "#0a2a1a" }, // --mk-cover-multilevel-a / -b
   english: { a: "#2f3a8f", b: "#151a47" }, // --mk-cover-english-a / -b
   stories: { a: "#8a4a0c", b: "#3b1e04" }, // --mk-cover-stories-a / -b
   engprogress: { a: "#7d0132", b: "#2c0013" }, // --mk-hero-b / --mk-hero-a

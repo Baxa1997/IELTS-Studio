@@ -33,6 +33,7 @@ const SAME_ON_PURPOSE: Record<string, string> = {
   "nav.cefr": "CEFR is the framework's name in every language",
   "nav.ielts": "IELTS is a proper noun",
   "blog.catIelts": "IELTS is a proper noun",
+  "blog.catMultilevel": "the exam's own name, used as-is in Uzbek and Russian",
   "blog.name": "Uzbek uses the loanword blog",
   "card.pro": "the plan is called Pro on the invoice in every language",
   /* The IELTS module names. Uzbek and Russian centres say "Academic Task 2" and
