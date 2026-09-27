@@ -6,7 +6,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { reportBackLink } from "@/lib/console/report-back";
 import { createClient } from "@/lib/supabase/server";
 
-import { TRAP_EXPLAIN, type StoredQResult, type StoredResult } from "../../_lib/trap-explain";
+import { TRAP_EXPLAIN, type StoredQResult, type StoredResult } from "@/shared/components/listening/trap-explain";
 import {
   BRAND,
   BRAND_SOFT as TINT,

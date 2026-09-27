@@ -126,6 +126,11 @@ export const PUBLIC_ROUTES = [
   // The front page only. The articles are listed from lib/blog by the sitemap
   // and by llms.txt, so publishing a post never means editing this list.
   { path: "/blog", label: "Blog — IELTS tips, English stories and EngProgress news", section: "product", priority: 0.7, changeFrequency: "weekly" },
+  // The free daily practice, one page per skill. The runners behind them
+  // (/grade/today, /read/free, /listen/free) are tools, not pages to rank.
+  { path: "/practice/writing", label: "Free daily IELTS Writing practice — graded, no account needed", section: "product", priority: 0.8, changeFrequency: "daily" },
+  { path: "/practice/reading", label: "Free daily IELTS Reading practice — marked instantly, no account needed", section: "product", priority: 0.8, changeFrequency: "daily" },
+  { path: "/practice/listening", label: "Free daily IELTS Listening practice — marked instantly, no account needed", section: "product", priority: 0.8, changeFrequency: "daily" },
   { path: "/sign-in", label: "Sign in", section: "about", priority: 0.3, changeFrequency: "yearly" },
   { path: "/contact", label: "Contact and support", section: "about", priority: 0.4, changeFrequency: "yearly" },
   { path: "/privacy", label: "Privacy policy", section: "about", priority: 0.2, changeFrequency: "yearly" },

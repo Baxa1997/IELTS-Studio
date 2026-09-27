@@ -8,18 +8,20 @@ import type { GradedItem } from "@/lib/reading/grade";
 import type { ReadingModule } from "@/lib/reading/types";
 import { bandColor } from "@/lib/ui/band";
 
-import { CoachPanel } from "../../_components/coach-panel";
+import { CoachPanel } from "./coach-panel";
 import {
   HIGHLIGHT_CSS,
   MarkerToolbar,
   useFullscreen,
   useHighlighter,
-} from "../../_components/highlighter";
-import { QuestionGroups } from "../../_components/question-groups";
-import { Timer, type DeliveredQuestion } from "../../_components/question-inputs";
-import { ReviewItem, WeakTypes, type TypeBreakdown } from "../../_components/review";
+} from "./highlighter";
+import { QuestionGroups } from "./question-groups";
+import { Timer, type DeliveredQuestion } from "./question-inputs";
+import { ReviewItem, WeakTypes, type TypeBreakdown } from "./review";
 import { btnBase, AMBER, BRAND, INK, MUTED, primaryBtn, RED, SANS, SERIF } from "@/shared/components/reading/tokens";
+import { FreeTrialCard, FreeTrialStrip } from "@/shared/components/practice/free-trial-nudge";
 import { WordLookup } from "@/shared/components/reading/word-lookup";
+import type { FreeTrialCopy } from "@/lib/free-practice/copy";
 import {
   BRAND_FILL,
   BRAND_LINE,
@@ -80,22 +82,41 @@ export interface ResumeState {
   secondsLeft: number | null;
 }
 
+/**
+ * `publicMode` is today's free Reading practice (/read/free), for a visitor
+ * with no account: no autosave (there is no attempt row to save into), no AI
+ * coach or word lookup (both are signed-in services that spend money or write
+ * to a vocabulary list), a public submit route, and — the owner's rule — the
+ * recommendation to sign in for more free practices, as a strip while reading
+ * and a card on the results. Everything else is what a signed-in learner sees.
+ */
+export interface PublicMode {
+  submitUrl: string;
+  exitHref: string;
+  copy: FreeTrialCopy;
+}
+
 export function ReadingRunner({
   passage,
   questions,
   learnerContext = "",
   practiceNo = null,
   resume = null,
+  publicMode,
 }: {
   passage: RunnerPassage;
   questions: DeliveredQuestion[];
   learnerContext?: string;
   practiceNo?: number | null;
   resume?: ResumeState | null;
+  publicMode?: PublicMode;
 }) {
   // A FILL that carries white — BRAND_FILL, not BRAND (see `--tk-brand-fill`).
   const accent = BRAND_FILL;
-  const exitHref = "/read";
+  const exitHref = publicMode?.exitHref ?? "/read";
+  // A plain string, so the submit callback can depend on it directly (the
+  // compiler cannot preserve memoisation over an optional-chained prop).
+  const submitUrl = publicMode?.submitUrl ?? `/api/reading/${passage.id}/submit`;
   const [phase, setPhase] = useState<Phase>("reading");
   const [answers, setAnswers] = useState<Record<string, string>>(() => resume?.answers ?? {});
   const [flags, setFlags] = useState<Record<string, boolean>>({});
@@ -130,7 +151,8 @@ export function ReadingRunner({
   /* ⭐ AUTOSAVE, so closing the tab no longer loses the run. A passage has no
      cursor — there is only one text — so the route stores `answered_count` and the
      hub card tracks answered/total instead of "Passage 2 of 3". */
-  const savingOffRef = useRef(false);
+  // Off from the start in public mode: there is no account to save a run into.
+  const savingOffRef = useRef(Boolean(publicMode));
   const saveProgress = useCallback(
     (opts?: { keepalive?: boolean }) => {
       if (savingOffRef.current || submittingRef.current) return;
@@ -235,10 +257,12 @@ export function ReadingRunner({
 
     const durationSeconds = Math.round((Date.now() - startRef.current) / 1000);
     try {
-      const res = await fetch(`/api/reading/${passage.id}/submit`, {
+      const res = await fetch(submitUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: answersRef.current, durationSeconds }),
+        // `passageId` is for the public route, which has no path segment to
+        // carry it; the signed-in route ignores it.
+        body: JSON.stringify({ passageId: passage.id, answers: answersRef.current, durationSeconds }),
       });
       const body = (await res.json().catch(() => ({}))) as {
         result?: ReadingResult;
@@ -259,7 +283,7 @@ export function ReadingRunner({
       submittingRef.current = false;
       setSubmitting(false);
     }
-  }, [passage.id]);
+  }, [passage.id, submitUrl]);
 
   const submitRef = useRef(submit);
   useEffect(() => void (submitRef.current = submit), [submit]);
@@ -274,7 +298,13 @@ export function ReadingRunner({
   if (phase === "results" && result) {
     return (
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px clamp(16px,4vw,32px) 64px" }}>
-        <ResultsView result={result} disclaimer={disclaimer} passageBody={passage.body} />
+        {publicMode ? <FreeTrialCard copy={publicMode.copy} /> : null}
+        <ResultsView
+          result={result}
+          disclaimer={disclaimer}
+          passageBody={passage.body}
+          publicMode={publicMode}
+        />
       </div>
     );
   }
@@ -306,6 +336,7 @@ export function ReadingRunner({
           overflow: "hidden",
         }}
       >
+        {publicMode ? <FreeTrialStrip copy={publicMode.copy} /> : null}
         {/* One flat header row: exit · title | text size · pens · fullscreen · timer · progress · submit */}
         <div
           className="rd-topbar"
@@ -673,17 +704,20 @@ export function ReadingRunner({
         />
       ) : null}
 
-      <CoachPanel
-        passageTitle={passage.title}
-        passageBody={passage.body}
-        questions={coachQuestions}
-        currentQuestion={coachCurrent}
-        phase="reading"
-        learnerContext={learnerContext}
-      />
+      {publicMode ? null : (
+        <CoachPanel
+          passageTitle={passage.title}
+          passageBody={passage.body}
+          questions={coachQuestions}
+          currentQuestion={coachCurrent}
+          phase="reading"
+          learnerContext={learnerContext}
+        />
+      )}
       {/* Word lookup is suppressed while a highlighter pen is active so a drag marks
-          text instead of popping the dictionary. */}
-      {hl.tool === null ? (
+          text instead of popping the dictionary — and absent in public mode,
+          where there is no vocabulary list to save a word into. */}
+      {hl.tool === null && !publicMode ? (
         <WordLookup getContainer={() => passageRef.current} contextText={passage.body} />
       ) : null}
     </div>
@@ -860,10 +894,12 @@ function ResultsView({
   result,
   disclaimer,
   passageBody,
+  publicMode,
 }: {
   result: ReadingResult;
   disclaimer: string | null;
   passageBody: string;
+  publicMode?: PublicMode;
 }) {
   const wrong = result.items.filter((it) => !it.is_correct);
   const bc = bandColor(result.band);
@@ -940,14 +976,24 @@ function ResultsView({
         <p style={{ fontFamily: SANS, fontSize: 12, color: SLATE_MUTED, margin: 0 }}>{disclaimer}</p>
       ) : null}
 
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
-        <Link href="/read" style={primaryBtn(false)}>
-          Try another passage
-        </Link>
-        <Link href="/dashboard" style={{ ...btnBase, background: "transparent", color: MUTED }}>
-          Back to dashboard
-        </Link>
-      </div>
+      {/* A visitor has no /read or /dashboard — both would bounce them to
+          sign-in — so theirs is the way back to the free practice page. */}
+      {publicMode ? (
+        <div>
+          <Link href={publicMode.exitHref} style={{ ...btnBase, background: "transparent", color: MUTED }}>
+            ← All free practice
+          </Link>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+          <Link href="/read" style={primaryBtn(false)}>
+            Try another passage
+          </Link>
+          <Link href="/dashboard" style={{ ...btnBase, background: "transparent", color: MUTED }}>
+            Back to dashboard
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
@@ -955,6 +1001,9 @@ function ResultsView({
 // ---- Helpers ---------------------------------------------------------------
 
 function messageFor(status: number, error?: string): string {
+  // The free daily practice's two refusals (/api/public/practice/reading).
+  if (error === "daily_done") return "You've already done today's free practice — a new one arrives tomorrow.";
+  if (error === "not_today") return "Today's practice has changed — reload the page to get the new one.";
   if (status === 404) return "This passage isn't available anymore.";
   if (status === 422)
     return error === "no_questions" ? "This passage has no questions yet." : "Nothing to mark.";

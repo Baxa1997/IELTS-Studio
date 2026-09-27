@@ -11,7 +11,7 @@
  * tidiness question and became a requirement.
  */
 
-import { RUN } from "../_lib/theme";
+import { RUN } from "./theme";
 
 export function NumChip({ n, answered }: { n: number; answered: boolean }) {
   return (

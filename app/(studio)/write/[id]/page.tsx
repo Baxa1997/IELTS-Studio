@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PAGE_GRAD_BOTTOM, PAGE_GRAD_TOP } from "@/lib/theme/tokens";
 import { parseFigure } from "@/lib/writing/figure";
 
-import { WritingStudio, type ServedPrompt } from "./_components/writing-studio";
+import { WritingStudio, type ServedPrompt } from "../_components/writing-studio";
 
 export const dynamic = "force-dynamic";
 

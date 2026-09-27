@@ -4,7 +4,7 @@ import { loadStudentAssignments } from "@/lib/assignments/student";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-import { ListeningClient } from "./_components/listening-client";
+import { ListeningClient } from "@/shared/components/listening/listening-client";
 
 export const dynamic = "force-dynamic";
 

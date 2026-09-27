@@ -26,7 +26,7 @@ import {
   type PlayerApi,
   type PlayerTick,
 } from "./player";
-import type { PauseSeg, Segment } from "../_types";
+import type { PauseSeg, Segment } from "./types";
 
 const audio = (label: string, seconds: number, part?: number): Segment => ({
   kind: "audio",

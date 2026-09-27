@@ -31,8 +31,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 
 import { formatClock } from "@/shared/components/exam/timer";
 
-import { RUN } from "../_lib/theme";
-import type { AudioSeg, PauseSeg, PlayerPhase, Segment } from "../_types";
+import { RUN } from "./theme";
+import type { AudioSeg, PauseSeg, PlayerPhase, Segment } from "./types";
 import { BRAND_DARKEST, PANEL, WHITE } from "@/lib/theme/tokens";
 
 // ---- Player (segment engine + audio strip) --------------------------------

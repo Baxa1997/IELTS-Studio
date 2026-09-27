@@ -295,6 +295,47 @@ export const uz: Messages = {
   "lp.proofSub":
     "Imtihonchi tizimi haqiqatda chiqaradigan hisobot koʻrinishi. Ataylab ehtiyotkor: ikki band orasida pastrogʻini qoʻyadi va nima yetishmayotganini aniq aytadi.",
 
+  "free.eyebrow": "Har kuni bepul",
+  "free.title": "Bugun bepul mashq qiling",
+  "free.sub":
+    "Har kuni yangi Yozish, Oʻqish va Tinglash mashqi, baholash bilan — hisob shart emas. Gapirish bepul hisob bilan ochiladi.",
+  "free.freeToday": "Bugun bepul",
+  "free.signIn": "Kirish",
+  "free.seeToday": "Bugungi mashqni koʻrish",
+  "free.signInToPractise": "Mashq uchun kiring",
+  "free.writingMeta": "Task 2 esse · AI imtihonchi baholaydi",
+  "free.readingMeta": "Bitta matn · taxminan 20 daqiqa · darhol baholanadi",
+  "free.listeningMeta": "Bitta qism · taxminan 8 daqiqa · darhol baholanadi",
+  "free.speakingMeta": "AI imtihonchi bilan jonli sinov",
+  "free.pageEyebrow": "Kundalik bepul mashq",
+  "free.pageTitleWriting": "Bepul IELTS Writing mashqi",
+  "free.pageTitleReading": "Bepul IELTS Reading mashqi",
+  "free.pageTitleListening": "Bepul IELTS Listening mashqi",
+  "free.pageLead":
+    "Siz uchun tanlangan yigirmata mashq, har kuni bittadan yangisi. Kuniga bittasi hisobsiz bepul — EngProgress ichidagi bilan bir xil mashq va bir xil baholash.",
+  "free.minutes": "{n} daqiqa",
+  "free.questions": "{n} ta savol",
+  "free.doneTitle": "Bugungi mashq bajarildi",
+  "free.doneBody": "Keyingi bepul mashq ertaga chiqadi. Bugun koʻproq bepul mashqlar uchun kiring.",
+  "free.newToday":
+    "Bugun yangi",
+  "free.availableToday":
+    "Bugungi bepul mashq tayyor — quyidagilardan istalganini tanlang.",
+  "free.usedToday":
+    "Bugungi bepul mashq ishlatildi. Koʻproq bepul mashqlar uchun kiring yoki ertaga qayting.",
+  "free.otherSkills": "Boshqa koʻnikmalar",
+  "free.stripLead": "Siz bugungi bepul mashqdasiz.",
+  "free.moreCta": "Koʻproq bepul mashqlar uchun kiring",
+  "free.moreTitle": "Bu bugungi bepul mashqingiz edi",
+  "free.moreBody":
+    "Koʻproq bepul mashqlar uchun kiring — bepul hisob toʻrtala koʻnikma boʻyicha, jumladan Gapirish, qoʻshimcha mashqlarni ochadi va har bir natijani saqlaydi.",
+  "free.runnerTitleWriting": "Bugungi bepul Writing mashqi",
+  "free.runnerTitleReading": "Bugungi bepul Reading mashqi",
+  "free.runnerTitleListening": "Bugungi bepul Listening mashqi",
+  "free.allFreePractice": "Barcha bepul mashqlar",
+  "free.metaDesc":
+    "Har kuni yangi IELTS Writing, Reading va Listening mashqi — bepul, baholash bilan, hisob shart emas.",
+
   "blog.name": "Blog",
   "blog.eyebrow": "Blogdan",
   "blog.title": "Oʻqishga arziydigan maqolalar",

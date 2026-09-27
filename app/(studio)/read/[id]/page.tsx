@@ -12,7 +12,7 @@ import {
   type DeliveredQuestion,
   type ResumeState,
   type RunnerPassage,
-} from "./_components/reading-runner";
+} from "../_components/reading-runner";
 
 export const dynamic = "force-dynamic";
 

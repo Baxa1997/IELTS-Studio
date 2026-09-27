@@ -205,7 +205,7 @@ function skillsPassedByHubs(): string[] {
   const hubs = [
     "../../../app/(shell)/read/_components/read-hub.tsx",
     "../../../app/(shell)/write/_components/library.tsx",
-    "../../../app/(shell)/listen/_components/listening-client.tsx",
+    "../listening/listening-client.tsx",
   ];
   const found = new Set<string>();
   for (const rel of hubs) {
@@ -632,7 +632,7 @@ function hubSource(rel: string): string {
 
 const READ = hubSource("../../../app/(shell)/read/_components/read-hub.tsx");
 const WRITE = hubSource("../../../app/(shell)/write/_components/library.tsx");
-const LISTEN = hubSource("../../../app/(shell)/listen/_components/listening-client.tsx");
+const LISTEN = hubSource("../listening/listening-client.tsx");
 
 describe("a locked card is gated, not dimmed", () => {
   it("never fades the whole card", () => {

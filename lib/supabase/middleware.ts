@@ -10,6 +10,12 @@ const REFERRAL_COOKIE = "ep_ref";
  *  changing the row does not change this — see the note in the referrals plan. */
 const REFERRAL_COOKIE_DAYS = 90;
 
+/** Kept in step with `VISITOR_COOKIE` in lib/free-practice/visitor.ts (server-only,
+ *  so not importable here); a test fails if the two names drift. */
+const VISITOR_COOKIE = "ep_visitor";
+/** Where the free daily practice lives — the only paths that need a visitor id. */
+const FREE_PRACTICE_PATHS = ["/practice", "/read/free", "/listen/free", "/write/free", "/api/public/practice"];
+
 // Pages reachable without a session. Everything else requires authentication.
 // `/auth` covers the OAuth callback, which must run before a session exists.
 // `/grade` is the public, no-login essay grader (the marketing funnel); `/` lets
@@ -52,6 +58,14 @@ const PUBLIC_PATHS = [
   "/p",
   "/auth",
   "/grade",
+  /* The free practice: the practice pages and the three runners (the same
+     studios a learner uses, opened by practice id). A visitor without an
+     account is the whole point of them, so a redirect to /sign-in here would
+     defeat the feature; /api paths pass through on their own. */
+  "/practice",
+  "/read/free",
+  "/listen/free",
+  "/write/free",
   // The documentation front page. A public route MUST be listed here or the
   // middleware 307s every logged-out visitor and every crawler to /sign-in —
   // which is exactly what still happens to /pricing.
@@ -119,6 +133,22 @@ function isPublicPath(pathname: string): boolean {
  * one of two directions: short enough to exclude an existing customer also
  * excludes somebody who takes three days to click their confirmation email.
  */
+/**
+ * A random, anonymous id for the free daily practice's rotation — which
+ * practice a visitor gets today is hashed from it (lib/free-practice/rotation).
+ * Only minted on the free-practice paths, and never overwritten: the rotation
+ * is only stable for as long as the id is. Returns the new id, or null when
+ * none was needed.
+ */
+function mintVisitor(request: NextRequest): string | null {
+  const { pathname } = request.nextUrl;
+  if (!FREE_PRACTICE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return null;
+  if (request.cookies.get(VISITOR_COOKIE)?.value) return null;
+  const id = crypto.randomUUID();
+  request.cookies.set(VISITOR_COOKIE, id);
+  return id;
+}
+
 function captureReferral(request: NextRequest, response: NextResponse): void {
   const raw = request.nextUrl.searchParams.get("ref");
   if (!raw) return;
@@ -153,7 +183,21 @@ function captureReferral(request: NextRequest, response: NextResponse): void {
  * No-ops when Supabase isn't configured yet so the skeleton still runs.
  */
 export async function updateSession(request: NextRequest) {
+  // BEFORE the response is built: `NextResponse.next({ request })` forwards the
+  // request's cookies as they stand at that moment, so a visitor id minted after
+  // it would reach the page only on the NEXT request — and the first page a new
+  // visitor sees would rotate on their IP, then change on reload.
+  const newVisitor = mintVisitor(request);
   const supabaseResponse = NextResponse.next({ request });
+  if (newVisitor) {
+    supabaseResponse.cookies.set(VISITOR_COOKIE, newVisitor, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+  }
   const { pathname } = request.nextUrl;
 
   // A referral link is `/?ref=CODE`, so this has to run BEFORE the public-path

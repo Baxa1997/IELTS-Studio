@@ -188,7 +188,9 @@ export type MineItem = {
 };
 
 /** Which grade endpoint an open practice belongs to. */
-export type Source = "library" | "mine";
+/** Where the runner's practice came from. `public` is the free daily practice
+ *  (/listen/free): a visitor with no account, marked through the app. */
+export type Source = "library" | "mine" | "public";
 
 /** Where the segment player is in its run. */
 export type PlayerPhase = "idle" | "running" | "finished";

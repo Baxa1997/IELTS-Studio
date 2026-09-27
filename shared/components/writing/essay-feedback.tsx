@@ -79,6 +79,10 @@ const TASK_PILL: Record<string, string> = {
 };
 
 interface Props {
+  /** Show the "Write it better" tab. Off for the free practice (/write/free):
+   *  its model answer is a signed-in generation, and the route refuses a
+   *  visitor with no account. */
+  modelAnswer?: boolean;
   taskType: string;
   topicFamily: string | null;
   /** Academic Task 1 only: the figure the essay described, shown for context. */
@@ -137,11 +141,12 @@ export function EssayFeedback({
   onRevise,
   disclaimer,
   promptText = null,
+  modelAnswer = true,
   children,
 }: Props) {
   const ranges = matchRanges(essayText, annotations);
   const insights = useMemo(() => computeWritingInsights(essayText), [essayText]);
-  const showSamples = Boolean(promptText && promptText.trim());
+  const showSamples = modelAnswer && Boolean(promptText && promptText.trim());
   const [tab, setTab] = useState<"bands" | "issues" | "insights" | "samples">("bands");
   const [selected, setSelected] = useState<number | null>(null); // 1-based issue index
   const fixListRef = useRef<HTMLDivElement>(null);

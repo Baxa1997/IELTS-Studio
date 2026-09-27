@@ -48,10 +48,18 @@ export const BLOG_CSS = `
   .bl-cover-art{position:absolute;inset:0;transition:transform .5s cubic-bezier(.2,.7,.2,1)}
   .bl-kicker{
     position:absolute;left:7cqi;bottom:7cqi;right:7cqi;
+    display:flex;align-items:center;gap:.3em;
     font-family:${DISPLAY};font-weight:600;letter-spacing:-.03em;line-height:1;
     font-size:14px;font-size:clamp(14px,11cqi,88px);
-    color:${WHITE};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    color:${WHITE};white-space:nowrap;
   }
+  .bl-kicker-text{min-width:0;overflow:hidden;text-overflow:ellipsis}
+  /* The free-practice covers' icon, set just before the kicker word and sized
+     in em so it grows with it. Lucide's SVG strokes in currentColor, so the
+     kicker's WHITE reaches it — a colour passed to the icon itself would land
+     in an SVG attribute, where a token does not resolve. */
+  .bl-kicker-icon{display:flex;flex:none}
+  .bl-kicker-icon svg{width:.9em;height:.9em}
   .bl-ring{position:absolute;width:68cqi;aspect-ratio:1;border-radius:50%;border:1px solid ${COVER_RING}}
   .bl-ring::after{content:"";position:absolute;inset:14%;border-radius:50%;border:1px solid ${COVER_RING_SOFT}}
 
@@ -72,6 +80,11 @@ export const BLOG_CSS = `
   @media(max-width:900px){
     .bl-lead{grid-template-columns:minmax(0,1fr);gap:18px}
   }
+  /* Exactly four cards (the free-practice section) must not leave one orphan
+     on a row of its own, which auto-fill does at laptop widths — so they
+     step 4 → 2 → 1 by breakpoint instead. After .bl-grid so it wins. */
+  .bl-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media(max-width:1100px){.bl-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
   /* On a phone a column of full-width covers is a lot of scrolling for very
      little reading, so every card below the lead turns into a row — thumbnail
      beside headline — and drops its summary. The lead keeps both. */
@@ -79,6 +92,7 @@ export const BLOG_CSS = `
     .bl-grid{gap:0}
     .bl-card{display:grid;grid-template-columns:minmax(0,38%) minmax(0,1fr);gap:14px;align-items:start;padding:16px 0;border-top:1px solid ${LINE}}
     .bl-card .bl-dek{display:none}
+    .bl-grid-4{grid-template-columns:minmax(0,1fr)}
   }
 
   /* ── the article ───────────────────────────────────────────────────────── */

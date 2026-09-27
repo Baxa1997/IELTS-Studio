@@ -8,6 +8,7 @@ import Link from "next/link";
 
 import { Band9Card } from "@/app/_landing/_components/band9-card";
 import { LeadStory, StoryRow } from "@/app/_landing/_components/blog-stories";
+import { SkillPracticeCard } from "@/app/_landing/_components/practice-cards";
 import { BLOG_CSS } from "@/app/_landing/_lib/blog-css";
 import { DEMO_TABS } from "@/app/_landing/_lib/demo-content";
 import { DeferredReportShowcase } from "@/app/_landing/_components/deferred-report-showcase";
@@ -49,6 +50,7 @@ import {
 } from "@/app/_landing/_lib/design";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
 import { leadPost, otherPosts } from "@/lib/blog";
+import { PRACTICE_CARD_SKILLS } from "@/lib/free-practice/links";
 import {
   getSiteUrl,
   LANDING_DESCRIPTION,
@@ -306,6 +308,9 @@ export function LandingPage({ locale }: { locale: Locale }) {
         style={{ background: PANEL, fontFamily: SANS, color: INK, minHeight: "100%" }}
       >
         <style>{DESIGN_CSS}</style>
+        {/* The blog's card classes — used by the free-practice section as well
+            as the blog section, so it is injected once, here. */}
+        <style>{BLOG_CSS}</style>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -316,6 +321,7 @@ export function LandingPage({ locale }: { locale: Locale }) {
           <Stats t={t} />
           <HeroProcessDemo />
           <DemoSection t={t} />
+          <PracticeTodaySection t={t} />
           <BlogSection t={t} locale={locale} />
           <ResultsSection t={t} />
           <Platform t={t} />
@@ -920,6 +926,39 @@ function DemoSection({ t }: { t: Translate }) {
 }
 
 /**
+ * "Practise today, for free": one card per skill, in the blog's card style.
+ * Writing, Reading and Listening open their page of dated practices, where
+ * today's is free without an account; Speaking is locked behind sign-in.
+ *
+ * STATIC, LIKE THE REST OF THE PAGE. The cards name the skill, not the
+ * practice: which practice a visitor gets is decided per visitor on the
+ * practice page, and reading a cookie here would make the front door dynamic.
+ */
+function PracticeTodaySection({ t }: { t: Translate }) {
+  return (
+    <section id="free-practice" className="lp-below-fold" style={{ ...SHELL, padding: "56px 28px 20px" }}>
+      <Head eyebrow={t("free.eyebrow")} title={t("free.title")} sub={t("free.sub")} />
+      <div className="bl-grid bl-grid-4" style={{ marginTop: 36 }}>
+        {PRACTICE_CARD_SKILLS.map((s) => (
+          <SkillPracticeCard key={s} skill={s} t={t} />
+        ))}
+      </div>
+      {/* The owner's rule: wherever the free practice is offered, say that an
+          account brings more of it. */}
+      <div style={{ textAlign: "center", marginTop: 26 }}>
+        <Link
+          href="/sign-in"
+          className="lp-ghost"
+          style={{ ...ghostButton(), display: "inline-block", fontSize: 15, padding: "13px 24px" }}
+        >
+          {t("free.moreCta")} →
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+/**
  * The newest writing from /blog: the lead story on the left, the next three as
  * rows on the right, stacking on a phone.
  *
@@ -933,7 +972,6 @@ function BlogSection({ t, locale }: { t: Translate; locale: Locale }) {
   const lang = HTML_LANG[locale];
   return (
     <section id="blog" className="lp-below-fold" style={{ ...SHELL, padding: "56px 28px 20px" }}>
-      <style>{BLOG_CSS}</style>
       <Head eyebrow={t("blog.eyebrow")} title={t("blog.title")} sub={t("blog.sub")} />
       <div className="bl-top" style={{ marginTop: 36 }}>
         <LeadStory post={leadPost()} t={t} lang={lang} layout="stacked" />

@@ -28,11 +28,13 @@ import { Timer } from "@/shared/components/exam/timer";
 import { Typewriter } from "@/shared/components/typewriter";
 import { cleanAnnotations, type Annotation } from "@/shared/components/writing/annotations";
 import { EssayFeedback } from "@/shared/components/writing/essay-feedback";
+import { FreeTrialCard, FreeTrialStrip } from "@/shared/components/practice/free-trial-nudge";
+import type { FreeTrialCopy } from "@/lib/free-practice/copy";
 import { FigureView } from "@/shared/components/writing/figure";
 import type { Figure } from "@/lib/writing/figure";
 import { writeHubHref } from "@/lib/writing/hub-tabs";
 
-import { saveDraft } from "../../actions";
+import { saveDraft } from "../actions";
 import { IELTS_STUDIO_THEME, accentStrong, type StudioTheme } from "../_lib/studio-theme";
 
 // ---- Types -----------------------------------------------------------------
@@ -134,6 +136,24 @@ const TUTOR_CHIPS = ["Plan an outline", "Useful vocabulary", "Check my idea"];
 
 // ---- Studio ----------------------------------------------------------------
 
+/**
+ * The studio for a visitor with NO account — the free practice (/write/free).
+ *
+ * Same editor, same timer, same grader and the same feedback screen a learner
+ * gets inside (owner, 2026-09-27: "the same grading … and the same practice UI").
+ * What cannot work without an account is off: drafts (there is no essay row to
+ * save into, so no autosave and no discard beacon), the coach and the photo
+ * upload (both signed-in services), revising (a second grade), and "Write it
+ * better" (its route needs a session). Grading goes to `gradeUrl`, which
+ * answers in the shape /api/essays/[id]/grade does. The sign-in recommendation
+ * rides along as a strip and, on the result, a card.
+ */
+export interface WritingPublicMode {
+  gradeUrl: string;
+  exitHref: string;
+  copy: FreeTrialCopy;
+}
+
 export function WritingStudio({
   prompt,
   essayId: initialEssayId = null,
@@ -141,6 +161,7 @@ export function WritingStudio({
   resumed = false,
   learnerContext = "",
   practiceNo = null,
+  publicMode,
 }: {
   prompt: ServedPrompt;
   essayId?: string | null;
@@ -151,9 +172,13 @@ export function WritingStudio({
   /** Compact "who is this learner" line (target/level/weakest area) so the coach
    *  pitches its help to the right level. Context only — never quoted as a band. */
   learnerContext?: string;
+  publicMode?: WritingPublicMode;
 }) {
   const router = useRouter();
   const taskKind = prompt.task_type;
+  const isPublic = Boolean(publicMode);
+  const publicGradeUrl = publicMode?.gradeUrl ?? null;
+  const publicExit = publicMode?.exitHref ?? null;
 
   // The studio chrome is driven by a single theme object so every accent/ink/border
   // reference reads from one place.
@@ -172,7 +197,8 @@ export function WritingStudio({
   const [submitting, setSubmitting] = useState(false);
   const [lastGraded, setLastGraded] = useState("");
 
-  const [tutorOpen, setTutorOpen] = useState(true);
+  // No coach without an account: it is a signed-in service.
+  const [tutorOpen, setTutorOpen] = useState(!isPublic);
   // On phones/tablets the coach opens as a floating modal over the editor (not an
   // inline column that pushes the answer down), so start it CLOSED — the floating
   // "Ask coach" button opens it. Desktop keeps it open as the side column. The
@@ -223,30 +249,32 @@ export function WritingStudio({
   }, [prompt.id]);
 
   useEffect(() => {
-    if (phase !== "writing") return;
+    if (isPublic || phase !== "writing") return; // no essay row to save into
     if (content.trim() === lastSavedRef.current.trim()) return;
     const t = setTimeout(() => void persist(), AUTOSAVE_MS);
     return () => clearTimeout(t);
-  }, [content, phase, persist]);
+  }, [content, phase, persist, isPublic]);
 
   useEffect(() => {
+    if (isPublic) return;
     const onHide = () => {
       if (document.visibilityState === "hidden" && contentRef.current.trim() !== lastSavedRef.current.trim()) void persist();
     };
     document.addEventListener("visibilitychange", onHide);
     return () => document.removeEventListener("visibilitychange", onHide);
-  }, [persist]);
+  }, [persist, isPublic]);
 
   // Full-page exit (refresh / close / non-SPA navigation) also resets the studio:
   // beacon the discard so the unsubmitted draft doesn't linger. Graded essays are
   // kept by the route's guard (status='draft' + zero gradings).
   useEffect(() => {
+    if (isPublic) return; // no draft was ever saved
     const onPageHide = () => {
       navigator.sendBeacon?.(`/api/essays/discard?promptId=${prompt.id}`);
     };
     window.addEventListener("pagehide", onPageHide);
     return () => window.removeEventListener("pagehide", onPageHide);
-  }, [prompt.id]);
+  }, [prompt.id, isPublic]);
 
   const submit = useCallback(async () => {
     if (submittingRef.current) return;
@@ -257,6 +285,38 @@ export function WritingStudio({
     submittingRef.current = true;
     setSubmitting(true);
     setMessage(null);
+
+    // No account: grade the text directly — there is no saved essay to name.
+    if (publicGradeUrl) {
+      try {
+        const res = await fetch(publicGradeUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ promptId: prompt.id, content: contentRef.current }),
+        });
+        const body = (await res.json().catch(() => ({}))) as {
+          grading?: Grading;
+          disclaimer?: string;
+          error?: string;
+        };
+        if (res.status === 200 && body.grading) {
+          setGrading(body.grading);
+          setDisclaimer(body.disclaimer ?? null);
+          setLastGraded(contentRef.current);
+          setTimed(false);
+          setPhase("results");
+          window.scrollTo({ top: 0 });
+        } else {
+          setMessage(publicGradeMessage(body.error));
+        }
+      } catch {
+        setMessage("Network error while grading — please try again.");
+      } finally {
+        submittingRef.current = false;
+        setSubmitting(false);
+      }
+      return;
+    }
 
     const id = await persist();
     if (!id) {
@@ -294,7 +354,7 @@ export function WritingStudio({
       submittingRef.current = false;
       setSubmitting(false);
     }
-  }, [persist]);
+  }, [persist, publicGradeUrl, prompt.id]);
 
   const submitRef = useRef(submit);
   useEffect(() => void (submitRef.current = submit), [submit]);
@@ -314,6 +374,10 @@ export function WritingStudio({
   // first so the discard (keyed by prompt) is sure to find and remove the row;
   // graded work has gradings and is kept by the route's guard. Best-effort.
   const goLibrary = useCallback(async () => {
+    if (publicExit) {
+      router.push(publicExit); // nothing was saved, so nothing to discard
+      return;
+    }
     await persist();
     try {
       await fetch(`/api/essays/discard?promptId=${prompt.id}`, { method: "POST", keepalive: true });
@@ -323,7 +387,7 @@ export function WritingStudio({
     // Back to the tab this prompt lives on, not to wherever a bare /write opens.
     router.push(writeHubHref(taskKind));
     router.refresh(); // re-fetch the library so a freshly generated prompt shows
-  }, [persist, prompt.id, router, taskKind]);
+  }, [persist, prompt.id, router, taskKind, publicExit]);
 
   // Upload/paste a photo or PDF of a written answer → transcribe to editable text.
   // Faithful transcription server-side; we append it (non-destructive) so a typed
@@ -408,7 +472,7 @@ export function WritingStudio({
   // ---- Results -------------------------------------------------------------
 
   if (phase === "results" && grading) {
-    return (
+    const feedback = (
       <EssayFeedback
         taskType={taskKind}
         topicFamily={prompt.topic_family}
@@ -420,11 +484,24 @@ export function WritingStudio({
         essayText={lastGraded}
         annotations={cleanAnnotations(grading.annotations)}
         promptText={prompt.prompt_text}
-        backHref={writeHubHref(taskKind)}
-        backLabel="Library"
-        onRevise={revise}
+        backHref={publicMode ? publicMode.exitHref : writeHubHref(taskKind)}
+        backLabel={publicMode ? "All free practice" : "Library"}
+        // One free grade a day: revising would be a second one.
+        onRevise={publicMode ? undefined : revise}
+        // "Write it better" is a signed-in generation.
+        modelAnswer={!publicMode}
         disclaimer={disclaimer ?? undefined}
-      />
+      >
+        {publicMode ? <FreeTrialCard copy={publicMode.copy} /> : null}
+      </EssayFeedback>
+    );
+    return publicMode ? (
+      <>
+        <FreeTrialStrip copy={publicMode.copy} />
+        {feedback}
+      </>
+    ) : (
+      feedback
     );
   }
 
@@ -452,6 +529,8 @@ export function WritingStudio({
     <div style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", background: theme.canvas }}>
       {/* grading modal — a calm, on-brand cover every time we mark a submission */}
       {submitting ? <GradingOverlay theme={theme} /> : null}
+
+      {publicMode ? <FreeTrialStrip copy={publicMode.copy} /> : null}
 
       {/* header */}
       <header className="lp-write-hdr" style={{ flexShrink: 0, height: 62, background: PANEL, borderBottom: `1px solid ${theme.line}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", gap: 14 }}>
@@ -591,6 +670,7 @@ export function WritingStudio({
                   e.target.value = ""; // let the same file be re-picked
                 }}
               />
+              {isPublic ? null : (
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -601,6 +681,7 @@ export function WritingStudio({
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: SLATE_BODY }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
                 {uploading ? "Reading…" : "Upload answer"}
               </button>
+              )}
               <button type="button" onClick={() => setSpellOn((s) => !s)} aria-pressed={spellOn} style={{ display: "flex", alignItems: "center", gap: 7, height: 32, padding: "0 12px", border: `1px solid ${spellOn ? theme.accentLine : theme.line}`, background: spellOn ? theme.accentSoft : PANEL, borderRadius: 8, fontFamily: SANS, fontSize: 13, fontWeight: 600, color: spellOn ? BRAND : SLATE_STRONG, cursor: "pointer" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: spellOn ? BRAND : SLATE_BODY }}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
                 Spelling check{spellOn ? " · on" : ""}
@@ -609,15 +690,15 @@ export function WritingStudio({
           </div>
         </main>
 
-        {/* coach */}
-        {tutorOpen ? (
+        {/* coach — signed in only */}
+        {tutorOpen && !isPublic ? (
           <aside className="lp-write-coach" style={{ width: 316, flexShrink: 0, background: PANEL, border: `1px solid ${theme.line}`, borderRadius: 14, display: "flex", overflow: "hidden" }}>
             <TutorPanel msgs={tutorMsgs} input={tutorInput} setInput={setTutorInput} pending={tutorPending} onSend={sendTutor} scrollRef={tutorScrollRef} unlockedSamples={hasGraded} onClose={() => setTutorOpen(false)} onAnimated={markTutorAnimated} theme={theme} />
           </aside>
         ) : null}
 
         {/* floating "ask coach" button — only when the coach is collapsed */}
-        {!tutorOpen ? (
+        {!tutorOpen && !isPublic ? (
           <button
             type="button"
             onClick={() => setTutorOpen(true)}
@@ -880,3 +961,22 @@ function SaveBadge({ state }: { state: "idle" | "saving" | "saved" | "error" }) 
     </span>
   );
 }
+
+/** What the free practice's grade route can refuse, in words a visitor reads. */
+function publicGradeMessage(error: string | undefined): string {
+  switch (error) {
+    case "daily_done":
+      return "You've already used today's free practice — sign in to get more free practices.";
+    case "not_today":
+      return "This practice isn't on today's list any more — reload the practice page.";
+    case "too_short":
+      return "Write a little more before grading — at least 40 words.";
+    case "too_long":
+      return "That's longer than the free practice grades — trim it, or sign in to grade it in full.";
+    case "rate_limited":
+      return "You've used the free gradings for today — sign in to get more free practices.";
+    default:
+      return "Grading failed this time — please try again in a moment.";
+  }
+}
+

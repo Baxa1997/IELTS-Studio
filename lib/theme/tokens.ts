@@ -4,7 +4,7 @@
  * Before this module the app had four token sources — `globals.css` (oklch
  * semantic tokens), `app/(app)/console/_components/crm-ui.tsx`,
  * `shared/components/reading/tokens.ts` and
- * `app/(studio)/write/[id]/_lib/studio-theme.ts` — plus 95 files that opened
+ * `app/(studio)/write/_lib/studio-theme.ts` — plus 95 files that opened
  * with their own private `const INK = "…"` block. They had drifted measurably:
  * eight different inks, nine muteds, eight reds, four indigos. Nobody chose
  * eight inks; they accumulated one screen at a time.

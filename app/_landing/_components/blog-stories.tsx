@@ -69,10 +69,43 @@ export function BlogCover({
   }
 
   const { a, b } = BLOG_COVER[post.category];
-  const ring = RINGS[seed(post.slug) % RINGS.length];
+  return <GeneratedCover a={a} b={b} kicker={post.cover.kicker} seedKey={post.slug} radius={radius} />;
+}
+
+/**
+ * The generated cover on its own — a two-stop ground, a dot grid, a ring and a
+ * kicker — for anything that is not a blog post but should look like one: the
+ * free-practice cards. `seedKey` places the ring, so the same thing keeps the
+ * same cover. Decorative, like the blog's.
+ *
+ * `icon` goes just BEFORE the kicker word — the free-practice cards show the
+ * practice's icon, then its skill ("Reading"), both set large (owner,
+ * 2026-09-27: an icon with the title after it, not instead of it).
+ */
+export function GeneratedCover({
+  a,
+  b,
+  kicker,
+  icon,
+  seedKey,
+  radius = 16,
+  children,
+}: {
+  a: string;
+  b: string;
+  seedKey: string;
+  radius?: number;
+  /** Badges laid over the cover (e.g. "Free today", a lock). */
+  children?: React.ReactNode;
+  kicker: string;
+  /** Set before the kicker, at the kicker's size. */
+  icon?: React.ReactNode;
+}) {
+  const ring = RINGS[seed(seedKey) % RINGS.length];
   return (
-    <div className="bl-cover" aria-hidden style={{ borderRadius: radius }}>
+    <div className="bl-cover" style={{ borderRadius: radius }}>
       <div
+        aria-hidden
         className="bl-cover-art"
         style={{
           backgroundImage: `radial-gradient(${COVER_DOT} 1.1px, transparent 1.6px), linear-gradient(135deg, ${a} 0%, ${b} 100%)`,
@@ -80,8 +113,12 @@ export function BlogCover({
         }}
       >
         <span className="bl-ring" style={ring} />
-        <span className="bl-kicker">{post.cover.kicker}</span>
+        <span className="bl-kicker">
+          {icon ? <span className="bl-kicker-icon">{icon}</span> : null}
+          <span className="bl-kicker-text">{kicker}</span>
+        </span>
       </div>
+      {children}
     </div>
   );
 }

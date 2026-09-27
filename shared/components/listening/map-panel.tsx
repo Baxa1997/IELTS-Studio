@@ -19,9 +19,9 @@
 import { useId, useState } from "react";
 import { Check, X } from "lucide-react";
 
-import { BAD, RUN } from "../_lib/theme";
+import { BAD, RUN } from "./theme";
 import { FlagButton, NumChip } from "./question-ui";
-import type { MapFeature, MapView, QCtx } from "../_types";
+import type { MapFeature, MapView, QCtx } from "./types";
 import { BRAND, PANEL, withAlpha } from "@/lib/theme/tokens";
 
 // ---- IELTS-style schematic map rendering -------------------------------------

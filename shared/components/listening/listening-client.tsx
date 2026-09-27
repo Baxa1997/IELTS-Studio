@@ -11,10 +11,12 @@ import { ArrowRight, Check, Headphones, Loader2, Lock, RotateCcw, Sparkles, X } 
 import { AiGenerateButton, AiGenerateSection } from "@/shared/components/ai-generate-section";
 import { UpgradeNotice } from "@/shared/components/billing/upgrade-notice";
 import { engineClient } from "@/lib/engine/client";
+import type { FreeTrialCopy } from "@/lib/free-practice/copy";
+import { FreeTrialCard, FreeTrialStrip } from "@/shared/components/practice/free-trial-nudge";
 import { AttachForm, PracticeModal } from "@/shared/components/console/teacher-practice";
 
 import { FlagButton, NumChip } from "./question-ui";
-import { TRAP_EXPLAIN } from "../_lib/trap-explain";
+import { TRAP_EXPLAIN } from "./trap-explain";
 import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
 /**
@@ -57,7 +59,7 @@ import {
   Waveform,
 } from "@/shared/components/practice/card";
 import { groupByLevel, levelChipForLevel, levelSectionTitle } from "@/lib/practice/levels";
-import { BAD, BRAND, INK, MUTED, PART_GENRE, RUN, SANS, SERIF, TINT } from "../_lib/theme";
+import { BAD, BRAND, INK, MUTED, PART_GENRE, RUN, SANS, SERIF, TINT } from "./theme";
 import type {
   Catalogue,
   ClusterView,
@@ -79,7 +81,7 @@ import type {
   RenderView,
   Source,
   TableView,
-} from "../_types";
+} from "./types";
 import {
   BRAND as TK_BRAND,
   BRAND_FILL,
@@ -1313,14 +1315,67 @@ function audioPartCount(view: RenderView): number {
   return Math.max(1, parts.size);
 }
 
+/**
+ * Today's free Listening practice for a visitor with no account (/listen/free).
+ *
+ * The signed-in runner, unchanged, fed a `public` source: marking goes to the
+ * app's public route (which checks the part really is this visitor's for
+ * today), there is no autosave (the autosave only ever runs for `library`),
+ * no "practice again", and — the owner's rule — the recommendation to sign in
+ * for more free practices: a strip while listening, a card on the review.
+ */
+export function PublicListeningRunner({
+  view,
+  gradeUrl,
+  exitHref,
+  copy,
+}: {
+  view: RenderView;
+  gradeUrl: string;
+  exitHref: string;
+  copy: FreeTrialCopy;
+}) {
+  const router = useRouter();
+  const grade = useCallback(
+    async (answers: Record<string, string>): Promise<Grade> => {
+      const res = await fetch(gradeUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: view.id, answers }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { grade?: Grade; error?: string };
+      if (res.ok && body.grade) return body.grade;
+      throw new Error(
+        body.error === "daily_done"
+          ? "You've already done today's free practice — a new one arrives tomorrow."
+          : body.error === "not_today"
+            ? "Today's practice has changed — reload the page to get the new one."
+            : "Couldn't mark your answers. Please try again.",
+      );
+    },
+    [gradeUrl, view.id],
+  );
+  const publicRun = useMemo(() => ({ grade, copy }), [grade, copy]);
+  return <Runner view={view} source="public" onExit={() => router.push(exitHref)} publicRun={publicRun} />;
+}
+
+/** What a `public` run needs that a signed-in one gets from the engine:
+ *  someone to mark it, and somewhere to send the visitor next. */
+type PublicRun = {
+  grade: (answers: Record<string, string>) => Promise<Grade>;
+  copy: FreeTrialCopy;
+};
+
 function Runner({
   view,
   source,
   onExit,
+  publicRun,
 }: {
   view: RenderView;
   source: Source;
   onExit: () => void;
+  publicRun?: PublicRun;
 }) {
   /* ⭐ RESUMING. `view.resume` is present only when the engine found an
      in_progress attempt for this practice (render_library attaches it). The
@@ -1495,7 +1550,9 @@ function Runner({
         ? Math.round((Date.now() - startedAtRef.current) / 1000)
         : 0;
       const graded =
-        source === "library"
+        source === "public" && publicRun
+          ? await publicRun.grade(body)
+          : source === "library"
           ? await callEngine<Grade>("library/grade", {
               library_id: view.id,
               answers: body,
@@ -1516,7 +1573,7 @@ function Runner({
     } finally {
       setGrading(false);
     }
-  }, [answers, view.id, source]);
+  }, [answers, view.id, source, publicRun]);
 
   const practiceAgain = useCallback(() => {
     // A fresh run: the clock restarts and autosave is armed again.
@@ -1615,6 +1672,7 @@ function Runner({
           overflow: "hidden",
         }}
       >
+        {publicRun ? <FreeTrialStrip copy={publicRun.copy} /> : null}
         {/* ===== TOP BAR ===== */}
         <header
           style={{
@@ -1809,6 +1867,7 @@ function Runner({
             {/* questions — flat, full-bleed, no card chrome (matches handoff) */}
             <section>{visiblePart ? <PartPanels p={visiblePart} ctx={qctx} /> : null}</section>
 
+            {grade && publicRun ? <FreeTrialCard copy={publicRun.copy} /> : null}
             {grade ? <ReviewPanel grade={grade} /> : null}
             {grade ? <ReplayList segments={view.audio} /> : null}
             {error ? (
@@ -2074,11 +2133,14 @@ function RunnerFooter({
               <ArrowRight size={15} />
             </a>
           ) : null}
-          <button type="button" onClick={onPracticeAgain} style={ghost}>
-            <RotateCcw size={15} /> Practice again
-          </button>
+          {/* One free practice a day: "again" would be a second one. */}
+          {source === "public" ? null : (
+            <button type="button" onClick={onPracticeAgain} style={ghost}>
+              <RotateCcw size={15} /> Practice again
+            </button>
+          )}
           <button type="button" onClick={onExit} style={primary}>
-            {source === "library" ? "Back to library" : "Back to Listening"}
+            {source === "library" ? "Back to library" : source === "public" ? "All free practice" : "Back to Listening"}
             <Chevron dir="right" />
           </button>
         </>

@@ -1,0 +1,234 @@
+/**
+ * The free daily practice's wiring — the parts that fail silently.
+ *
+ *  - The proxy mints the visitor cookie; the app reads it. They cannot share a
+ *    constant (the proxy runs on the edge, the reader is server-only), and a
+ *    drift would not throw: every visitor would quietly rotate on their IP.
+ *  - A runner that is not public 307s every visitor to /sign-in, which would
+ *    make "no account needed" false on the only page that matters.
+ *  - The "done today" record is a signed cookie; if it could be forged or
+ *    replayed from yesterday, the one-a-day rule would mean nothing.
+ */
+
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+import { FREE_RUNNER_BASE, freePracticePage, freeRunner, PRACTICE_CARD_SKILLS, signInFor } from "./links";
+import { FREE_LIST_SIZE, FREE_SKILLS, listIndices, recentDays } from "./rotation";
+import { readDone, VISITOR_COOKIE, writeDone } from "./visitor";
+
+const mw = readFileSync(join(process.cwd(), "lib/supabase/middleware.ts"), "utf8");
+const list = (name: string) => {
+  const start = mw.indexOf(`const ${name} = [`);
+  expect(start, `${name} not found in middleware.ts`).toBeGreaterThan(-1);
+  return mw.slice(start, mw.indexOf("];", start));
+};
+const covers = (block: string, path: string) =>
+  [...block.matchAll(/"([^"]+)"/g)].some(([, p]) => path === p || path.startsWith(`${p}/`));
+
+describe("the proxy and the app agree", () => {
+  it("on the visitor cookie's name", () => {
+    expect(mw).toContain(`const VISITOR_COOKIE = "${VISITOR_COOKIE}";`);
+  });
+
+  it("mint a visitor id on every page and route the free practice uses", () => {
+    const paths = list("FREE_PRACTICE_PATHS");
+    for (const s of FREE_SKILLS) {
+      expect(covers(paths, freeRunner(s, "some-id")), freeRunner(s, "some-id")).toBe(true);
+      expect(covers(paths, freePracticePage(s)), freePracticePage(s)).toBe(true);
+    }
+    expect(covers(paths, "/api/public/practice/reading")).toBe(true);
+  });
+
+  it("let a visitor with no account reach every one of them", () => {
+    const pub = list("PUBLIC_PATHS");
+    for (const s of FREE_SKILLS) {
+      const runner = freeRunner(s, "some-id");
+      expect(covers(pub, runner), `${runner} would redirect to /sign-in`).toBe(true);
+      expect(covers(pub, freePracticePage(s)), `${freePracticePage(s)} would redirect to /sign-in`).toBe(true);
+    }
+  });
+});
+
+describe("the done-today record", () => {
+  const day = "2026-09-27";
+
+  it("round-trips", () => {
+    const one = writeDone(new Set(), "reading", day);
+    const two = writeDone(readDone(one, day), "writing", day);
+    expect([...readDone(two, day)].sort()).toEqual(["reading", "writing"]);
+  });
+
+  it("means nothing on another day", () => {
+    expect(readDone(writeDone(new Set(), "reading", day), "2026-09-28").size).toBe(0);
+  });
+
+  it("cannot be edited to say something else", () => {
+    const real = writeDone(new Set(), "reading", day);
+    const forged = real.replace("reading", "listening");
+    expect(readDone(forged, day).size).toBe(0);
+    // Nor re-dated to today from an old one.
+    const old = writeDone(new Set(), "reading", "2026-09-20");
+    expect(readDone(old.replace("2026-09-20", day), day).size).toBe(0);
+  });
+
+  it("treats junk as nothing done", () => {
+    for (const junk of [undefined, "", "abc", "2026-09-27:reading", "x.y.z"]) {
+      expect(readDone(junk, day).size).toBe(0);
+    }
+  });
+});
+
+describe("the links", () => {
+  it("offers the three free skills, then Speaking behind sign-in", () => {
+    expect(PRACTICE_CARD_SKILLS).toEqual([...FREE_SKILLS, "speaking"]);
+    expect(Object.keys(FREE_RUNNER_BASE)).not.toContain("speaking");
+  });
+
+  it("opens every practice on our own runner — never the dashboard or sign-in", () => {
+    for (const s of FREE_SKILLS) {
+      const url = freeRunner(s, "abc_2");
+      expect(url.startsWith(`${FREE_RUNNER_BASE[s]}/`)).toBe(true);
+      expect(url).not.toMatch(/sign-in|dashboard/);
+    }
+  });
+
+  it("sends sign-in back to the skill the visitor reached for", () => {
+    expect(signInFor("speaking")).toBe("/sign-in?next=%2Fspeak");
+  });
+
+  it("keeps Speaking out of the practice pages", () => {
+    const page = readFileSync(join(process.cwd(), "app/practice/[skill]/page.tsx"), "utf8");
+    expect(page).toMatch(/export const dynamicParams = false/);
+    expect(page).toMatch(/FREE_SKILLS\.map/);
+  });
+});
+
+describe("every free practice recommends signing in for more", () => {
+  /* THE OWNER'S RULE (2026-09-27): each time a visitor uses a free practice,
+     recommend signing in to get more free practices. A runner that stopped
+     passing the copy, or stopped rendering it, would drop the one message the
+     free practice exists to deliver — silently, since nothing would break. */
+  const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
+
+  it("says it in the owner's words", async () => {
+    const { en } = await import("@/lib/i18n/messages/en");
+    expect(en["free.moreCta"]).toBe("Sign in to get more free practices");
+    expect(en["free.moreBody"]).toMatch(/^Sign in to get more free practices/);
+  });
+
+  it("hands the message to every runner, and gates a used day with it", () => {
+    const pages: [string, string][] = [
+      ["app/(studio)/write/free/[id]/page.tsx", "writing"],
+      ["app/(studio)/read/free/[id]/page.tsx", "reading"],
+      ["app/(studio)/listen/free/[key]/page.tsx", "listening"],
+    ];
+    for (const [file, skill] of pages) {
+      const src = read(file);
+      expect(src, file).toContain(`freeTrialCopy(t, "${skill}")`);
+      expect(src, `${file}: a used day must show the gate`).toMatch(/if \(entry\.done\)[\s\S]{0,120}<FreeTrialGate/);
+      expect(src, `${file}: must check the visitor's list`).toContain(`onTodaysList("${skill}"`);
+    }
+  });
+
+  it("shows it while practising and again on the result, in every runner", () => {
+    const runners: [string, string][] = [
+      ["app/(studio)/write/_components/writing-studio.tsx", "publicMode.copy"],
+      ["app/(studio)/read/_components/reading-runner.tsx", "publicMode.copy"],
+      ["shared/components/listening/listening-client.tsx", "publicRun.copy"],
+    ];
+    for (const [file, copy] of runners) {
+      const src = read(file);
+      expect(src, `${file}: no strip while practising`).toContain(`<FreeTrialStrip copy={${copy}} />`);
+      expect(src, `${file}: no card on the result`).toContain(`<FreeTrialCard copy={${copy}} />`);
+    }
+  });
+
+  it("offers it on the practice pages and under the landing section's cards", () => {
+    expect(read("app/practice/[skill]/page.tsx")).toContain("<MorePracticeBanner skill={skill} t={t} />");
+    expect(read("app/_landing/_components/landing-page.tsx")).toContain('{t("free.moreCta")} →');
+  });
+});
+
+describe("every practice list", () => {
+  it("shows at least twenty practices whenever the pool has them (owner, 2026-09-27)", () => {
+    expect(FREE_LIST_SIZE).toBeGreaterThanOrEqual(20);
+    for (const size of [25, 76, 140, 176]) {
+      expect(listIndices(size, "v", "reading", "2026-09-27")).toHaveLength(FREE_LIST_SIZE);
+    }
+  });
+
+  it("shows a smaller pool whole, never padded with repeats", () => {
+    const list = listIndices(7, "v", "reading", "2026-09-27");
+    expect(list).toHaveLength(7);
+    expect(new Set(list).size).toBe(7);
+  });
+
+  it("never lists the same practice twice", () => {
+    const list = listIndices(25, "v", "writing", "2026-09-27");
+    expect(new Set(list).size).toBe(list.length);
+  });
+
+  it("brings one new practice a day, per visitor", () => {
+    const [today, yesterday] = recentDays("2026-09-27", 2);
+    const a = listIndices(76, "v", "writing", yesterday);
+    const b = listIndices(76, "v", "writing", today);
+    expect(b.slice(0, -1)).toEqual(a.slice(1)); // yesterday's list, shifted by one
+    expect(a).not.toContain(b[b.length - 1]); // and one practice it did not have
+  });
+
+  it("gives two visitors different lists", () => {
+    expect(listIndices(140, "visitor-a", "listening", "2026-09-27")).not.toEqual(
+      listIndices(140, "visitor-b", "listening", "2026-09-27"),
+    );
+  });
+});
+
+
+describe("the practice page's cards", () => {
+  /* The owner's calls on one day (2026-09-27): not the signed-in hubs'
+     PracticeCard ("no practice card"); the blog's covered card, kept ("design
+     as previous"); and on the cover, the practice's ICON followed by its skill
+     ("Reading") — the icon added before the word, not in place of it. The
+     practice behind each card is still the signed-in runner; only the list's
+     look is pinned here. */
+  const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
+  const grid = read("app/practice/[skill]/_components/free-practice-grid.tsx");
+  const landing = read("app/_landing/_components/practice-cards.tsx");
+  const cover = read("app/_landing/_components/blog-stories.tsx");
+
+  it("are not the signed-in practice card", () => {
+    expect(grid).not.toMatch(/shared\/components\/practice\/card/);
+  });
+
+  it("are the blog's covered cards — the lead and the grid", () => {
+    expect(grid).toContain('className="bl-story bl-lead"');
+    expect(grid).toContain('className="bl-story bl-card"');
+  });
+
+  it("show the icon AND the skill's name on every cover", () => {
+    const both = /<GeneratedCover [^>]*icon=\{coverIcon\(skill, item\)\} kicker=\{t\(SKILL_NAME\[skill\]\)\}/g;
+    expect(grid.match(both)?.length).toBe(2);
+    expect(landing).toMatch(/<GeneratedCover [^>]*icon=\{SKILL_ICON\[skill\]\} kicker=\{t\(SKILL_NAME\[skill\]\)\}/);
+  });
+
+  it("set the icon before the word, in one line", () => {
+    expect(cover).toMatch(
+      /<span className="bl-kicker">\s*\{icon \? <span className="bl-kicker-icon">\{icon\}<\/span> : null\}\s*<span className="bl-kicker-text">\{kicker\}<\/span>/,
+    );
+  });
+
+  it("colour the icon through CSS, never the SVG attribute", () => {
+    // Lucide puts `color` in the stroke attribute, where var(--…) is black.
+    for (const src of [grid, landing]) {
+      expect(src).not.toMatch(/<(BookOpen|Headphones|BarChart3|Mail|PenLine|Mic) [^>]*color=/);
+    }
+    // Sliced rather than matched with [^}]*: the rule holds `${DISPLAY}`,
+    // whose own brace would end a naive match before it reached the colour.
+    const css = read("app/_landing/_lib/blog-css.ts");
+    const rule = css.slice(css.indexOf(".bl-kicker{"), css.indexOf("\n  }", css.indexOf(".bl-kicker{")));
+    expect(rule).toContain("color:${WHITE}");
+  });
+});

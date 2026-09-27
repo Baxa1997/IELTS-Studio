@@ -33,7 +33,7 @@ import { UpgradeNotice } from "@/shared/components/billing/upgrade-notice";
 import { LegalFooter } from "@/shared/components/legal-footer";
 // These live with the full-screen runner in the (studio) group; the hub library
 // only needs the prompt type and the save-draft action from them.
-import type { LibraryPrompt } from "@/app/(studio)/write/[id]/_components/writing-studio";
+import type { LibraryPrompt } from "@/app/(studio)/write/_components/writing-studio";
 import { saveDraft } from "@/app/(studio)/write/actions";
 import {
   BRAND,

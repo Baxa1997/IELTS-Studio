@@ -311,6 +311,48 @@ export const en = {
   "lp.proofSub":
     "The report layout the examiner engine actually produces. Conservative by design: between two bands it rounds down and names exactly what is missing.",
 
+  /* ── free daily practice: the landing section and /practice ─────────── */
+  "free.eyebrow": "Free every day",
+  "free.title": "Practise today, for free",
+  "free.sub":
+    "A new Writing, Reading and Listening practice every day, marked for you — no account needed. Speaking opens with a free account.",
+  "free.freeToday": "Free today",
+  "free.signIn": "Sign in",
+  "free.seeToday": "See today's practice",
+  "free.signInToPractise": "Sign in to practise",
+  "free.writingMeta": "Task 2 essay · graded by the AI examiner",
+  "free.readingMeta": "One passage · about 20 minutes · marked instantly",
+  "free.listeningMeta": "One part · about 8 minutes · marked instantly",
+  "free.speakingMeta": "A live mock with an AI examiner",
+  "free.pageEyebrow": "Free daily practice",
+  "free.pageTitleWriting": "Free IELTS Writing practice",
+  "free.pageTitleReading": "Free IELTS Reading practice",
+  "free.pageTitleListening": "Free IELTS Listening practice",
+  "free.pageLead":
+    "Twenty practices picked for you, with a new one every day. One a day is free with no account — the same practice, and the same marking, as inside EngProgress.",
+  "free.minutes": "{n} min",
+  "free.questions": "{n} questions",
+  "free.doneTitle": "Done for today",
+  "free.doneBody": "Your next free practice arrives tomorrow. Sign in to get more free practices today.",
+  "free.newToday":
+    "New today",
+  "free.availableToday":
+    "Today's free practice is ready — pick any one below.",
+  "free.usedToday":
+    "Today's free practice is used. Sign in to get more free practices, or come back tomorrow.",
+  "free.otherSkills": "The other skills",
+  "free.stripLead": "You're on today's free practice.",
+  "free.moreCta": "Sign in to get more free practices",
+  "free.moreTitle": "That was today's free practice",
+  "free.moreBody":
+    "Sign in to get more free practices — a free account opens more practice in all four skills, Speaking included, and keeps every result.",
+  "free.runnerTitleWriting": "Today's free Writing practice",
+  "free.runnerTitleReading": "Today's free Reading practice",
+  "free.runnerTitleListening": "Today's free Listening practice",
+  "free.allFreePractice": "All free practice",
+  "free.metaDesc":
+    "A new IELTS Writing, Reading and Listening practice every day, free and marked, with no account needed.",
+
   /* ── the blog: the landing section and /blog's chrome ─────────────────
      The ARTICLES stay in English in every locale (see lib/blog/types.ts);
      only the furniture around them is translated. */

@@ -144,6 +144,19 @@ export const BLOG_COVER: Record<BlogCategory, { a: string; b: string }> = {
   engprogress: { a: HERO_B, b: HERO_A },
 };
 
+/**
+ * The same generated covers on the free-practice cards, one ground per skill.
+ * Reuses the blog's stops rather than adding four more — each is already held
+ * to AA against the white kicker in both themes, and a practice card should
+ * look like it belongs to the same newsroom as the articles beside it.
+ */
+export const SKILL_COVER: Record<"writing" | "reading" | "listening" | "speaking", { a: string; b: string }> = {
+  writing: BLOG_COVER.english,
+  reading: BLOG_COVER.ielts,
+  listening: BLOG_COVER.stories,
+  speaking: BLOG_COVER.engprogress,
+};
+
 /** The ring and the dot grid drawn on a cover — white in both themes, because
  *  every cover ground is dark in both. */
 export const COVER_RING = "var(--mk-cover-ring)";
