@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 
 import { onTodaysList } from "@/lib/free-practice/assignment";
-import { EngineUnavailable, listeningPublic } from "@/lib/free-practice/engine";
+import { EngineUnavailable, listeningPublic, publicTarget } from "@/lib/free-practice/engine";
 import { DONE_COOKIE, DONE_COOKIE_OPTIONS, doneToday, writeDone } from "@/lib/free-practice/visitor";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * POST /api/public/practice/listening — marks today's free Listening part.
- * Body: { key: "libraryId_part", answers: { [questionNumber]: string } }
+ * POST /api/public/practice/listening — marks today's free Listening practice.
+ * Body: { key, answers: { [questionNumber]: string } } — `key` is the list's:
+ * `libraryId` for a full test, `libraryId_part` for one part.
  *
  * No auth and nothing stored. The guard is the rotation: `key` must be on THIS
  * visitor's list today, and today's free practice must not be used — so the
@@ -31,16 +32,10 @@ export async function POST(req: Request): Promise<Response> {
   if (!today || !key) return fail(409, "not_today");
   if (today.done) return fail(429, "daily_done");
 
-  // The id is a UUID (hyphens, no underscore), so the LAST underscore is the part.
-  const sep = key.lastIndexOf("_");
-  const libraryId = key.slice(0, sep);
-  const part = key.slice(sep + 1);
+  // Which test, and which part, come from the list's own entry — never
+  // parsed out of what the browser sent.
   try {
-    const grade = await listeningPublic<Record<string, unknown>>("grade", {
-      library_id: libraryId,
-      part: Number(part),
-      answers,
-    });
+    const grade = await listeningPublic<Record<string, unknown>>("grade", { ...publicTarget(today.item), answers });
     const res = NextResponse.json({ grade });
     res.cookies.set(DONE_COOKIE, writeDone(await doneToday(today.day), "listening", today.day), DONE_COOKIE_OPTIONS);
     return res;

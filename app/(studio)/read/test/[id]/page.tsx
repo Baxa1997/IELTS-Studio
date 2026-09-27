@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PAGE_GRAD_BOTTOM, PAGE_GRAD_TOP } from "@/lib/theme/tokens";
 
 import type { DeliveredQuestion } from "../../_components/question-inputs";
-import { ReadingTestRunner, type ResumeState, type TestPassage } from "./_components/test-runner";
+import { ReadingTestRunner, type ResumeState, type TestPassage } from "../../_components/test-runner";
 
 export const dynamic = "force-dynamic";
 

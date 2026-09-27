@@ -11,19 +11,25 @@ import type { NoteMeta, ReadingModule, ReadingQuestionType } from "@/lib/reading
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PAGE_GRAD_BOTTOM, PAGE_GRAD_TOP } from "@/lib/theme/tokens";
 
-import { ReadingRunner, type DeliveredQuestion } from "../../_components/reading-runner";
+import { ReadingRunner, type DeliveredQuestion, type PublicMode } from "../../_components/reading-runner";
+import { ReadingTestRunner, type TestPassage } from "../../_components/test-runner";
 
 /**
- * /read/free/[id] — one free Reading practice, for a visitor with no account.
+ * /read/free/[id] — one free Reading practice, for a visitor with no account:
+ * a FULL library test (three passages, the hour) or one passage of one — the
+ * visitor's list says which (lib/free-practice/pools). `id` is the test's id
+ * or the passage's.
  *
- * The runner a signed-in learner uses, in public mode, with the same marking
- * (/api/public/practice/reading runs the same `gradeReadingAttempt` against the
- * same shared keys). The passage must be on this visitor's list today (see
+ * The runners a signed-in learner uses — the full-test runner or the passage
+ * runner — in public mode, with the same marking (/api/public/practice/reading
+ * runs the same `gradeReadingTest` / `gradeReadingAttempt` against the same
+ * shared keys). The practice must be on this visitor's list today (see
  * `onTodaysList`) — otherwise back to the list; today's free practice already
  * used → the gate, which recommends signing in for more.
  *
- * Questions are loaded ANSWER-FREE, exactly as `/read/[id]` loads them. Public
- * by PUBLIC_PATHS; not indexed — the list is the page that ranks.
+ * Questions are loaded ANSWER-FREE, exactly as `/read/test/[id]` and
+ * `/read/[id]` load them. Public by PUBLIC_PATHS; not indexed — the list is the
+ * page that ranks.
  */
 const t = translator(SOURCE_LOCALE);
 
@@ -31,6 +37,22 @@ export const metadata: Metadata = {
   title: t("free.runnerTitleReading"),
   robots: { index: false, follow: true },
 };
+
+/** The answer-free projection every reading runner is given. */
+const DELIVERED = "id, question_type, order_index, prompt, options, word_limit, section, note_meta, passage_id";
+
+function deliver(q: Record<string, unknown>): DeliveredQuestion {
+  return {
+    id: q.id as string,
+    question_type: q.question_type as ReadingQuestionType,
+    order_index: q.order_index as number,
+    prompt: (q.prompt as string) ?? "",
+    options: (q.options as string[] | null) ?? null,
+    word_limit: (q.word_limit as string | null) ?? null,
+    section: (q.section as string | null) ?? null,
+    note_meta: (q.note_meta as NoteMeta | null) ?? null,
+  };
+}
 
 export default async function FreeReadingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -53,33 +75,70 @@ export default async function FreeReadingPage({ params }: { params: Promise<{ id
     );
   }
 
+  const publicMode: PublicMode = {
+    submitUrl: "/api/public/practice/reading",
+    exitHref: freePracticePage("reading"),
+    copy,
+  };
   const admin = createAdminClient();
+
+  if (entry.item.format === "full") {
+    const { data: passages } = await admin
+      .from("reading_passages")
+      .select("id, title, body, topic, order_in_test")
+      .eq("test_id", entry.item.source)
+      .eq("is_library", true)
+      .order("order_in_test", { ascending: true });
+    if (!passages || passages.length === 0) redirect(freePracticePage("reading"));
+    const { data: questions } = await admin
+      .from("reading_questions")
+      .select(DELIVERED) // deliberately answer-free
+      .in(
+        "passage_id",
+        passages.map((p) => p.id as string),
+      )
+      .is("organization_id", null)
+      .order("order_index", { ascending: true });
+
+    const testPassages: TestPassage[] = passages
+      .map((p, i) => ({
+        id: p.id as string,
+        order: (p.order_in_test as number | null) ?? i + 1,
+        title: (p.title as string) ?? "",
+        body: (p.body as string) ?? "",
+        topic: (p.topic as string | null) ?? null,
+        questions: (questions ?? []).filter((q) => q.passage_id === p.id).map(deliver),
+      }))
+      .filter((p) => p.questions.length > 0);
+    if (testPassages.length === 0) redirect(freePracticePage("reading"));
+
+    return (
+      <div lang="en" style={frame}>
+        <ReadingTestRunner
+          testId={entry.item.source}
+          passages={testPassages}
+          practiceNo={entry.item.testNo}
+          publicMode={publicMode}
+        />
+      </div>
+    );
+  }
+
   const [{ data: passage }, { data: questions }] = await Promise.all([
     admin
       .from("reading_passages")
       .select("id, title, body, module, topic, difficulty")
-      .eq("id", entry.item.key)
-      .is("organization_id", null)
+      .eq("id", entry.item.source)
+      .eq("is_library", true)
       .maybeSingle(),
     admin
       .from("reading_questions")
-      .select("id, question_type, order_index, prompt, options, word_limit, section, note_meta") // deliberately answer-free
-      .eq("passage_id", entry.item.key)
+      .select(DELIVERED) // deliberately answer-free
+      .eq("passage_id", entry.item.source)
       .is("organization_id", null)
       .order("order_index", { ascending: true }),
   ]);
   if (!passage || !questions || questions.length === 0) redirect(freePracticePage("reading"));
-
-  const delivered: DeliveredQuestion[] = questions.map((q) => ({
-    id: q.id as string,
-    question_type: q.question_type as ReadingQuestionType,
-    order_index: q.order_index as number,
-    prompt: (q.prompt as string) ?? "",
-    options: (q.options as string[] | null) ?? null,
-    word_limit: (q.word_limit as string | null) ?? null,
-    section: (q.section as string | null) ?? null,
-    note_meta: (q.note_meta as NoteMeta | null) ?? null,
-  }));
 
   return (
     <div lang="en" style={frame}>
@@ -92,12 +151,9 @@ export default async function FreeReadingPage({ params }: { params: Promise<{ id
           topic: (passage.topic as string | null) ?? null,
           difficulty: (passage.difficulty as number | null) ?? null,
         }}
-        questions={delivered}
-        publicMode={{
-          submitUrl: "/api/public/practice/reading",
-          exitHref: freePracticePage("reading"),
-          copy,
-        }}
+        questions={questions.map(deliver)}
+        practiceNo={entry.item.testNo}
+        publicMode={publicMode}
       />
     </div>
   );

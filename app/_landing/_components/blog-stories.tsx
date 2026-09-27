@@ -87,6 +87,7 @@ export function GeneratedCover({
   b,
   kicker,
   icon,
+  caption,
   seedKey,
   radius = 16,
   children,
@@ -100,6 +101,8 @@ export function GeneratedCover({
   kicker: string;
   /** Set before the kicker, at the kicker's size. */
   icon?: React.ReactNode;
+  /** A smaller line under the kicker — the free practice's "Full reading". */
+  caption?: string;
 }) {
   const ring = RINGS[seed(seedKey) % RINGS.length];
   return (
@@ -114,8 +117,11 @@ export function GeneratedCover({
       >
         <span className="bl-ring" style={ring} />
         <span className="bl-kicker">
-          {icon ? <span className="bl-kicker-icon">{icon}</span> : null}
-          <span className="bl-kicker-text">{kicker}</span>
+          <span className="bl-kicker-line">
+            {icon ? <span className="bl-kicker-icon">{icon}</span> : null}
+            <span className="bl-kicker-text">{kicker}</span>
+          </span>
+          {caption ? <span className="bl-kicker-sub">{caption}</span> : null}
         </span>
       </div>
       {children}

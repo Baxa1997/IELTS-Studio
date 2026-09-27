@@ -2,8 +2,10 @@ import "server-only";
 
 import { cache } from "react";
 
+import { composeTestSubtitle } from "@/lib/reading/titles";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import { mixSlots } from "./mix";
 import type { FreeSkill } from "./rotation";
 
 /**
@@ -12,26 +14,49 @@ import type { FreeSkill } from "./rotation";
  *
  *   writing    every shared prompt — Task 1 Academic, Task 1 General, Task 2 —
  *              the same set a signed-in learner practises in the studio
- *   reading    the standalone practice passages (~20 min each), not full tests
- *   listening  each PART of each active library test, one at a time (~8 min)
+ *   reading    the library's FULL TESTS (three passages, ~40 questions), with
+ *              one passage of another test mixed in after every second one
+ *   listening  the same for the library's full tests (four parts, 40
+ *              questions) and their parts — see ./mix for the mix
+ *
+ * ⚠️ FULL TESTS, NOT PARTS (owner, 2026-09-27: "practice must be full
+ * practice, not part"). Until then Reading was the standalone ~14-question
+ * passages and Listening one part at a time. The standalone passages are left
+ * out now: a part is always a part OF a numbered test, so "Test 12 · Part
+ * reading" on a card means passage N of the Test 12 the hub also shows.
  *
  * Read with the service role because a visitor has no session for RLS to use.
  * Nothing here selects an answer key: these rows feed cards and pickers, and
  * the runners load their own answer-free material.
  *
- * ⚠️ ORDER IS BY ID, AND IT IS LOAD-BEARING. The rotation indexes into these
- * arrays, so an unstable order would hand a visitor a different practice on
- * every request. Adding content shifts some visitors' positions once — fine;
- * reshuffling on every read is not.
+ * ⚠️ ORDER IS LOAD-BEARING. The rotation indexes into these arrays, so an
+ * unstable order would hand a visitor a different practice on every request.
+ * Every order below ends on `id`. Adding content shifts some visitors'
+ * positions once — fine; reshuffling on every read is not.
  */
 
+/** A whole test, one part of one, or — Writing — one task. */
+export type PracticeFormat = "full" | "part" | "task";
+
 export interface PoolItem {
-  /** What the runner is given: a prompt id, a passage id, or `libraryId_part`.
-   *  URL-safe — it is the last segment of the runner's path. */
+  /** The runner's last path segment: a reading test or passage id, a
+   *  listening `libraryId` or `libraryId_part`, a prompt id. URL-safe. */
   key: string;
+  /** What the runner and the marking route ask for — the reading test or
+   *  passage, the listening library row, the writing prompt. */
+  source: string;
+  format: PracticeFormat;
+  /** The "Test N" on the cover: the test's number in the signed-in hub's
+   *  library ("Practice test N"), counted the way that hub counts — so a part
+   *  carries the number of the test it comes from. Writing: the prompt's
+   *  number within its task, as the writing hub numbers its tabs. */
+  testNo: number;
+  /** The passage or part number when `format` is "part"; otherwise null. */
+  part: number | null;
   title: string;
   topic: string | null;
-  /** Writing's task ("Task 2"), Listening's part ("Part 3"); null for Reading. */
+  /** The facts line's first word: "3 passages", "Passage 2", "4 parts",
+   *  "Part 3", "Task 2". Plain English — the practice pages are English. */
   kind: string | null;
   /** 1–9-ish difficulty, where the source has one. */
   level: number | null;
@@ -39,7 +64,13 @@ export interface PoolItem {
   questions: number | null;
 }
 
-const MINUTES: Record<FreeSkill, number> = { writing: 40, reading: 20, listening: 8 };
+/** The exam's own time for each. */
+const MINUTES = {
+  readingTest: 60,
+  readingPassage: 20,
+  listeningTest: 30,
+  listeningPart: 8,
+} as const;
 
 /** The exam's own names for the writing tasks, and the time each is given. */
 const WRITING_TASK: Record<string, { kind: string; minutes: number }> = {
@@ -54,86 +85,228 @@ function firstSentence(text: string, max = 110): string {
   return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s;
 }
 
-export const loadPool = cache(async function loadPool(skill: FreeSkill): Promise<PoolItem[]> {
-  const admin = createAdminClient();
+type Admin = ReturnType<typeof createAdminClient>;
 
-  if (skill === "writing") {
-    const { data } = await admin
-      .from("writing_prompts")
-      .select("id, task_type, prompt_text, topic_family, difficulty")
-      .is("organization_id", null)
-      .order("id");
-    return (data ?? [])
-      .filter((r) => WRITING_TASK[r.task_type as string])
-      .map((r) => ({
-        key: r.id as string,
-        title: firstSentence((r.prompt_text as string) ?? ""),
-        topic: (r.topic_family as string | null) ?? null,
-        kind: WRITING_TASK[r.task_type as string].kind,
-        level: (r.difficulty as number | null) ?? null,
-        minutes: WRITING_TASK[r.task_type as string].minutes,
-        questions: null,
-      }));
-  }
+/** PostgREST's default ceiling on rows per response. */
+const PAGE = 1000;
 
-  if (skill === "reading") {
-    const { data } = await admin
-      .from("reading_passages")
-      .select("id, title, topic, difficulty")
-      .is("organization_id", null)
-      .is("test_id", null)
-      .eq("status", "approved")
-      .order("id");
-    const rows = data ?? [];
-    // One count query for the lot rather than one per passage.
-    const { data: qs } = await admin
+/**
+ * How many questions each shared reading passage has.
+ *
+ * ⚠️ PAGED, because the hundred-odd tests are ~4,500 question rows and a select
+ * stops at 1,000 without an error — the counts would come out short, and
+ * whichever passages fell past the cut would drop out of the pool as
+ * "no questions". The first page asks for the total; the rest go in parallel.
+ */
+async function questionCounts(admin: Admin): Promise<Map<string, number>> {
+  const page = (from: number, count: boolean) =>
+    admin
       .from("reading_questions")
-      .select("passage_id")
+      .select("passage_id", count ? { count: "exact" } : undefined)
       .is("organization_id", null)
-      .in(
-        "passage_id",
-        rows.map((r) => r.id as string),
-      );
-    const counts = new Map<string, number>();
-    for (const q of qs ?? []) counts.set(q.passage_id as string, (counts.get(q.passage_id as string) ?? 0) + 1);
-    return rows
-      .filter((r) => (counts.get(r.id as string) ?? 0) > 0)
-      .map((r) => ({
-        key: r.id as string,
-        title: (r.title as string) ?? "Reading practice",
-        topic: (r.topic as string | null) ?? null,
-        kind: null,
-        level: (r.difficulty as number | null) ?? null,
-        minutes: MINUTES.reading,
-        questions: counts.get(r.id as string) ?? null,
-      }));
+      .order("id")
+      .range(from, from + PAGE - 1);
+  const first = await page(0, true);
+  const total = first.count ?? 0;
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(0, Math.ceil(total / PAGE) - 1) }, (_, i) => page((i + 1) * PAGE, false)),
+  );
+  const counts = new Map<string, number>();
+  for (const res of [first, ...rest]) {
+    for (const q of res.data ?? []) counts.set(q.passage_id as string, (counts.get(q.passage_id as string) ?? 0) + 1);
+  }
+  return counts;
+}
+
+async function readingPool(admin: Admin): Promise<PoolItem[]> {
+  const [{ data: tests }, { data: passages }, counts] = await Promise.all([
+    // The hub's own order (app/(shell)/read/page.tsx), so "Test N" here is
+    // "Practice test N" there.
+    admin
+      .from("reading_tests")
+      .select("id, target_band")
+      .eq("is_library", true)
+      .order("target_band", { ascending: true })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true }),
+    admin
+      .from("reading_passages")
+      .select("id, test_id, title, topic, difficulty, order_in_test")
+      .eq("is_library", true)
+      .not("test_id", "is", null)
+      .order("order_in_test", { ascending: true })
+      .order("id", { ascending: true }),
+    questionCounts(admin),
+  ]);
+
+  const byTest = new Map<string, NonNullable<typeof passages>>();
+  for (const p of passages ?? []) {
+    const list = byTest.get(p.test_id as string) ?? [];
+    list.push(p);
+    byTest.set(p.test_id as string, list);
   }
 
-  // Listening: every part of every active shared test. Only the part topics are
-  // selected — `content` also holds the scripts and the answers.
+  // Numbered BEFORE any is dropped, so a test's number stays the hub's even
+  // when an earlier one is skipped here. A test goes in only if every passage
+  // has questions: a "full" test that is short a passage is not one.
+  const library = (tests ?? [])
+    .map((t, i) => ({ id: t.id as string, band: (t.target_band as number | null) ?? null, no: i + 1, passages: byTest.get(t.id as string) ?? [] }))
+    .filter((t) => t.passages.length > 0 && t.passages.every((p) => (counts.get(p.id as string) ?? 0) > 0));
+
+  return mixSlots(library.map((t) => t.passages.length)).map(({ test, part }) => {
+    const t = library[test];
+    if (part === null) {
+      return {
+        key: t.id,
+        source: t.id,
+        format: "full",
+        testNo: t.no,
+        part: null,
+        // The passages' own titles, as the hub's subtitle lists them — their
+        // topics are whole sentences, and three of those make no headline.
+        title: composeTestSubtitle(t.passages.map((p) => p.title as string)),
+        topic: null,
+        kind: `${t.passages.length} passages`,
+        level: t.band,
+        minutes: MINUTES.readingTest,
+        questions: t.passages.reduce((n, p) => n + (counts.get(p.id as string) ?? 0), 0),
+      };
+    }
+    const p = t.passages[part - 1];
+    const order = (p.order_in_test as number | null) ?? part;
+    return {
+      key: p.id as string,
+      source: p.id as string,
+      format: "part",
+      testNo: t.no,
+      part: order,
+      title: (p.title as string) ?? "Reading passage",
+      // The passage's topic is a whole sentence ("how heat pumps work and
+      // why …"), which the headline already says better.
+      topic: null,
+      kind: `Passage ${order}`,
+      level: (p.difficulty as number | null) ?? null,
+      minutes: MINUTES.readingPassage,
+      questions: counts.get(p.id as string) ?? null,
+    };
+  });
+}
+
+async function listeningPool(admin: Admin): Promise<PoolItem[]> {
+  // Full tests only (`part` 0 — the rest are single-recording quick
+  // practices), and only their topics: `content` also holds the scripts and
+  // the answers.
   const { data } = await admin
     .from("listening_library")
     .select(
-      "id, difficulty, t1:content->parts->0->>topic, t2:content->parts->1->>topic, t3:content->parts->2->>topic, t4:content->parts->3->>topic",
+      "id, difficulty, created_at, version:content->version, t1:content->parts->0->>topic, t2:content->parts->1->>topic, t3:content->parts->2->>topic, t4:content->parts->3->>topic",
     )
     .is("organization_id", null)
     .eq("active", true)
+    .eq("part", 0)
     .order("id");
-  const out: PoolItem[] = [];
-  for (const r of (data ?? []) as Record<string, unknown>[]) {
-    ([1, 2, 3, 4] as const).forEach((part) => {
-      const topic = r[`t${part}`] as string | null;
-      if (!topic) return;
-      out.push({
-        key: `${r.id as string}_${part}`,
-        title: topic,
+  const rows = (data ?? []) as Record<string, unknown>[];
+
+  /* The hub's own order (shared/components/listening/listening-client.tsx:
+     newest format first, then easiest, then oldest — the engine's catalogue
+     order, re-sorted by version), so "Test N" here is "Practice test N" there. */
+  const num = (v: unknown, d: number) => (typeof v === "number" ? v : d);
+  rows.sort(
+    (a, b) =>
+      num(b.version, 1) - num(a.version, 1) ||
+      num(a.difficulty, 3) - num(b.difficulty, 3) ||
+      String(a.created_at).localeCompare(String(b.created_at)) ||
+      String(a.id).localeCompare(String(b.id)),
+  );
+
+  const library = rows
+    .map((r, i) => ({
+      id: r.id as string,
+      no: i + 1,
+      level: (r.difficulty as number | null) ?? null,
+      // Part number → its topic, for the parts this test really has.
+      parts: ([1, 2, 3, 4] as const)
+        .map((n) => ({ n, topic: r[`t${n}`] as string | null }))
+        .filter((p): p is { n: 1 | 2 | 3 | 4; topic: string } => Boolean(p.topic)),
+    }))
+    .filter((t) => t.parts.length > 0);
+
+  return mixSlots(library.map((t) => t.parts.length)).map(({ test, part }) => {
+    const t = library[test];
+    if (part === null) {
+      return {
+        key: t.id,
+        source: t.id,
+        format: "full",
+        testNo: t.no,
+        part: null,
+        title: composeTestSubtitle(t.parts.map((p) => p.topic)),
         topic: null,
-        kind: `Part ${part}`,
-        level: (r.difficulty as number | null) ?? null,
-        minutes: MINUTES.listening,
-        questions: 10,
-      });
-    });
+        kind: `${t.parts.length} parts`,
+        level: t.level,
+        minutes: MINUTES.listeningTest,
+        questions: t.parts.length * 10,
+      };
+    }
+    const p = t.parts[part - 1];
+    return {
+      key: `${t.id}_${p.n}`,
+      source: t.id,
+      format: "part",
+      testNo: t.no,
+      part: p.n,
+      title: p.topic,
+      topic: null,
+      kind: `Part ${p.n}`,
+      level: t.level,
+      minutes: MINUTES.listeningPart,
+      questions: 10,
+    };
+  });
+}
+
+async function writingPool(admin: Admin): Promise<PoolItem[]> {
+  const { data } = await admin
+    .from("writing_prompts")
+    .select("id, task_type, prompt_text, topic_family, difficulty, created_at")
+    .is("organization_id", null)
+    .order("id");
+  const rows = (data ?? []).filter((r) => WRITING_TASK[r.task_type as string]);
+
+  /* The writing hub numbers each task's tab by difficulty, easiest first,
+     newest first within a level (app/(shell)/write/_components/library.tsx) —
+     counted the same way here so "Test N" matches "Practice test N". */
+  const noById = new Map<string, number>();
+  for (const task of Object.keys(WRITING_TASK)) {
+    rows
+      .filter((r) => r.task_type === task)
+      .sort(
+        (a, b) =>
+          ((a.difficulty as number | null) ?? 99) - ((b.difficulty as number | null) ?? 99) ||
+          String(b.created_at).localeCompare(String(a.created_at)) ||
+          String(a.id).localeCompare(String(b.id)),
+      )
+      .forEach((r, i) => noById.set(r.id as string, i + 1));
   }
-  return out;
+
+  return rows.map((r) => ({
+    key: r.id as string,
+    source: r.id as string,
+    format: "task",
+    testNo: noById.get(r.id as string) ?? 0,
+    part: null,
+    title: firstSentence((r.prompt_text as string) ?? ""),
+    topic: (r.topic_family as string | null) ?? null,
+    kind: WRITING_TASK[r.task_type as string].kind,
+    level: (r.difficulty as number | null) ?? null,
+    minutes: WRITING_TASK[r.task_type as string].minutes,
+    questions: null,
+  }));
+}
+
+export const loadPool = cache(async function loadPool(skill: FreeSkill): Promise<PoolItem[]> {
+  const admin = createAdminClient();
+  if (skill === "writing") return writingPool(admin);
+  if (skill === "reading") return readingPool(admin);
+  return listeningPool(admin);
 });

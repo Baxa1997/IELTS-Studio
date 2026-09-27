@@ -25,11 +25,14 @@ import type { Translate } from "@/lib/i18n";
  * blog-css.ts) — so the page reads as the same newsroom as the landing page
  * and the articles.
  *
- * ⚠️ THREE OWNER CALLS ON ONE DAY (2026-09-27), all pinned by tests:
+ * ⚠️ FOUR OWNER CALLS ON ONE DAY (2026-09-27), all pinned by tests:
  *  - not the signed-in hubs' PracticeCard ("no practice card");
  *  - the blog's covered card, kept ("design as previous");
- *  - the cover shows the practice's ICON, then the skill ("Reading") — the
- *    task or part is still written in the facts line.
+ *  - the cover shows the practice's ICON before its title;
+ *  - that title is the TEST'S NUMBER ("Test 12"), and under it whether this
+ *    is the whole test or a part of it ("Full reading" / "Part reading") —
+ *    the practices are mostly full tests now, and a visitor should see which
+ *    is which before opening one.
  * The PRACTICE behind each card is the signed-in one: the same runner, the
  * same grading, on our own free page.
  *
@@ -55,19 +58,46 @@ function coverIcon(skill: FreeSkill, item: PoolItem): React.ReactNode {
   return <PenLine {...props} />;
 }
 
-/** The word after the icon on every cover — the skill, the same on every card
- *  of a page; the task or part is written in the facts line below. */
-const SKILL_NAME = { writing: "nav.writing", reading: "nav.reading", listening: "nav.listening" } as const;
+/** The line under "Test N": the whole test, or one part of it. A writing
+ *  task is neither — the exam's Writing test is both tasks — so it names the
+ *  task instead. */
+const FORMAT_LABEL = {
+  reading: { full: "free.fullReading", part: "free.partReading" },
+  listening: { full: "free.fullListening", part: "free.partListening" },
+} as const;
+
+function formatLabel(skill: FreeSkill, item: PoolItem, t: Translate): string {
+  if (skill === "writing") return t("free.writingTask", { n: item.kind?.endsWith("Task 2") ? 2 : 1 });
+  return t(FORMAT_LABEL[skill][item.format === "full" ? "full" : "part"]);
+}
+
+/** Everything a cover takes from the practice. */
+function coverOf(skill: FreeSkill, item: PoolItem, t: Translate) {
+  return {
+    icon: coverIcon(skill, item),
+    kicker: t("free.testNo", { n: item.testNo }),
+    caption: formatLabel(skill, item, t),
+  };
+}
+
+/** A full test's headline lists its three or four passages or recordings, so
+ *  it is held to three lines; the card's facts already say what it is. */
+const CLAMP: React.CSSProperties = {
+  display: "-webkit-box",
+  WebkitLineClamp: 3,
+  WebkitBoxOrient: "vertical",
+  overflow: "hidden",
+};
 
 function titleCase(s: string): string {
   return s.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/** The line above a headline: task or part · topic · time · questions. */
-function Facts({ skill, item, t }: { skill: FreeSkill; item: PoolItem; t: Translate }) {
+/** The line above a headline: what it is · topic · time · questions. */
+function Facts({ item, t }: { item: PoolItem; t: Translate }) {
   const topic = item.topic && item.topic !== "custom" ? titleCase(item.topic) : null;
   const parts = [
-    skill === "reading" ? topic : [item.kind, topic].filter(Boolean).join(" · ") || null,
+    [item.kind, topic].filter(Boolean).join(" · ") || null,
     t("free.minutes", { n: item.minutes }),
     item.questions ? t("free.questions", { n: item.questions }) : null,
   ].filter(Boolean);
@@ -113,11 +143,11 @@ function LeadPractice({ skill, item, t }: { skill: FreeSkill; item: PoolItem; t:
   const href = freeRunner(skill, item.key);
   return (
     <article className="bl-story bl-lead">
-      <GeneratedCover a={a} b={b} icon={coverIcon(skill, item)} kicker={t(SKILL_NAME[skill])} seedKey={item.key} radius={20}>
+      <GeneratedCover a={a} b={b} {...coverOf(skill, item, t)} seedKey={item.key} radius={20}>
         <CoverChip label={t("free.newToday")} />
       </GeneratedCover>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Facts skill={skill} item={item} t={t} />
+        <Facts item={item} t={t} />
         <h2
           lang="en"
           style={{
@@ -129,6 +159,7 @@ function LeadPractice({ skill, item, t }: { skill: FreeSkill; item: PoolItem; t:
             color: INK,
             margin: 0,
             textWrap: "balance",
+            ...CLAMP,
           }}
         >
           <Link href={href} className="bl-hl">
@@ -152,9 +183,9 @@ function PracticeStory({ skill, item, t }: { skill: FreeSkill; item: PoolItem; t
   const { a, b } = SKILL_COVER[skill];
   return (
     <article className="bl-story bl-card">
-      <GeneratedCover a={a} b={b} icon={coverIcon(skill, item)} kicker={t(SKILL_NAME[skill])} seedKey={item.key} radius={14} />
+      <GeneratedCover a={a} b={b} {...coverOf(skill, item, t)} seedKey={item.key} radius={14} />
       <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-        <Facts skill={skill} item={item} t={t} />
+        <Facts item={item} t={t} />
         <h3
           lang="en"
           style={{
@@ -164,6 +195,7 @@ function PracticeStory({ skill, item, t }: { skill: FreeSkill; item: PoolItem; t
             lineHeight: 1.25,
             letterSpacing: "-0.02em",
             margin: 0,
+            ...CLAMP,
           }}
         >
           <Link href={freeRunner(skill, item.key)} className="bl-hl">

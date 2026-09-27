@@ -17,6 +17,7 @@ import {
   useHighlighter,
 } from "@/app/(studio)/read/_components/highlighter";
 import { QuestionGroups } from "@/app/(studio)/read/_components/question-groups";
+import type { PublicMode } from "@/app/(studio)/read/_components/reading-runner";
 import { Timer, type DeliveredQuestion } from "@/app/(studio)/read/_components/question-inputs";
 import {
   perfColor,
@@ -25,6 +26,7 @@ import {
   WeakTypes,
   type TypeBreakdown,
 } from "@/app/(studio)/read/_components/review";
+import { FreeTrialCard, FreeTrialStrip } from "@/shared/components/practice/free-trial-nudge";
 import { AMBER, BRAND, INK, MUTED, RED, SANS, SERIF } from "@/shared/components/reading/tokens";
 import { WordLookup } from "@/shared/components/reading/word-lookup";
 import {
@@ -82,19 +84,31 @@ export interface ResumeState {
   secondsLeft: number | null;
 }
 
+/**
+ * `publicMode` is a free full Reading test (/read/free), for a visitor with no
+ * account — the same terms as the single-passage runner's (see `PublicMode`):
+ * no autosave, no AI coach or word lookup, a public submit route, no retake,
+ * and the recommendation to sign in for more, while reading and on the review.
+ */
 export function ReadingTestRunner({
   testId,
   passages,
   learnerContext = "",
   practiceNo = null,
   resume = null,
+  publicMode,
 }: {
   testId: string;
   passages: TestPassage[];
   learnerContext?: string;
   practiceNo?: number | null;
   resume?: ResumeState | null;
+  publicMode?: PublicMode;
 }) {
+  const exitHref = publicMode?.exitHref ?? "/read";
+  // A plain string, so the submit callback can depend on it directly (the
+  // compiler cannot preserve memoisation over an optional-chained prop).
+  const submitUrl = publicMode?.submitUrl ?? `/api/reading/test/${testId}/submit`;
   const [phase, setPhase] = useState<Phase>("reading");
   // Resumed where the learner left off. `cursorIndex` is 1-based on the wire and
   // clamped here, so a saved cursor pointing past a test that has since lost a
@@ -145,8 +159,9 @@ export function ReadingTestRunner({
   const activeRef = useRef(active);
   useEffect(() => void (activeRef.current = active), [active]);
   // Stops autosaving for good once the run is submitted, abandoned, or claimed by
-  // another tab (the route answers 409 on the partial unique index).
-  const savingOffRef = useRef(false);
+  // another tab (the route answers 409 on the partial unique index). Off from
+  // the start for a visitor: there is no attempt row to save into.
+  const savingOffRef = useRef(Boolean(publicMode));
   const saveProgress = useCallback(
     (opts?: { keepalive?: boolean }) => {
       if (savingOffRef.current || submittingRef.current) return;
@@ -283,10 +298,12 @@ export function ReadingTestRunner({
     const durationSeconds = Math.round((Date.now() - startRef.current) / 1000);
     setUsedSeconds(durationSeconds);
     try {
-      const res = await fetch(`/api/reading/test/${testId}/submit`, {
+      const res = await fetch(submitUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: answersRef.current, durationSeconds }),
+        // `testId` is for the public route, which has no path segment to carry
+        // it; the signed-in route ignores it.
+        body: JSON.stringify({ testId, answers: answersRef.current, durationSeconds }),
       });
       const body = (await res.json().catch(() => ({}))) as {
         result?: TestResult;
@@ -307,7 +324,7 @@ export function ReadingTestRunner({
       submittingRef.current = false;
       setSubmitting(false);
     }
-  }, [testId]);
+  }, [submitUrl, testId]);
 
   const submitRef = useRef(submit);
   useEffect(() => void (submitRef.current = submit), [submit]);
@@ -335,13 +352,16 @@ export function ReadingTestRunner({
           flags={flags}
           usedSeconds={usedSeconds}
           testId={testId}
+          publicMode={publicMode}
         />
-        <CoachPanel
-          passageTitle="Full test review"
-          passageBody={joinedBodies}
-          phase="results"
-          learnerContext={learnerContext}
-        />
+        {publicMode ? null : (
+          <CoachPanel
+            passageTitle="Full test review"
+            passageBody={joinedBodies}
+            phase="results"
+            learnerContext={learnerContext}
+          />
+        )}
       </>
     );
   }
@@ -387,6 +407,7 @@ export function ReadingTestRunner({
           overflow: "hidden",
         }}
       >
+        {publicMode ? <FreeTrialStrip copy={publicMode.copy} /> : null}
         {/* One flat header row: exit · title | text size · pens · fullscreen · timer · progress · finish */}
         <div
           className="rd-topbar"
@@ -403,7 +424,7 @@ export function ReadingTestRunner({
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
             <Link
-              href="/read"
+              href={exitHref}
               aria-label="Exit test"
               className="rd-exit"
               style={{
@@ -800,17 +821,20 @@ export function ReadingTestRunner({
         />
       ) : null}
 
-      <CoachPanel
-        passageTitle={passage.title}
-        passageBody={passage.body}
-        questions={coachQuestions}
-        currentQuestion={coachCurrent}
-        phase="reading"
-        learnerContext={learnerContext}
-      />
+      {publicMode ? null : (
+        <CoachPanel
+          passageTitle={passage.title}
+          passageBody={passage.body}
+          questions={coachQuestions}
+          currentQuestion={coachCurrent}
+          phase="reading"
+          learnerContext={learnerContext}
+        />
+      )}
       {/* Word lookup is suppressed while a highlighter pen is active so a drag marks
-          text instead of popping the dictionary. */}
-      {hl.tool === null ? (
+          text instead of popping the dictionary — and for a visitor, whose
+          lookups would have no vocabulary list to go to. */}
+      {hl.tool === null && !publicMode ? (
         <WordLookup getContainer={() => passageRef.current} contextText={passage.body} />
       ) : null}
     </div>
@@ -1001,6 +1025,7 @@ function TestResultsView({
   flags,
   usedSeconds,
   testId,
+  publicMode,
 }: {
   result: TestResult;
   disclaimer: string | null;
@@ -1008,6 +1033,7 @@ function TestResultsView({
   flags: Record<string, boolean>;
   usedSeconds: number | null;
   testId: string;
+  publicMode?: PublicMode;
 }) {
   const [filter, setFilter] = useState<ReviewFilter>("all");
   const bodyByOrder = useMemo(() => new Map(passages.map((p) => [p.order, p.body])), [passages]);
@@ -1063,7 +1089,7 @@ function TestResultsView({
           }}
         >
           <Link
-            href="/read"
+            href={publicMode?.exitHref ?? "/read"}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -1101,29 +1127,33 @@ function TestResultsView({
             >
               Export PDF
             </button>
-            <button
-              type="button"
-              onClick={() => window.location.assign(`/read/test/${testId}`)}
-              style={{
-                padding: "9px 20px",
-                borderRadius: 10,
-                border: "none",
-                background: BRAND_FILL,
-                color: WHITE,
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: "pointer",
-                fontFamily: SANS,
-                boxShadow: `0 3px 10px ${withAlpha(BRAND_FILL, 26)}`,
-              }}
-            >
-              Retake test
-            </button>
+            {/* No retake for a visitor: the day's one free practice is spent. */}
+            {publicMode ? null : (
+              <button
+                type="button"
+                onClick={() => window.location.assign(`/read/test/${testId}`)}
+                style={{
+                  padding: "9px 20px",
+                  borderRadius: 10,
+                  border: "none",
+                  background: BRAND_FILL,
+                  color: WHITE,
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  fontFamily: SANS,
+                  boxShadow: `0 3px 10px ${withAlpha(BRAND_FILL, 26)}`,
+                }}
+              >
+                Retake test
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "36px 28px 90px" }}>
+        {publicMode ? <FreeTrialCard copy={publicMode.copy} /> : null}
         {/* Hero */}
         <div
           style={{
@@ -1430,6 +1460,11 @@ function StatCard({ label, value, color }: { label: string; value: string; color
 // ---- Helpers ---------------------------------------------------------------
 
 function messageFor(status: number, error?: string): string {
+  // The free daily practice's two refusals (/api/public/practice/reading).
+  if (error === "daily_done")
+    return "You've already done today's free practice — a new one arrives tomorrow.";
+  if (error === "not_today")
+    return "Today's practice has changed — reload the page to get the new one.";
   if (status === 404) return "This test isn't available anymore.";
   if (status === 422)
     return error === "no_questions" ? "This test has no questions yet." : "Nothing to mark.";

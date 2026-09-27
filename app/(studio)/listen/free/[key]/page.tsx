@@ -8,16 +8,17 @@ import type { RenderView } from "@/shared/components/listening/types";
 import { FreeTrialGate } from "@/shared/components/practice/free-trial-nudge";
 import { onTodaysList } from "@/lib/free-practice/assignment";
 import { freeTrialCopy } from "@/lib/free-practice/copy";
-import { listeningPublic } from "@/lib/free-practice/engine";
+import { listeningPublic, publicTarget } from "@/lib/free-practice/engine";
 import { freePracticePage } from "@/lib/free-practice/links";
 import { translator } from "@/lib/i18n";
 import { SOURCE_LOCALE } from "@/lib/i18n/locales";
 import { BRAND_FILL, PANEL, SLATE_BODY, SLATE_INK, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
 
 /**
- * /listen/free/[key] — one free Listening practice: ONE part of one shared
- * library test (~8 minutes, 10 questions), for a visitor with no account.
- * `key` is `libraryId_part`.
+ * /listen/free/[key] — one free Listening practice, for a visitor with no
+ * account: a FULL shared library test (four parts, 40 questions) or one part
+ * of one (~8 minutes, 10 questions) — the visitor's list says which
+ * (lib/free-practice/pools). `key` is `libraryId` or `libraryId_part`.
  *
  * The part must be on this visitor's list today; the page asks the engine for
  * it server to server (lib/free-practice/engine) and hands the answer-free view
@@ -53,14 +54,11 @@ export default async function FreeListeningPage({ params }: { params: Promise<{ 
     );
   }
 
-  const sep = entry.item.key.lastIndexOf("_");
-  const libraryId = entry.item.key.slice(0, sep);
-  const part = Number(entry.item.key.slice(sep + 1));
   // `redirect()` throws, so it must not sit inside this try — the catch would
   // swallow it. The engine call alone is guarded.
   let view: RenderView | null = null;
   try {
-    view = await listeningPublic<RenderView>("render", { library_id: libraryId, part });
+    view = await listeningPublic<RenderView>("render", publicTarget(entry.item));
   } catch (err) {
     console.error("[listen/free] engine render failed:", err);
   }
@@ -74,6 +72,7 @@ export default async function FreeListeningPage({ params }: { params: Promise<{ 
       {view ? (
         <PublicListeningRunner
           view={view}
+          practiceKey={entry.item.key}
           gradeUrl="/api/public/practice/listening"
           exitHref={freePracticePage("listening")}
           copy={copy}

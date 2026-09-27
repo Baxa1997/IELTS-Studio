@@ -137,6 +137,7 @@ describe("every free practice recommends signing in for more", () => {
     const runners: [string, string][] = [
       ["app/(studio)/write/_components/writing-studio.tsx", "publicMode.copy"],
       ["app/(studio)/read/_components/reading-runner.tsx", "publicMode.copy"],
+      ["app/(studio)/read/_components/test-runner.tsx", "publicMode.copy"],
       ["shared/components/listening/listening-client.tsx", "publicRun.copy"],
     ];
     for (const [file, copy] of runners) {
@@ -149,6 +150,30 @@ describe("every free practice recommends signing in for more", () => {
   it("offers it on the practice pages and under the landing section's cards", () => {
     expect(read("app/practice/[skill]/page.tsx")).toContain("<MorePracticeBanner skill={skill} t={t} />");
     expect(read("app/_landing/_components/landing-page.tsx")).toContain('{t("free.moreCta")} →');
+  });
+});
+
+describe("a full test is the whole test, on the full-test runner (owner, 2026-09-27)", () => {
+  const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
+
+  it("opens a full Reading test in the three-passage runner, in public mode", () => {
+    const page = read("app/(studio)/read/free/[id]/page.tsx");
+    expect(page).toMatch(/if \(entry\.item\.format === "full"\)[\s\S]*<ReadingTestRunner[\s\S]*publicMode=\{publicMode\}/);
+    expect(page).toMatch(/<ReadingRunner[\s\S]*publicMode=\{publicMode\}/);
+  });
+
+  it("asks the engine for the whole Listening test, or the one part, from the list's entry", () => {
+    expect(read("app/(studio)/listen/free/[key]/page.tsx")).toContain('listeningPublic<RenderView>("render", publicTarget(entry.item))');
+    expect(read("app/api/public/practice/listening/route.ts")).toContain("publicTarget(today.item)");
+  });
+
+  it("marks a Listening practice by the list's key, never the engine's view id", () => {
+    /* The engine names a part `id:part` and the list `id_part`. Grading by
+       `view.id` sent the former, so every free part came back "not today" —
+       live from the first release until this was pinned. */
+    const client = read("shared/components/listening/listening-client.tsx");
+    expect(client).toContain("JSON.stringify({ key: practiceKey, answers })");
+    expect(read("app/(studio)/listen/free/[key]/page.tsx")).toContain("practiceKey={entry.item.key}");
   });
 });
 
@@ -208,15 +233,27 @@ describe("the practice page's cards", () => {
     expect(grid).toContain('className="bl-story bl-card"');
   });
 
-  it("show the icon AND the skill's name on every cover", () => {
-    const both = /<GeneratedCover [^>]*icon=\{coverIcon\(skill, item\)\} kicker=\{t\(SKILL_NAME\[skill\]\)\}/g;
-    expect(grid.match(both)?.length).toBe(2);
+  it("show the icon, the TEST'S NUMBER and full-or-part on every practice cover", async () => {
+    // The owner's words (2026-09-27): "show the Test count and below the Full
+    // reading or part reading, and the same for all practice".
+    expect(grid.match(/<GeneratedCover [^>]*\{\.\.\.coverOf\(skill, item, t\)\}/g)?.length).toBe(2);
+    expect(grid).toContain("icon: coverIcon(skill, item)");
+    expect(grid).toContain('kicker: t("free.testNo", { n: item.testNo })');
+    expect(grid).toContain("caption: formatLabel(skill, item, t)");
+    const { en } = await import("@/lib/i18n/messages/en");
+    expect([en["free.testNo"], en["free.fullReading"], en["free.partReading"]]).toEqual([
+      "Test {n}",
+      "Full reading",
+      "Part reading",
+    ]);
+    expect([en["free.fullListening"], en["free.partListening"]]).toEqual(["Full listening", "Part listening"]);
+    // The landing section's four skill cards keep the skill's own name.
     expect(landing).toMatch(/<GeneratedCover [^>]*icon=\{SKILL_ICON\[skill\]\} kicker=\{t\(SKILL_NAME\[skill\]\)\}/);
   });
 
-  it("set the icon before the word, in one line", () => {
+  it("set the icon before the number, in one line, and full-or-part under it", () => {
     expect(cover).toMatch(
-      /<span className="bl-kicker">\s*\{icon \? <span className="bl-kicker-icon">\{icon\}<\/span> : null\}\s*<span className="bl-kicker-text">\{kicker\}<\/span>/,
+      /<span className="bl-kicker-line">\s*\{icon \? <span className="bl-kicker-icon">\{icon\}<\/span> : null\}\s*<span className="bl-kicker-text">\{kicker\}<\/span>\s*<\/span>\s*\{caption \? <span className="bl-kicker-sub">\{caption\}<\/span> : null\}/,
     );
   });
 

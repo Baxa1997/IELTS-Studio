@@ -2,6 +2,8 @@ import "server-only";
 
 import { serverEnv } from "@/lib/env";
 
+import type { PoolItem } from "./pools";
+
 /**
  * The app calling the engine's `/listening/public/*` for a visitor with NO
  * account — server to server, with the shared `X-Internal-Key`, the same way
@@ -17,6 +19,16 @@ import { serverEnv } from "@/lib/env";
  * where this throws `EngineUnavailable` and the page says so instead of failing.
  */
 export class EngineUnavailable extends Error {}
+
+/** What the engine is asked for: the whole test, or one part of it. The part
+ *  is only sent for a part — an engine older than whole-test support reads a
+ *  missing `part` as a bad request rather than as the wrong practice. */
+export function publicTarget(item: Pick<PoolItem, "source" | "format" | "part">): {
+  library_id: string;
+  part?: number;
+} {
+  return item.format === "part" && item.part ? { library_id: item.source, part: item.part } : { library_id: item.source };
+}
 
 export async function listeningPublic<T>(path: "render" | "grade", body: unknown): Promise<T> {
   const engine = serverEnv.aiEngine;

@@ -48,12 +48,20 @@ export const BLOG_CSS = `
   .bl-cover-art{position:absolute;inset:0;transition:transform .5s cubic-bezier(.2,.7,.2,1)}
   .bl-kicker{
     position:absolute;left:7cqi;bottom:7cqi;right:7cqi;
-    display:flex;align-items:center;gap:.3em;
+    display:flex;flex-direction:column;align-items:flex-start;gap:.24em;
     font-family:${DISPLAY};font-weight:600;letter-spacing:-.03em;line-height:1;
     font-size:14px;font-size:clamp(14px,11cqi,88px);
     color:${WHITE};white-space:nowrap;
   }
+  .bl-kicker-line{display:flex;align-items:center;gap:.3em;max-width:100%;min-width:0}
   .bl-kicker-text{min-width:0;overflow:hidden;text-overflow:ellipsis}
+  /* The line under the kicker ("Full reading"), in em so it keeps its
+     proportion to the kicker on every card width. */
+  .bl-kicker-sub{
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;
+    font-family:${SANS};font-weight:600;letter-spacing:0;line-height:1.2;
+    font-size:12px;font-size:max(12px,.4em);
+  }
   /* The free-practice covers' icon, set just before the kicker word and sized
      in em so it grows with it. Lucide's SVG strokes in currentColor, so the
      kicker's WHITE reaches it — a colour passed to the icon itself would land

@@ -1326,11 +1326,16 @@ function audioPartCount(view: RenderView): number {
  */
 export function PublicListeningRunner({
   view,
+  practiceKey,
   gradeUrl,
   exitHref,
   copy,
 }: {
   view: RenderView;
+  /** The practice's key on the visitor's list — what the marking route checks.
+   *  ⚠️ NOT `view.id`: the engine names a part `id:part`, the list `id_part`,
+   *  and sending the view's id made every free part come back "not today". */
+  practiceKey: string;
   gradeUrl: string;
   exitHref: string;
   copy: FreeTrialCopy;
@@ -1341,7 +1346,7 @@ export function PublicListeningRunner({
       const res = await fetch(gradeUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: view.id, answers }),
+        body: JSON.stringify({ key: practiceKey, answers }),
       });
       const body = (await res.json().catch(() => ({}))) as { grade?: Grade; error?: string };
       if (res.ok && body.grade) return body.grade;
@@ -1353,7 +1358,7 @@ export function PublicListeningRunner({
             : "Couldn't mark your answers. Please try again.",
       );
     },
-    [gradeUrl, view.id],
+    [gradeUrl, practiceKey],
   );
   const publicRun = useMemo(() => ({ grade, copy }), [grade, copy]);
   return <Runner view={view} source="public" onExit={() => router.push(exitHref)} publicRun={publicRun} />;

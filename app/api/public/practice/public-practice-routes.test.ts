@@ -12,13 +12,20 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-type Entry = { day: string; item: { key: string }; done: boolean };
-const list = vi.hoisted(() => ({ keys: [] as string[], done: false }));
+type Item = { key: string; source: string; format: "full" | "part" | "task"; part: number | null };
+type Entry = { day: string; item: Item; done: boolean };
+/** This visitor's list today. `keys` alone offers writing tasks; `items`
+ *  offers a practice with its format (a full test, a part). */
+const list = vi.hoisted(() => ({ keys: [] as string[], items: [] as Item[], done: false }));
 const calls = vi.hoisted(() => ({ engine: [] as unknown[], grader: [] as unknown[], rate: { allowed: true } }));
 
 vi.mock("@/lib/free-practice/assignment", () => ({
-  onTodaysList: async (_skill: string, key: string): Promise<Entry | null> =>
-    list.keys.includes(key) ? { day: "2026-09-27", item: { key }, done: list.done } : null,
+  onTodaysList: async (_skill: string, key: string): Promise<Entry | null> => {
+    const item =
+      list.items.find((i) => i.key === key) ??
+      (list.keys.includes(key) ? { key, source: key, format: "task" as const, part: null } : null);
+    return item ? { day: "2026-09-27", item, done: list.done } : null;
+  },
 }));
 vi.mock("@/lib/free-practice/visitor", () => ({
   DONE_COOKIE: "ep_free_done",
@@ -26,7 +33,8 @@ vi.mock("@/lib/free-practice/visitor", () => ({
   doneToday: async () => new Set(),
   writeDone: () => "signed",
 }));
-vi.mock("@/lib/free-practice/engine", () => ({
+vi.mock("@/lib/free-practice/engine", async (real) => ({
+  publicTarget: (await real<typeof import("@/lib/free-practice/engine")>()).publicTarget,
   EngineUnavailable: class extends Error {},
   listeningPublic: async (path: string, body: unknown) => {
     calls.engine.push({ path, body });
@@ -53,17 +61,26 @@ vi.mock("@/lib/public-grader/rate-limit", () => ({
   hashIp: () => "h",
 }));
 vi.mock("@/lib/supabase/admin", () => {
-  const rows = [
-    { id: "q1", question_type: "tfng", order_index: 0, prompt: "p", options: null, answer_key: "TRUE", supporting_sentence: "s", explanation: "e" },
-  ];
-  const query = () => {
+  const question = { question_type: "tfng", order_index: 0, prompt: "p", options: null, answer_key: "TRUE", supporting_sentence: "s", explanation: "e" };
+  // A test of two passages, one question each; a lone passage is "p1".
+  const rows: Record<string, unknown[]> = {
+    reading_passages: [
+      { id: "pa", title: "A", order_in_test: 1 },
+      { id: "pb", title: "B", order_in_test: 2 },
+    ],
+    reading_questions: [
+      { id: "q1", passage_id: "pa", ...question },
+      { id: "q2", passage_id: "pb", ...question },
+    ],
+  };
+  const query = (table: string) => {
     const q: Record<string, unknown> = {};
-    for (const m of ["select", "eq", "is", "order"]) q[m] = () => q;
+    for (const m of ["select", "eq", "is", "in", "order"]) q[m] = () => q;
     q.maybeSingle = async () => ({ data: { id: "p1", title: "T", task_type: "task2", prompt_text: "Q?", figure: null } });
-    q.then = (res: (v: unknown) => unknown) => res({ data: rows, error: null });
+    q.then = (res: (v: unknown) => unknown) => res({ data: rows[table] ?? [], error: null });
     return q;
   };
-  return { createAdminClient: () => ({ from: () => query() }) };
+  return { createAdminClient: () => ({ from: (table: string) => query(table) }) };
 });
 
 const { POST: reading } = await import("./reading/route");
@@ -76,6 +93,7 @@ const essay = Array(60).fill("word").join(" ");
 
 beforeEach(() => {
   list.keys = [];
+  list.items = [];
   list.done = false;
   calls.engine = [];
   calls.grader = [];
@@ -83,52 +101,84 @@ beforeEach(() => {
 });
 
 describe("/api/public/practice/reading", () => {
+  const passage: Item = { key: "p1", source: "p1", format: "part", part: 2 };
+  const test: Item = { key: "t1", source: "t1", format: "full", part: null };
+
   it("refuses a passage that is not on this visitor's list — so no key leaves for it", async () => {
-    list.keys = ["p1"];
+    list.items = [passage];
     const res = await reading(post({ passageId: "some-other-passage", answers: {} }));
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: "not_today" });
   });
 
   it("refuses once today's free practice is used", async () => {
-    list.keys = ["p1"];
+    list.items = [passage];
     list.done = true;
     expect((await reading(post({ passageId: "p1", answers: {} }))).status).toBe(429);
   });
 
   it("marks a listed passage and records the day as done", async () => {
-    list.keys = ["p1"];
+    list.items = [passage];
     const res = await reading(post({ passageId: "p1", answers: { q1: "TRUE" } }));
     expect(res.status).toBe(200);
-    expect(((await res.json()) as { result: { total: number } }).result.total).toBe(1);
+    expect(((await res.json()) as { result: { total: number } }).result.total).toBe(2);
     expect(res.headers.get("set-cookie")).toMatch(/ep_free_done=signed/);
+  });
+
+  it("marks a listed full test across all its passages", async () => {
+    list.items = [test];
+    const res = await reading(post({ testId: "t1", answers: { q1: "TRUE", q2: "FALSE" } }));
+    expect(res.status).toBe(200);
+    const { result } = (await res.json()) as {
+      result: { total: number; correctCount: number; passages: { order: number; total: number }[] };
+    };
+    expect(result.total).toBe(2);
+    expect(result.correctCount).toBe(1);
+    expect(result.passages.map((p) => p.order)).toEqual([1, 2]);
+    expect(res.headers.get("set-cookie")).toMatch(/ep_free_done=signed/);
+  });
+
+  it("marks only in the format the list offers — a passage is never marked as a whole test", async () => {
+    // Offered one passage, a visitor must not get a whole test's keys by
+    // sending that id as a test — nor the reverse.
+    list.items = [passage, test];
+    expect((await reading(post({ testId: "p1", answers: {} }))).status).toBe(409);
+    expect((await reading(post({ passageId: "t1", answers: {} }))).status).toBe(409);
   });
 });
 
 describe("/api/public/practice/listening", () => {
-  it("refuses a part that is not on the list, without asking the engine", async () => {
-    list.keys = ["lib_2"];
-    expect((await listening(post({ key: "lib_3", answers: {} }))).status).toBe(409);
+  const part: Item = { key: "0554e1cc-8fd6-4af1_2", source: "0554e1cc-8fd6-4af1", format: "part", part: 2 };
+  const whole: Item = { key: "9a1b-44", source: "9a1b-44", format: "full", part: null };
+
+  it("refuses a practice that is not on the list, without asking the engine", async () => {
+    list.items = [part];
+    expect((await listening(post({ key: "0554e1cc-8fd6-4af1_3", answers: {} }))).status).toBe(409);
     expect(calls.engine).toEqual([]);
   });
 
   it("refuses once today's free practice is used", async () => {
-    list.keys = ["lib_2"];
+    list.items = [part];
     list.done = true;
-    expect((await listening(post({ key: "lib_2", answers: {} }))).status).toBe(429);
+    expect((await listening(post({ key: part.key, answers: {} }))).status).toBe(429);
     expect(calls.engine).toEqual([]);
   });
 
   it("asks the engine for exactly that part, and records the day as done", async () => {
-    // A real library id is a UUID — hyphens, never an underscore — so the last
-    // underscore is the part, even with hyphens before it.
-    list.keys = ["0554e1cc-8fd6-4af1_2"];
-    const res = await listening(post({ key: "0554e1cc-8fd6-4af1_2", answers: { "11": "x" } }));
+    list.items = [part];
+    const res = await listening(post({ key: part.key, answers: { "11": "x" } }));
     expect(res.status).toBe(200);
     expect(calls.engine).toEqual([
       { path: "grade", body: { library_id: "0554e1cc-8fd6-4af1", part: 2, answers: { "11": "x" } } },
     ]);
     expect(res.headers.get("set-cookie")).toMatch(/ep_free_done=signed/);
+  });
+
+  it("asks the engine for the whole test when the list offers a full test", async () => {
+    list.items = [whole];
+    const res = await listening(post({ key: whole.key, answers: { "31": "y" } }));
+    expect(res.status).toBe(200);
+    expect(calls.engine).toEqual([{ path: "grade", body: { library_id: "9a1b-44", answers: { "31": "y" } } }]);
   });
 });
 
