@@ -6,15 +6,24 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { GET as llms } from "@/app/llms.txt/route";
-import { POSTS } from "@/lib/blog";
 import { absoluteUrl } from "@/lib/seo";
+import { seededPosts } from "@/test/blog-seed";
 
 import { GET } from "./route";
 
-const body = await GET().text();
+/* Tests have no database: the store hands back the posts the blog migration
+   seeds — the same list production started from. */
+vi.mock("@/lib/blog/store", async () => {
+  const { seededPosts } = await import("@/test/blog-seed");
+  const posts = seededPosts();
+  return { loadPosts: async () => posts, loadPost: async (slug: string) => posts.find((p) => p.slug === slug) };
+});
+
+const POSTS = seededPosts();
+const body = await (await GET()).text();
 
 describe("/llms-full.txt", () => {
   it("carries every article in full, each with its own URL to cite", () => {
@@ -30,7 +39,7 @@ describe("/llms-full.txt", () => {
   });
 
   it("is linked from /llms.txt, where answer engines look first", async () => {
-    expect(await llms().text()).toContain(absoluteUrl("/llms-full.txt"));
+    expect(await (await llms()).text()).toContain(absoluteUrl("/llms-full.txt"));
   });
 
   it("is reachable signed out — otherwise every crawler reads a redirect", () => {

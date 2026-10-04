@@ -1,7 +1,10 @@
 import { PLAN_ORDER, planTier } from "@/lib/billing/plans";
-import { POSTS } from "@/lib/blog";
+import { loadPosts } from "@/lib/blog/store";
+import { FREE_PAGE_DESCRIPTION, freePracticePage } from "@/lib/free-practice/links";
+import { FREE_SKILLS } from "@/lib/free-practice/rotation";
+import { en } from "@/lib/i18n/messages/en";
 import { DEFAULT_LOCALE, LOCALE_NAMES, LOCALES, localePath } from "@/lib/i18n/locales";
-import { absoluteUrl, PLATFORM_FEATURES, PUBLIC_ROUTES, SEO_DESCRIPTION, SITE_NAME } from "@/lib/seo";
+import { absoluteUrl, FREE_PRACTICE_LABEL, PLATFORM_FEATURES, PUBLIC_ROUTES, SEO_DESCRIPTION, SITE_NAME } from "@/lib/seo";
 
 /**
  * GET /llms.txt — the site, summarised for answer engines (llmstxt.org).
@@ -18,11 +21,14 @@ import { absoluteUrl, PLATFORM_FEATURES, PUBLIC_ROUTES, SEO_DESCRIPTION, SITE_NA
  * And because PLATFORM_FEATURES is the list lib/seo-claims.test.ts polices,
  * no accuracy claim can arrive here that the rest of the site may not make.
  *
- * Static: built once per deploy, served from the edge.
+ * Static, served from the edge; the blog list inside it is the cached one, so
+ * a post published from /admin reaches it without a deploy.
  */
 export const dynamic = "force-static";
+export const revalidate = 3600;
 
-export function GET(): Response {
+export async function GET(): Promise<Response> {
+  const posts = await loadPosts();
   const product = PUBLIC_ROUTES.filter((r) => r.section === "product");
   const about = PUBLIC_ROUTES.filter((r) => r.section === "about");
 
@@ -72,9 +78,18 @@ export function GET(): Response {
     "",
     ...product.map((r) => `- [${r.label}](${absoluteUrl(r.path)})`),
     "",
+    "## Free practice",
+    "",
+    "One practice a day in each skill, free and with no account: the same practice tests and the same marking " +
+      "as inside the platform. Each page lists the visitor's practices, newest first.",
+    "",
+    ...FREE_SKILLS.map(
+      (s) => `- [${FREE_PRACTICE_LABEL[s]}](${absoluteUrl(freePracticePage(s))}): ${en[FREE_PAGE_DESCRIPTION[s]]}`,
+    ),
+    "",
     "## Blog",
     "",
-    ...POSTS.map((p) => `- [${p.title}](${absoluteUrl(`/blog/${p.slug}`)}): ${p.standfirst}`),
+    ...posts.map((p) => `- [${p.title}](${absoluteUrl(`/blog/${p.slug}`)}): ${p.standfirst}`),
     "",
     `The full text of every article, as Markdown: ${absoluteUrl("/llms-full.txt")}`,
     "",

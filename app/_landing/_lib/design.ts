@@ -150,12 +150,21 @@ export const BLOG_COVER: Record<BlogCategory, { a: string; b: string }> = {
  * to AA against the white kicker in both themes, and a practice card should
  * look like it belongs to the same newsroom as the articles beside it.
  */
-export const SKILL_COVER: Record<"writing" | "reading" | "listening" | "speaking", { a: string; b: string }> = {
-  writing: BLOG_COVER.english,
-  reading: BLOG_COVER.ielts,
-  listening: BLOG_COVER.stories,
-  speaking: BLOG_COVER.engprogress,
+export const SKILL_COVER_CATEGORY: Record<"writing" | "reading" | "listening" | "cefr" | "speaking", BlogCategory> = {
+  writing: "english",
+  reading: "ielts",
+  listening: "stories",
+  // The blog's Multilevel green — the same exam, the same colour.
+  cefr: "multilevel",
+  speaking: "engprogress",
 };
+
+/** Derived from SKILL_COVER_CATEGORY, so a practice page's share card
+ *  (og-palette.ts, by the same map) can never wear a different colour from
+ *  its cards. */
+export const SKILL_COVER = Object.fromEntries(
+  Object.entries(SKILL_COVER_CATEGORY).map(([skill, cat]) => [skill, BLOG_COVER[cat]]),
+) as Record<keyof typeof SKILL_COVER_CATEGORY, { a: string; b: string }>;
 
 /** The ring and the dot grid drawn on a cover — white in both themes, because
  *  every cover ground is dark in both. */

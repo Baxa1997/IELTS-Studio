@@ -1,27 +1,33 @@
 /**
  * The shape of a blog post.
  *
- * POSTS ARE CODE, NOT ROWS — the same call as the curated reading and writing
- * libraries (`lib/reading/curated`, `lib/prompts/curated`). A post is reviewed
- * in a diff, ships with a deploy, and renders as a static page that costs the
- * database nothing. Publishing without a deploy would need a table, an editor
- * in `/admin` and a sanitiser; the body is already structured blocks rather than
- * HTML so it could move into a JSON column without the renderer changing.
+ * POSTS ARE ROWS — `public.blog_posts`, written in /admin/blog by the platform
+ * super_admin and read by the site through `./store` (migration
+ * 20261004120000). They were code until 2026-10-04, reviewed in a diff and
+ * shipped with a deploy; the owner moved them so a post can go out without
+ * one. The body was already structured blocks rather than HTML for exactly
+ * that move, so it went into a jsonb column and the renderer did not change.
+ *
+ * WHAT USED TO BE THE REVIEW IS NOW `./validate`. A post can no longer be
+ * caught by a test before it ships, so the same rules run when it is
+ * published: `publishProblems` refuses a post that breaks one, with the reason.
  *
  * ⚠️ EVERY ARTICLE IS IN ENGLISH — the owner's rule (2026-09-26), and every
  * string of it: title, standfirst, body, cover, call to action. The blog is
  * reading practice for people learning English, so a translated article
  * defeats it, however helpful translating for an Uzbek-default site looks.
  * Only the chrome around the articles is localised (`blog.*` keys).
- * `blog.test.ts` fails on Cyrillic, on Uzbek letters, and on any paragraph that
+ * `publishProblems` refuses Cyrillic, Uzbek letters, and any paragraph that
  * does not read as English.
  */
 
-export type BlogCategory = "ielts" | "multilevel" | "english" | "stories" | "engprogress";
+export const BLOG_CATEGORIES = ["ielts", "multilevel", "english", "stories", "engprogress"] as const;
+export type BlogCategory = (typeof BLOG_CATEGORIES)[number];
 
 /** The practice area a post is about — it links the post from that area's
  *  marketing page ("From the blog") and names it in the structured data. */
-export type BlogSkill = "writing" | "reading" | "listening" | "speaking" | "cefr";
+export const BLOG_SKILLS = ["writing", "reading", "listening", "speaking", "cefr"] as const;
+export type BlogSkill = (typeof BLOG_SKILLS)[number];
 
 /**
  * One block of an article body.
@@ -64,7 +70,8 @@ export interface BlogPost {
   cover: { kicker: string };
   image?: { src: string; alt: string; credit?: string };
   /** The lead story on the landing section and the blog front page. At most
-   *  one post may set it; without one, the newest leads. */
+   *  one post may set it (a unique index holds it); without one, the newest
+   *  leads. */
   featured?: boolean;
   skill?: BlogSkill;
   /**
@@ -86,4 +93,17 @@ export interface BlogPost {
   body: Block[];
   /** The panel after the last paragraph — where to practise what was read. */
   cta?: { title: string; text: string; href: string; label: string };
+}
+
+export type PostStatus = "draft" | "published";
+
+/** A post as the editor sees it: the article, plus what only the database
+ *  knows about it. */
+export interface StoredPost extends BlogPost {
+  id: string;
+  status: PostStatus;
+  /** Order among posts published the same day: lower first. */
+  position: number;
+  /** When the row last changed — not the article's `updated` date. */
+  savedAt: string;
 }

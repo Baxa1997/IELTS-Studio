@@ -1,3 +1,6 @@
+import { freePracticePage } from "@/lib/free-practice/links";
+import { FREE_SKILLS, type FreeSkill } from "@/lib/free-practice/rotation";
+
 export const SITE_NAME = "EngProgress";
 // JPEG, not PNG: the same card as a PNG was 744 kB, and several chat apps skip a
 // link preview whose image is too big (WhatsApp's ceiling is ~600 kB) — so the
@@ -98,6 +101,26 @@ export function absoluteUrl(path: string): string {
 }
 
 /**
+ * What a search result and an answer engine call each free-practice page. A
+ * `Record` over the free skills, so the compiler refuses a new skill until it
+ * has a name here.
+ */
+export const FREE_PRACTICE_LABEL: Record<FreeSkill, string> = {
+  writing: "Free daily IELTS Writing practice — graded, no account needed",
+  reading: "Free daily IELTS Reading practice — marked instantly, no account needed",
+  listening: "Free daily IELTS Listening practice — marked instantly, no account needed",
+  cefr: "Free daily CEFR Multilevel (Uzbekistan) practice — Reading and Writing papers, no account needed",
+};
+
+const PRACTICE_ROUTES = FREE_SKILLS.map((skill) => ({
+  path: freePracticePage(skill),
+  label: FREE_PRACTICE_LABEL[skill],
+  section: "practice" as const,
+  priority: 0.8,
+  changeFrequency: "daily" as const,
+}));
+
+/**
  * Every page a signed-out visitor — or a crawler — can actually read.
  *
  * ONE LIST, TWO READERS: `app/sitemap.ts` for search engines and
@@ -126,11 +149,10 @@ export const PUBLIC_ROUTES = [
   // The front page only. The articles are listed from lib/blog by the sitemap
   // and by llms.txt, so publishing a post never means editing this list.
   { path: "/blog", label: "Blog — IELTS tips, English stories and EngProgress news", section: "product", priority: 0.7, changeFrequency: "weekly" },
-  // The free daily practice, one page per skill. The runners behind them
-  // (/grade/today, /read/free, /listen/free) are tools, not pages to rank.
-  { path: "/practice/writing", label: "Free daily IELTS Writing practice — graded, no account needed", section: "product", priority: 0.8, changeFrequency: "daily" },
-  { path: "/practice/reading", label: "Free daily IELTS Reading practice — marked instantly, no account needed", section: "product", priority: 0.8, changeFrequency: "daily" },
-  { path: "/practice/listening", label: "Free daily IELTS Listening practice — marked instantly, no account needed", section: "product", priority: 0.8, changeFrequency: "daily" },
+  // The free daily practice, one page per skill — derived, so a skill added to
+  // FREE_SKILLS is in the sitemap and llms.txt without a second edit. The
+  // runners behind them (/read/free, /cefr/free …) are tools, not pages to rank.
+  ...PRACTICE_ROUTES,
   { path: "/sign-in", label: "Sign in", section: "about", priority: 0.3, changeFrequency: "yearly" },
   { path: "/contact", label: "Contact and support", section: "about", priority: 0.4, changeFrequency: "yearly" },
   { path: "/privacy", label: "Privacy policy", section: "about", priority: 0.2, changeFrequency: "yearly" },
@@ -138,7 +160,9 @@ export const PUBLIC_ROUTES = [
 ] as const satisfies ReadonlyArray<{
   path: string;
   label: string;
-  section: "product" | "about";
+  /** Where llms.txt lists it: "practice" is its own section there, so an
+   *  answer engine asked "where can I practise for free?" finds the list. */
+  section: "product" | "practice" | "about";
   priority: number;
   changeFrequency: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
 }>;

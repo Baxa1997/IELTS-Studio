@@ -1,5 +1,5 @@
 /**
- * The three public marking routes, executed with the list and the data stubbed
+ * The four public marking routes, executed with the list and the data stubbed
  * — because what they must REFUSE is the point of them.
  *
  * ⚠️ THE KEYS, AND THE GRADES, ARE THE ASSET. /api/public/practice/reading
@@ -12,12 +12,23 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-type Item = { key: string; source: string; format: "full" | "part" | "task"; part: number | null };
+type Item = {
+  key: string;
+  source: string;
+  format: "full" | "part" | "task";
+  part: number | null;
+  paper?: "reading" | "writing" | null;
+};
 type Entry = { day: string; item: Item; done: boolean };
 /** This visitor's list today. `keys` alone offers writing tasks; `items`
  *  offers a practice with its format (a full test, a part). */
-const list = vi.hoisted(() => ({ keys: [] as string[], items: [] as Item[], done: false }));
-const calls = vi.hoisted(() => ({ engine: [] as unknown[], grader: [] as unknown[], rate: { allowed: true } }));
+const list = vi.hoisted(() => ({ keys: [] as string[], items: [] as Item[], done: false, spentOn: null as string | null }));
+const calls = vi.hoisted(() => ({
+  engine: [] as unknown[],
+  grader: [] as unknown[],
+  rate: { allowed: true },
+  writingGrade: { gradable: true } as Record<string, unknown>,
+}));
 
 vi.mock("@/lib/free-practice/assignment", () => ({
   onTodaysList: async (_skill: string, key: string): Promise<Entry | null> => {
@@ -32,6 +43,9 @@ vi.mock("@/lib/free-practice/visitor", () => ({
   DONE_COOKIE_OPTIONS: {},
   doneToday: async () => new Set(),
   writeDone: () => "signed",
+  SPENT_ON_COOKIE: "ep_free_on",
+  spentOnToday: async () => list.spentOn,
+  writeSpentOn: (_day: string, _skill: string, key: string) => `on-${key}`,
 }));
 vi.mock("@/lib/free-practice/engine", async (real) => ({
   publicTarget: (await real<typeof import("@/lib/free-practice/engine")>()).publicTarget,
@@ -39,6 +53,10 @@ vi.mock("@/lib/free-practice/engine", async (real) => ({
   listeningPublic: async (path: string, body: unknown) => {
     calls.engine.push({ path, body });
     return { score: 1, max_score: 10, results: [] };
+  },
+  multilevelPublic: async (path: string, body: unknown) => {
+    calls.engine.push({ path, body });
+    return path === "writing/grade" ? calls.writingGrade : { score: 3, max_score: 35, parts: [] };
   },
 }));
 vi.mock("@/lib/ai", () => ({
@@ -86,6 +104,7 @@ vi.mock("@/lib/supabase/admin", () => {
 const { POST: reading } = await import("./reading/route");
 const { POST: listening } = await import("./listening/route");
 const { POST: writing } = await import("./writing/route");
+const { POST: cefr } = await import("./cefr/route");
 
 const post = (body: unknown) =>
   new Request("http://x/api", { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
@@ -95,7 +114,9 @@ beforeEach(() => {
   list.keys = [];
   list.items = [];
   list.done = false;
+  list.spentOn = null;
   calls.engine = [];
+  calls.writingGrade = { gradable: true };
   calls.grader = [];
   calls.rate = { allowed: true };
 });
@@ -222,5 +243,70 @@ describe("/api/public/practice/writing", () => {
     expect(calls.grader).toHaveLength(1);
     expect((calls.grader[0] as { promptText: string }).promptText).toBe("Q?"); // from the DB, not the body
     expect(res.headers.get("set-cookie")).toMatch(/ep_free_done=signed/);
+  });
+});
+
+describe("/api/public/practice/cefr", () => {
+  const readingPaper: Item = { key: "r1", source: "r1", format: "full", part: null, paper: "reading" };
+  const writingPaper: Item = { key: "w1", source: "w1", format: "full", part: null, paper: "writing" };
+  const letter = Array(50).fill("word").join(" ");
+
+  it("refuses a paper that is not on the list, without asking the engine", async () => {
+    list.items = [readingPaper];
+    expect((await cefr(post({ key: "someone-elses-paper", answers: {} }))).status).toBe(409);
+    expect(calls.engine).toEqual([]);
+  });
+
+  it("marks a listed Reading paper by the list's id, and spends the day on it", async () => {
+    list.items = [readingPaper];
+    const res = await cefr(post({ key: "r1", answers: { "1": "astronomers", "7": 3 } }));
+    expect(res.status).toBe(200);
+    expect(calls.engine).toEqual([{ path: "reading/grade", body: { item_id: "r1", answers: { "1": "astronomers" } } }]);
+    const cookies = res.headers.get("set-cookie") ?? "";
+    expect(cookies).toMatch(/ep_free_done=signed/);
+    expect(cookies).toMatch(/ep_free_on=on-r1/);
+  });
+
+  it("refuses once today's free practice went on ANOTHER paper", async () => {
+    list.items = [readingPaper, writingPaper];
+    list.done = true;
+    list.spentOn = "r1";
+    expect((await cefr(post({ key: "w1", taskId: "1.1", answer: letter }))).status).toBe(429);
+    expect(calls.engine).toEqual([]);
+  });
+
+  it("but lets the paper the day went on finish — a Writing paper is three tasks", async () => {
+    /* Without this the first task's grade would lock out the other two: the
+       visitor would get a third of the practice they were given. */
+    list.items = [writingPaper];
+    list.done = true;
+    list.spentOn = "w1";
+    const res = await cefr(post({ key: "w1", taskId: "2", answer: letter }));
+    expect(res.status).toBe(200);
+    expect(calls.engine).toEqual([{ path: "writing/grade", body: { item_id: "w1", task_id: "2", answer: letter } }]);
+  });
+
+  it("never grades Writing past the per-IP ceiling — the cookies alone could be cleared", async () => {
+    list.items = [writingPaper];
+    calls.rate = { allowed: false };
+    const res = await cefr(post({ key: "w1", taskId: "1.1", answer: letter }));
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: "rate_limited" });
+    expect(calls.engine).toEqual([]);
+  });
+
+  it("refuses a few words, or a task the paper does not have, before any model call", async () => {
+    list.items = [writingPaper];
+    expect((await cefr(post({ key: "w1", taskId: "1.1", answer: "too short" }))).status).toBe(422);
+    expect((await cefr(post({ key: "w1", taskId: "3", answer: letter }))).status).toBe(422);
+    expect(calls.engine).toEqual([]);
+  });
+
+  it("does not spend the day on an answer the grader could not grade", async () => {
+    list.items = [writingPaper];
+    calls.writingGrade = { gradable: false, message: "off topic" };
+    const res = await cefr(post({ key: "w1", taskId: "1.1", answer: letter }));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("set-cookie")).toBeNull();
   });
 });

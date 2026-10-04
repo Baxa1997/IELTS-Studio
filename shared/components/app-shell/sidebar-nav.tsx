@@ -29,6 +29,7 @@ import {
   type LucideIcon,
   Megaphone,
   Mic,
+  Newspaper,
   Receipt,
   School,
   ShieldAlert,
@@ -424,6 +425,9 @@ const SUPER_ADMIN: Section[] = [
          sits where a super admin has to pass it deliberately rather than behind
          a URL somebody remembers. */
       { label: "Broadcast", labelKey: "nav.broadcast", href: "/admin/marketing", icon: Megaphone },
+      /* The blog's editor. Posts are rows since 2026-10-04 and publish from
+         here without a deploy. */
+      { label: "Blog", labelKey: "nav.blog", href: "/admin/blog", icon: Newspaper },
     ],
   },
   {

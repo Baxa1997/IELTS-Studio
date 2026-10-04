@@ -50,6 +50,7 @@ import {
 } from "@/app/_landing/_lib/design";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
 import { leadPost, otherPosts } from "@/lib/blog";
+import { loadPosts } from "@/lib/blog/store";
 import { PRACTICE_CARD_SKILLS } from "@/lib/free-practice/links";
 import {
   getSiteUrl,
@@ -938,7 +939,7 @@ function PracticeTodaySection({ t }: { t: Translate }) {
   return (
     <section id="free-practice" className="lp-below-fold" style={{ ...SHELL, padding: "56px 28px 20px" }}>
       <Head eyebrow={t("free.eyebrow")} title={t("free.title")} sub={t("free.sub")} />
-      <div className="bl-grid bl-grid-4" style={{ marginTop: 36 }}>
+      <div className="bl-grid bl-grid-5" style={{ marginTop: 36 }}>
         {PRACTICE_CARD_SKILLS.map((s) => (
           <SkillPracticeCard key={s} skill={s} t={t} />
         ))}
@@ -965,18 +966,22 @@ function PracticeTodaySection({ t }: { t: Translate }) {
  * The CHROME follows the page's locale and the STORIES stay English — they are
  * English articles, and reading them is the point. `blog-stories.tsx` marks the
  * English parts with `lang="en"` so a screen reader on `/` switches voice for
- * them. Static like the rest of the page: the posts are code, so a new post
- * reaches this section with the deploy that publishes it.
+ * them. The posts come from the cached list (lib/blog/store), so a post
+ * published from /admin reaches this section without a deploy. With no posts
+ * at all the section is left out rather than shown empty.
  */
-function BlogSection({ t, locale }: { t: Translate; locale: Locale }) {
+async function BlogSection({ t, locale }: { t: Translate; locale: Locale }) {
   const lang = HTML_LANG[locale];
+  const posts = await loadPosts();
+  const lead = leadPost(posts);
+  if (!lead) return null;
   return (
     <section id="blog" className="lp-below-fold" style={{ ...SHELL, padding: "56px 28px 20px" }}>
       <Head eyebrow={t("blog.eyebrow")} title={t("blog.title")} sub={t("blog.sub")} />
       <div className="bl-top" style={{ marginTop: 36 }}>
-        <LeadStory post={leadPost()} t={t} lang={lang} layout="stacked" />
+        <LeadStory post={lead} t={t} lang={lang} layout="stacked" />
         <div className="bl-rows">
-          {otherPosts()
+          {otherPosts(posts)
             .slice(0, 3)
             .map((p) => (
               <StoryRow key={p.slug} post={p} t={t} lang={lang} />

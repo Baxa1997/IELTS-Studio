@@ -16,6 +16,20 @@
  *    not only the first.
  */
 
+/**
+ * Two lists taken in turn — a, b, a, b … — and whatever is left of the longer
+ * one at the end. The CEFR pool's rule: Reading and Writing papers alternate,
+ * so any window of the list a visitor is shown offers both.
+ */
+export function alternate<T>(a: readonly T[], b: readonly T[]): T[] {
+  const out: T[] = [];
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    if (i < a.length) out.push(a[i]);
+    if (i < b.length) out.push(b[i]);
+  }
+  return out;
+}
+
 /** One entry of the pool: test `test` (an index into the library), whole when
  *  `part` is null, else its `part`-th part (1-based). */
 export interface MixSlot {

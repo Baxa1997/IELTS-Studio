@@ -5,7 +5,7 @@ import { cache } from "react";
 import { composeTestSubtitle } from "@/lib/reading/titles";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { mixSlots } from "./mix";
+import { alternate, mixSlots } from "./mix";
 import type { FreeSkill } from "./rotation";
 
 /**
@@ -18,6 +18,10 @@ import type { FreeSkill } from "./rotation";
  *              one passage of another test mixed in after every second one
  *   listening  the same for the library's full tests (four parts, 40
  *              questions) and their parts — see ./mix for the mix
+ *   cefr       the shared CEFR (Multilevel) papers — a full Reading paper
+ *              (five parts, 35 questions) or a full Writing paper (three
+ *              tasks), alternating. Made by the engine's
+ *              scripts/seed_multilevel_library.py; empty until it has run
  *
  * ⚠️ FULL TESTS, NOT PARTS (owner, 2026-09-27: "practice must be full
  * practice, not part"). Until then Reading was the standalone ~14-question
@@ -53,6 +57,9 @@ export interface PoolItem {
   testNo: number;
   /** The passage or part number when `format` is "part"; otherwise null. */
   part: number | null;
+  /** CEFR only: which of the exam's papers this is. Null for every other
+   *  skill, whose pools hold one kind of paper each. */
+  paper: "reading" | "writing" | null;
   title: string;
   topic: string | null;
   /** The facts line's first word: "3 passages", "Passage 2", "4 parts",
@@ -64,16 +71,24 @@ export interface PoolItem {
   questions: number | null;
 }
 
-/** The exam's own time for each. */
-const MINUTES = {
+/** The exam's own time for each — also what the practice page's "How long
+ *  does one practice take?" answer says, so the two cannot disagree. */
+export const MINUTES = {
   readingTest: 60,
   readingPassage: 20,
   listeningTest: 30,
   listeningPart: 8,
+  // The Multilevel exam's own: an hour for Reading, about an hour for the
+  // three Writing tasks (CEFR_MULTILEVEL_GENERATION_SPEC.md).
+  cefrReading: 60,
+  cefrWriting: 60,
 } as const;
 
+/** A full Multilevel Reading paper: Parts 1–5 hold questions 1–35. */
+const CEFR_READING_QUESTIONS = 35;
+
 /** The exam's own names for the writing tasks, and the time each is given. */
-const WRITING_TASK: Record<string, { kind: string; minutes: number }> = {
+export const WRITING_TASK: Record<string, { kind: string; minutes: number }> = {
   task2: { kind: "Task 2", minutes: 40 },
   task1_academic: { kind: "Academic Task 1", minutes: 20 },
   task1_general: { kind: "General Training Task 1", minutes: 20 },
@@ -162,6 +177,7 @@ async function readingPool(admin: Admin): Promise<PoolItem[]> {
         format: "full",
         testNo: t.no,
         part: null,
+        paper: null,
         // The passages' own titles, as the hub's subtitle lists them — their
         // topics are whole sentences, and three of those make no headline.
         title: composeTestSubtitle(t.passages.map((p) => p.title as string)),
@@ -180,6 +196,7 @@ async function readingPool(admin: Admin): Promise<PoolItem[]> {
       format: "part",
       testNo: t.no,
       part: order,
+      paper: null,
       title: (p.title as string) ?? "Reading passage",
       // The passage's topic is a whole sentence ("how heat pumps work and
       // why …"), which the headline already says better.
@@ -240,6 +257,7 @@ async function listeningPool(admin: Admin): Promise<PoolItem[]> {
         format: "full",
         testNo: t.no,
         part: null,
+        paper: null,
         title: composeTestSubtitle(t.parts.map((p) => p.topic)),
         topic: null,
         kind: `${t.parts.length} parts`,
@@ -255,6 +273,7 @@ async function listeningPool(admin: Admin): Promise<PoolItem[]> {
       format: "part",
       testNo: t.no,
       part: p.n,
+      paper: null,
       title: p.topic,
       topic: null,
       kind: `Part ${p.n}`,
@@ -295,6 +314,7 @@ async function writingPool(admin: Admin): Promise<PoolItem[]> {
     format: "task",
     testNo: noById.get(r.id as string) ?? 0,
     part: null,
+    paper: null,
     title: firstSentence((r.prompt_text as string) ?? ""),
     topic: (r.topic_family as string | null) ?? null,
     kind: WRITING_TASK[r.task_type as string].kind,
@@ -304,9 +324,69 @@ async function writingPool(admin: Admin): Promise<PoolItem[]> {
   }));
 }
 
+async function cefrPool(admin: Admin): Promise<PoolItem[]> {
+  /* The SHARED papers only (no owner — app migration 20261004130000), whole
+     papers only, and only what a card shows: `content` also holds the answer
+     keys and the model answers. Parts and tasks are stored in exam order, so
+     index 0 is Part 1 / Task 1.1. */
+  const { data } = await admin
+    .from("multilevel_items")
+    .select(
+      "id, paper, created_at, r1:content->parts->0->>title, r4:content->parts->3->>title, r5:content->parts->4->>title, w1:content->tasks->0->>situation, w2:content->tasks->2->>question",
+    )
+    .is("organization_id", null)
+    .eq("scope", "full")
+    .in("paper", ["reading", "writing"])
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+  const rows = (data ?? []) as Record<string, unknown>[];
+  const text = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+
+  // Numbered within each paper, oldest first: "Test 3" is the third Reading
+  // paper, or the third Writing paper — the caption under it says which.
+  const reading = rows
+    .filter((r) => r.paper === "reading")
+    .map((r, i): PoolItem => ({
+      key: r.id as string,
+      source: r.id as string,
+      format: "full",
+      testNo: i + 1,
+      part: null,
+      paper: "reading",
+      title:
+        composeTestSubtitle([r.r1, r.r4, r.r5].map(text).filter((t): t is string => Boolean(t))) ||
+        "CEFR Reading paper",
+      topic: null,
+      kind: "5 parts",
+      level: null,
+      minutes: MINUTES.cefrReading,
+      questions: CEFR_READING_QUESTIONS,
+    }));
+  const writing = rows
+    .filter((r) => r.paper === "writing")
+    .map((r, i): PoolItem => ({
+      key: r.id as string,
+      source: r.id as string,
+      format: "full",
+      testNo: i + 1,
+      part: null,
+      paper: "writing",
+      // Task 2's forum question is the paper's real headline; Section 1's
+      // situation stands in when a paper has none.
+      title: firstSentence(text(r.w2) ?? text(r.w1) ?? "CEFR Writing paper"),
+      topic: null,
+      kind: "3 tasks",
+      level: null,
+      minutes: MINUTES.cefrWriting,
+      questions: null,
+    }));
+  return alternate(reading, writing);
+}
+
 export const loadPool = cache(async function loadPool(skill: FreeSkill): Promise<PoolItem[]> {
   const admin = createAdminClient();
   if (skill === "writing") return writingPool(admin);
   if (skill === "reading") return readingPool(admin);
+  if (skill === "cefr") return cefrPool(admin);
   return listeningPool(admin);
 });

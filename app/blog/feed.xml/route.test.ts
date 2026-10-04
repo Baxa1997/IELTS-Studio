@@ -3,14 +3,23 @@
  * feed reader will read.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { POSTS } from "@/lib/blog";
 import { absoluteUrl } from "@/lib/seo";
+import { seededPosts } from "@/test/blog-seed";
 
 import { GET } from "./route";
 
-const res = GET();
+/* Tests have no database: the store hands back the posts the blog migration
+   seeds — the same list production started from. */
+vi.mock("@/lib/blog/store", async () => {
+  const { seededPosts } = await import("@/test/blog-seed");
+  const posts = seededPosts();
+  return { loadPosts: async () => posts, loadPost: async (slug: string) => posts.find((p) => p.slug === slug) };
+});
+
+const POSTS = seededPosts();
+const res = await GET();
 const xml = await res.text();
 
 describe("/blog/feed.xml", () => {

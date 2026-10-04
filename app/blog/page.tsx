@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 
 import { LeadStory, StoryCard } from "@/app/_landing/_components/blog-stories";
 import { DISPLAY_LG, FAINT, INK, LEDE, RULE, eyebrow } from "@/app/_landing/_lib/design";
-import { leadPost, otherPosts, POSTS } from "@/lib/blog";
+import { leadPost, otherPosts } from "@/lib/blog";
+import { loadPosts } from "@/lib/blog/store";
 import { translator } from "@/lib/i18n";
 import { HTML_LANG, SOURCE_LOCALE } from "@/lib/i18n/locales";
 import { absoluteUrl, PREVIEW_IMAGE, SITE_NAME } from "@/lib/seo";
@@ -16,7 +17,11 @@ import { blogAlternates } from "./_lib/metadata";
  * Rendered in ENGLISH from the dictionary, not from the visitor's cookie: the
  * articles are English, and reading the cookie would make this page dynamic
  * for the sake of a few labels. See the note on `lang` in `layout.tsx`.
+ *
+ * Static, from the cached post list (lib/blog/store); a save in /admin
+ * refreshes it, and the hour is the backstop.
  */
+export const revalidate = 3600;
 
 const t = translator(SOURCE_LOCALE);
 const LANG = HTML_LANG[SOURCE_LOCALE];
@@ -40,9 +45,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function BlogIndexPage() {
-  const lead = leadPost();
-  const rest = otherPosts();
+export default async function BlogIndexPage() {
+  const posts = await loadPosts();
+  const lead = leadPost(posts);
+  const rest = otherPosts(posts);
   const site = absoluteUrl("/").replace(/\/$/, "");
   /* `@id`s match the ones the landing page and every article publish, so the
      organisation, this blog and its posts resolve as one set of entities. */
@@ -57,7 +63,7 @@ export default function BlogIndexPage() {
         url: `${site}/blog`,
         inLanguage: "en",
         publisher: { "@type": "Organization", "@id": `${site}/#organization`, name: SITE_NAME, url: site },
-        blogPost: POSTS.map((p) => ({
+        blogPost: posts.map((p) => ({
           "@type": "BlogPosting",
           "@id": `${absoluteUrl(`/blog/${p.slug}`)}#article`,
           headline: p.title,
@@ -94,7 +100,7 @@ export default function BlogIndexPage() {
         <p style={{ ...LEDE, maxWidth: 680, margin: "14px 0 0" }}>{t("blog.indexLead")}</p>
       </header>
 
-      <LeadStory post={lead} t={t} lang={LANG} layout="wide" level={2} priority />
+      {lead ? <LeadStory post={lead} t={t} lang={LANG} layout="wide" level={2} priority /> : null}
 
       {rest.length > 0 ? (
         <section style={{ marginTop: "clamp(40px,6vw,64px)" }}>

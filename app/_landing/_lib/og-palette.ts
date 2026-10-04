@@ -1,5 +1,10 @@
 import type { BlogCategory } from "@/lib/blog";
 
+/* Shared by the two share cards the public site draws: an article's
+   (app/blog/[slug]/opengraph-image.tsx) and a free-practice page's
+   (app/practice/[skill]/opengraph-image.tsx), which wears its skill's cover —
+   see SKILL_COVER_CATEGORY in ./design. */
+
 /**
  * The share card's colours — hex, not tokens, and deliberately so.
  *

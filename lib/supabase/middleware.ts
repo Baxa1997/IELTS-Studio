@@ -14,7 +14,7 @@ const REFERRAL_COOKIE_DAYS = 90;
  *  so not importable here); a test fails if the two names drift. */
 const VISITOR_COOKIE = "ep_visitor";
 /** Where the free daily practice lives — the only paths that need a visitor id. */
-const FREE_PRACTICE_PATHS = ["/practice", "/read/free", "/listen/free", "/write/free", "/api/public/practice"];
+const FREE_PRACTICE_PATHS = ["/practice", "/read/free", "/listen/free", "/write/free", "/cefr/free", "/api/public/practice"];
 
 // Pages reachable without a session. Everything else requires authentication.
 // `/auth` covers the OAuth callback, which must run before a session exists.
@@ -58,7 +58,7 @@ const PUBLIC_PATHS = [
   "/p",
   "/auth",
   "/grade",
-  /* The free practice: the practice pages and the three runners (the same
+  /* The free practice: the practice pages and the four runners (the same
      studios a learner uses, opened by practice id). A visitor without an
      account is the whole point of them, so a redirect to /sign-in here would
      defeat the feature; /api paths pass through on their own. */
@@ -66,6 +66,8 @@ const PUBLIC_PATHS = [
   "/read/free",
   "/listen/free",
   "/write/free",
+  // Only the free runner under /cefr — the CEFR hub itself stays signed-in.
+  "/cefr/free",
   // The documentation front page. A public route MUST be listed here or the
   // middleware 307s every logged-out visitor and every crawler to /sign-in —
   // which is exactly what still happens to /pricing.

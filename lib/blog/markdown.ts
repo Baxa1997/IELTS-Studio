@@ -1,4 +1,6 @@
 import { CATEGORY_LABEL, formatPostDate, type Block, type BlogPost } from ".";
+import { FREE_PAGE_TITLE, freePracticePage } from "@/lib/free-practice/links";
+import { isFreeSkill } from "@/lib/free-practice/rotation";
 import { en } from "@/lib/i18n/messages/en";
 
 /**
@@ -30,6 +32,10 @@ export function postToMarkdown(post: BlogPost, absolute: (path: string) => strin
     for (const f of post.faq) out.push(`### ${f.q}`, "", f.a, "");
   }
   if (post.cta) out.push(`${post.cta.text} [${post.cta.label}](${absolute(post.cta.href)})`, "");
+  // The article's free practice, as the page links it (FreePracticeNote).
+  if (post.skill && isFreeSkill(post.skill)) {
+    out.push(`Practise it free: [${en[FREE_PAGE_TITLE[post.skill]]}](${absolute(freePracticePage(post.skill))})`, "");
+  }
   return out.join("\n").replace(/\n{3,}/g, "\n\n").trim() + "\n";
 }
 

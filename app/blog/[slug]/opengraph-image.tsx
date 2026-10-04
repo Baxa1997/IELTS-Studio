@@ -1,10 +1,11 @@
 import { ImageResponse } from "next/og";
 
-import { CATEGORY_LABEL, getPost } from "@/lib/blog";
+import { CATEGORY_LABEL } from "@/lib/blog";
+import { loadPost } from "@/lib/blog/store";
 import { en } from "@/lib/i18n/messages/en";
 import { absoluteUrl } from "@/lib/seo";
 
-import { OG_COVER, OG_INK } from "./_lib/og-palette";
+import { OG_COVER, OG_INK } from "@/app/_landing/_lib/og-palette";
 
 /**
  * The card a shared article link unfurls into — on Telegram above all, where
@@ -17,7 +18,8 @@ import { OG_COVER, OG_INK } from "./_lib/og-palette";
  *
  * Next serves this as og:image for `/blog/[slug]` and it overrides anything
  * `generateMetadata` says (file-based metadata wins). Static: no request-time
- * API is touched, so each card is drawn once and cached.
+ * API is touched, so each card is drawn once and cached — under the post
+ * list's `blog` tag, so an edited headline redraws its card.
  *
  * ⚠️ SATORI, NOT A BROWSER. Every element with more than one child needs
  * `display: flex` or the render throws, and only a subset of CSS exists — no
@@ -36,7 +38,7 @@ function titleSize(title: string): number {
 }
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
-  const post = getPost((await params).slug);
+  const post = await loadPost((await params).slug);
   // A plain 404 rather than notFound(): this is a route handler, not a page,
   // and a Response is the one return it is certain to honour.
   if (!post) return new Response("Not found", { status: 404 });

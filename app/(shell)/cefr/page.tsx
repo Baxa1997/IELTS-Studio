@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 
+import { MultilevelClient } from "@/shared/components/cefr/multilevel-client";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
-
-import { MultilevelClient } from "./_components/multilevel-client";
 
 export const dynamic = "force-dynamic";
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mixSlots } from "./mix";
+import { alternate, mixSlots } from "./mix";
 import { FREE_LIST_SIZE } from "./rotation";
 
 /** Every window of `size` consecutive slots, wrapping — which is what a
@@ -53,5 +53,13 @@ describe("the full-and-part mix (owner, 2026-09-27: full practice, some parts mi
     const pool = mixSlots([3, 0, 3, 0]);
     expect(pool.filter((s) => s.part !== null).every((s) => s.test % 2 === 0)).toBe(true);
     expect(mixSlots([])).toEqual([]);
+  });
+});
+
+describe("alternate — the CEFR pool's Reading/Writing order", () => {
+  it("takes the two lists in turn, then the rest of the longer one", () => {
+    expect(alternate<string | number>([1, 2, 3, 4], ["a", "b"])).toEqual([1, "a", 2, "b", 3, 4]);
+    expect(alternate([], ["a"])).toEqual(["a"]);
+    expect(alternate([], [])).toEqual([]);
   });
 });

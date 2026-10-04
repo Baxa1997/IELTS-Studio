@@ -16,6 +16,8 @@ const CRUMBS: Record<string, string> = {
   "/admin": "Platform · Overview",
   "/admin/centers": "Platform · Education centers",
   "/admin/users": "Platform · Users",
+  "/admin/blog": "Platform · Blog",
+  "/admin/blog/new": "Platform · Blog · new post",
   "/admin/plans": "Operations · Plans & revenue",
   "/admin/moderation": "Operations · Moderation",
   "/admin/health": "Operations · System health",
@@ -29,7 +31,9 @@ export function HeaderCrumb() {
     exact ??
     (pathname.startsWith("/admin/centers/")
       ? "Platform · Centers · this center"
-      : `Platform · ${pathname.replace("/admin/", "").replace(/\//g, " · ") || "Overview"}`);
+      : pathname.startsWith("/admin/blog/")
+        ? "Platform · Blog · this post"
+        : `Platform · ${pathname.replace("/admin/", "").replace(/\//g, " · ") || "Overview"}`);
 
   return <div style={{ fontSize: 12.5, color: MUTED }}>{crumb}</div>;
 }

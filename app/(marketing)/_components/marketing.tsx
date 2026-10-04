@@ -8,6 +8,7 @@
 import Link from "next/link";
 
 import { postsForSkill, type BlogSkill } from "@/lib/blog";
+import { loadPosts } from "@/lib/blog/store";
 import { CONTACT_EMAIL } from "@/lib/contact";
 import { translator } from "@/lib/i18n";
 import { SOURCE_LOCALE } from "@/lib/i18n/locales";
@@ -144,8 +145,8 @@ export function Faq({ items }: { items: { q: string; a: string }[] }) {
  * so publishing a reading article adds it here with no edit. Renders nothing
  * for a skill with no posts yet.
  */
-export function FromTheBlog({ skill }: { skill: BlogSkill }) {
-  const posts = postsForSkill(skill);
+export async function FromTheBlog({ skill }: { skill: BlogSkill }) {
+  const posts = postsForSkill(await loadPosts(), skill);
   if (!posts.length) return null;
   const t = translator(SOURCE_LOCALE);
   return (

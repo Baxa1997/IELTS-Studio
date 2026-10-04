@@ -19,6 +19,7 @@ import type { FreeSkill } from "./rotation";
  */
 export const VISITOR_COOKIE = "ep_visitor";
 export const DONE_COOKIE = "ep_free_done";
+export const SPENT_ON_COOKIE = "ep_free_on";
 
 /**
  * Who this visitor is, for the rotation: the cookie the proxy issues on the
@@ -72,6 +73,38 @@ export function writeDone(current: Set<FreeSkill>, skill: FreeSkill, day: string
 /** What this visitor has finished today. */
 export async function doneToday(day: string): Promise<Set<FreeSkill>> {
   return readDone((await cookies()).get(DONE_COOKIE)?.value, day);
+}
+
+/* ── which practice today's free use went on ─────────────────────────────── *
+ *
+ * A CEFR Writing paper is three tasks, graded one at a time. The first grade
+ * marks the day done — and without this record, the done mark would then
+ * refuse the paper's other two tasks: the visitor would get a third of the
+ * practice they were given. So the route also records WHICH paper the day
+ * went on, and a done day still lets that one paper finish. Signed like the
+ * done record, for the same reason.
+ */
+
+/** Parse `day:skill:key.sig` — the key, or null when it is for another day,
+ *  another skill, unsigned or malformed. */
+export function readSpentOn(raw: string | undefined, day: string, skill: FreeSkill): string | null {
+  if (!raw) return null;
+  const dot = raw.lastIndexOf(".");
+  if (dot < 0) return null;
+  const payload = raw.slice(0, dot);
+  if (sign(payload) !== raw.slice(dot + 1)) return null;
+  const [d, sk, ...rest] = payload.split(":");
+  return d === day && sk === skill && rest.length ? rest.join(":") : null;
+}
+
+export function writeSpentOn(day: string, skill: FreeSkill, key: string): string {
+  const payload = `${day}:${skill}:${key}`;
+  return `${payload}.${sign(payload)}`;
+}
+
+/** The practice today's free `skill` went on, or null. */
+export async function spentOnToday(day: string, skill: FreeSkill): Promise<string | null> {
+  return readSpentOn((await cookies()).get(SPENT_ON_COOKIE)?.value, day, skill);
 }
 
 /** Cookie options for the done record: it only has to outlive today. */

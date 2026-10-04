@@ -26,7 +26,7 @@ const GRIDS = [
   "app/(shell)/read/_components/read-hub.tsx",
   "app/(shell)/write/_components/library.tsx",
   "shared/components/listening/listening-client.tsx",
-  "app/(shell)/cefr/_components/multilevel-client.tsx",
+  "shared/components/cefr/multilevel-client.tsx",
   "shared/components/assignments/assigned-hub.tsx",
   "shared/components/app-shell/page-skeleton.tsx",
   "app/(shell)/listen/loading.tsx",

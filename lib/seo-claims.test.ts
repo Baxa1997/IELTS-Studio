@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { sourceFiles } from "@/test/source-files";
+import { ACCURACY_CLAIM } from "@/lib/blog/validate";
 
 import { PLATFORM_FEATURES, SEO_KEYWORDS } from "./seo";
 
@@ -40,16 +40,17 @@ const PUBLIC = [
   "app/(marketing)/ielts-speaking-practice/page.tsx",
   "lib/seo.ts",
   "lib/i18n/messages/en.ts",
-  // Every blog post, found rather than listed — a new article about the grader
-  // is exactly where this claim would come back.
-  ...sourceFiles("lib/blog/posts").filter((f) => f.endsWith(".ts")),
+  // The articles that moved from code into the database came in through this
+  // migration. Posts written since are held to the same pattern on publish —
+  // `publishProblems` in lib/blog/validate.ts uses ACCURACY_CLAIM too.
+  "supabase/migrations/20261004120000_blog_posts.sql",
 ];
 
 describe("claims about grading accuracy", () => {
   it.runIf(unverified)("make no measured-accuracy claim while the anchors are unverified", () => {
     for (const file of PUBLIC) {
       const text = copy(file);
-      expect(text, file).not.toMatch(/±\s*0\.5|within (about )?half a band|calibrated against expert/i);
+      expect(text, file).not.toMatch(ACCURACY_CLAIM);
     }
   });
 

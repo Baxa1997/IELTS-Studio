@@ -1,3 +1,5 @@
+import type { MessageKey } from "@/lib/i18n";
+
 import { FREE_SKILLS, type FreeSkill } from "./rotation";
 
 /** Every skill the free section shows, Speaking included — it is the locked one. */
@@ -17,6 +19,7 @@ export const FREE_RUNNER_BASE: Record<FreeSkill, string> = {
   writing: "/write/free",
   reading: "/read/free",
   listening: "/listen/free",
+  cefr: "/cefr/free",
 };
 
 /** One practice's runner: `/read/free/<passageId>` and so on. */
@@ -26,11 +29,30 @@ export const freeRunner = (skill: FreeSkill, key: string) =>
 /** The listing page of dated cards for a skill. */
 export const freePracticePage = (skill: FreeSkill) => `/practice/${skill}`;
 
+/** Each listing page's name — its heading, its <title>, and what an article
+ *  about the skill calls it when it links there. */
+export const FREE_PAGE_TITLE: Record<FreeSkill, MessageKey> = {
+  writing: "free.pageTitleWriting",
+  reading: "free.pageTitleReading",
+  listening: "free.pageTitleListening",
+  cefr: "free.pageTitleCefr",
+};
+
+/** Each listing page's description — its meta description, its share card's
+ *  line, and what llms.txt says about it. */
+export const FREE_PAGE_DESCRIPTION: Record<FreeSkill, MessageKey> = {
+  writing: "free.metaDescWriting",
+  reading: "free.metaDescReading",
+  listening: "free.metaDescListening",
+  cefr: "free.metaDescCefr",
+};
+
 /** The signed-in home of each skill — where "sign in" should land. */
 export const SKILL_HUB: Record<PracticeCardSkill, string> = {
   writing: "/write",
   reading: "/read",
   listening: "/listen",
+  cefr: "/cefr",
   speaking: "/speak",
 };
 

@@ -1,4 +1,5 @@
-import { CATEGORY_LABEL, POSTS } from "@/lib/blog";
+import { CATEGORY_LABEL } from "@/lib/blog";
+import { loadPosts } from "@/lib/blog/store";
 import { translator } from "@/lib/i18n";
 import { SOURCE_LOCALE } from "@/lib/i18n/locales";
 import { absoluteUrl } from "@/lib/seo";
@@ -18,6 +19,9 @@ import { FEED_PATH } from "../_lib/metadata";
  * must not tell every reader something is new.
  */
 export const dynamic = "force-static";
+// Built from the cached post list; a save in /admin refreshes it under the
+// `blog` tag, and the hour is the backstop.
+export const revalidate = 3600;
 
 const t = translator(SOURCE_LOCALE);
 
@@ -36,11 +40,12 @@ function xmlEscape(s: string): string {
 /** RFC 822 dates, which RSS requires: `Sat, 26 Sep 2026 00:00:00 GMT`. */
 const rfc822 = (iso: string) => new Date(`${iso}T00:00:00Z`).toUTCString();
 
-export function GET(): Response {
+export async function GET(): Promise<Response> {
+  const posts = await loadPosts();
   const blog = absoluteUrl("/blog");
-  const newest = POSTS.map((p) => p.updated ?? p.published).sort().at(-1);
+  const newest = posts.map((p) => p.updated ?? p.published).sort().at(-1);
 
-  const items = POSTS.map((p) => {
+  const items = posts.map((p) => {
     const url = absoluteUrl(`/blog/${p.slug}`);
     return [
       "<item>",

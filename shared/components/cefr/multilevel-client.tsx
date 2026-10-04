@@ -27,11 +27,16 @@ import {
   X,
 } from "lucide-react";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { FreeTrialCard, FreeTrialStrip } from "@/shared/components/practice/free-trial-nudge";
 import { Typewriter } from "@/shared/components/typewriter";
 import { AiGenerateSection, AiGenerateButton } from "@/shared/components/ai-generate-section";
 import { UpgradeNotice } from "@/shared/components/billing/upgrade-notice";
 import { Timer } from "@/shared/components/exam/timer";
 import { engineClient } from "@/lib/engine/client";
+import type { FreeTrialCopy } from "@/lib/free-practice/copy";
 import { WordLookup } from "@/shared/components/reading/word-lookup";
 import {
   BRAND,
@@ -144,7 +149,7 @@ type P5 = {
   mcq: { number: number; stem: string; options: Options }[];
 };
 type ReadingPart = P1 | P2 | P3 | P4 | P5;
-type ReadingPaper = { id: string; paper: "reading"; parts: ReadingPart[] };
+export type ReadingPaper = { id: string; paper: "reading"; parts: ReadingPart[] };
 
 type QResult = {
   number: number;
@@ -174,7 +179,7 @@ type WritingTask = {
   question?: string;
   forum_context?: string;
 };
-type WritingPaper = { id: string; paper: "writing"; tasks: WritingTask[] };
+export type WritingPaper = { id: string; paper: "writing"; tasks: WritingTask[] };
 type WritingGrade = {
   task_id: string;
   gradable: boolean;
@@ -197,6 +202,70 @@ type WritingGrade = {
   corrected_sentences?: { original: string; improved: string }[];
   examiner_comment?: string;
 };
+
+// ---- The free daily practice (a visitor with no account) ---------------------
+
+/**
+ * Today's free CEFR paper (/cefr/free/[key]) — the same runners, the same
+ * marking, for a visitor with no account.
+ *
+ * What changes in public mode, and why:
+ *  - marking goes to the APP's route (`submitUrl`), never the engine: the
+ *    visitor has no token, and the route is what checks that this paper is on
+ *    their list today before the engine is asked to mark it;
+ *  - no coach and no word lookup — both are signed-in features behind
+ *    signed-in APIs;
+ *  - no "New paper": a visitor cannot generate one. The way on is the list,
+ *    and the sign-in recommendation (owner, 2026-09-27) — a strip while
+ *    practising and a card on the result, as in every free runner.
+ */
+export interface CefrPublicMode {
+  submitUrl: string;
+  /** This practice's key on the visitor's list today — what the route checks. */
+  practiceKey: string;
+  /** The visitor's list of free practices. */
+  exitHref: string;
+  copy: FreeTrialCopy;
+}
+
+/** What the marking route's refusals mean, in words a visitor can act on. */
+const PUBLIC_ERRORS: Record<string, string> = {
+  daily_done: "Today's free practice is already used. Sign in to get more free practices.",
+  not_today: "This practice is no longer on today's list — open it again from the list.",
+  rate_limited: "Too many free gradings from this network today. Sign in to keep practising.",
+  busy: "The grader is very busy right now. Please try again in a few minutes.",
+  too_short: "Write a little more before submitting.",
+  too_long: "That answer is far longer than the task asks for.",
+  unavailable: "Marking is not available right now. Please try again later.",
+};
+
+async function postPublic<T>(mode: CefrPublicMode, body: Record<string, unknown>): Promise<T> {
+  const res = await fetch(mode.submitUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key: mode.practiceKey, ...body }),
+  });
+  const data = (await res.json().catch(() => ({}))) as { error?: string } & T;
+  if (!res.ok) throw new Error(PUBLIC_ERRORS[data.error ?? ""] ?? "Marking failed. Please try again.");
+  return data;
+}
+
+/** One shared paper, Reading or Writing, in public mode. */
+export function PublicCefrRunner({
+  paper,
+  publicMode,
+}: {
+  paper: ReadingPaper | WritingPaper;
+  publicMode: CefrPublicMode;
+}) {
+  const router = useRouter();
+  const exit = () => router.push(publicMode.exitHref);
+  return paper.paper === "reading" ? (
+    <ReadingRunner paper={paper} mode="full" regenBusy={false} onNew={exit} onExit={exit} publicMode={publicMode} />
+  ) : (
+    <WritingRunner paper={paper} regenBusy={false} onNew={exit} onExit={exit} publicMode={publicMode} />
+  );
+}
 
 // ---- Top-level -------------------------------------------------------------
 
@@ -1438,18 +1507,21 @@ function ReadingRunner({
   regenBusy,
   onNew,
   onExit,
+  publicMode,
 }: {
   paper: ReadingPaper;
   mode: ReadingMode;
   regenBusy: boolean;
   onNew: () => void;
   onExit: () => void;
+  publicMode?: CefrPublicMode;
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [grade, setGrade] = useState<ReadingGrade | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [coachOpen, setCoachOpen] = useState(true);
+  // No coach for a visitor: it is a signed-in feature behind a signed-in API.
+  const [coachOpen, setCoachOpen] = useState(!publicMode);
   const [active, setActive] = useState(0); // index into paper.parts — which part is showing
   const [cur, setCur] = useState<number | null>(null); // currently focused question number
   const passageRef = useRef<HTMLDivElement | null>(null);
@@ -1479,7 +1551,9 @@ function ReadingRunner({
     setBusy(true);
     setError(null);
     try {
-      const res = await callEngine<ReadingGrade>("reading/grade", { item_id: paper.id, answers });
+      const res = publicMode
+        ? await postPublic<ReadingGrade>(publicMode, { answers })
+        : await callEngine<ReadingGrade>("reading/grade", { item_id: paper.id, answers });
       setGrade(res);
       passageRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
@@ -1559,6 +1633,7 @@ function ReadingRunner({
       {/* Highlighter pens — transparent fills painted by the CSS Custom Highlight API. */}
       {/* Lighter washes in dark, where the passage text is near-white — see the note on
           HIGHLIGHT_CSS in app/(studio)/read/_components/highlighter.tsx. */}
+      {publicMode ? <FreeTrialStrip copy={publicMode.copy} /> : null}
       <style>{`::highlight(cefr-hl-yellow){background-color:rgba(253,224,71,.5)}::highlight(cefr-hl-green){background-color:rgba(134,239,172,.55)}::highlight(cefr-hl-pink){background-color:rgba(249,168,212,.55)}::highlight(cefr-hl-blue){background-color:rgba(147,197,253,.6)}.dark ::highlight(cefr-hl-yellow){background-color:rgba(253,224,71,.3)}.dark ::highlight(cefr-hl-green){background-color:rgba(134,239,172,.3)}.dark ::highlight(cefr-hl-pink){background-color:rgba(249,168,212,.3)}.dark ::highlight(cefr-hl-blue){background-color:rgba(147,197,253,.32)}`}</style>
 
       {/* Header (dark, in both themes) */}
@@ -1712,6 +1787,10 @@ function ReadingRunner({
           >
             {busy ? "Marking…" : "Submit answers"}
           </button>
+        ) : publicMode ? (
+          <Link href={publicMode.exitHref} style={{ ...dsSubmitBtn(false), textDecoration: "none" }}>
+            All free practice
+          </Link>
         ) : (
           <button type="button" onClick={onNew} disabled={regenBusy} style={dsSubmitBtn(regenBusy)}>
             {regenBusy ? "Generating…" : "New paper"}
@@ -1783,6 +1862,7 @@ function ReadingRunner({
           >
             {answeredCount} / {total}
           </span>
+          {publicMode ? null : (
           <button
             type="button"
             onClick={() => setCoachOpen((o) => !o)}
@@ -1812,11 +1892,13 @@ function ReadingRunner({
               </>
             )}
           </button>
+          )}
         </div>
       </div>
 
       {graded ? (
         <div style={{ padding: "14px clamp(16px,3vw,32px) 0", flexShrink: 0 }}>
+          {publicMode ? <FreeTrialCard copy={publicMode.copy} /> : null}
           <ScoreBanner score={grade.score} max={grade.max_score} level={grade.indicative_cefr} />
         </div>
       ) : null}
@@ -2039,7 +2121,7 @@ function ReadingRunner({
       {/* In-passage word lookup + translate. Mounted inside the runner root so it
           survives OS fullscreen; suppressed while a highlighter pen is active so a
           drag marks text instead of popping the dictionary. */}
-      {hl.tool === null ? (
+      {hl.tool === null && !publicMode ? (
         <WordLookup getContainer={() => passageRef.current} contextText={coach.body} />
       ) : null}
     </div>
@@ -3058,11 +3140,13 @@ function WritingRunner({
   regenBusy,
   onNew,
   onExit,
+  publicMode,
 }: {
   paper: WritingPaper;
   regenBusy: boolean;
   onNew: () => void;
   onExit: () => void;
+  publicMode?: CefrPublicMode;
 }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -3090,6 +3174,7 @@ function WritingRunner({
       regenBusy={regenBusy}
       onNew={onNew}
       onExit={onExit}
+      publicMode={publicMode}
     />
   );
 }
@@ -3107,6 +3192,7 @@ function TaskStudio({
   regenBusy,
   onNew,
   onExit,
+  publicMode,
 }: {
   itemId: string;
   tasks: WritingTask[];
@@ -3120,12 +3206,14 @@ function TaskStudio({
   regenBusy: boolean;
   onNew: () => void;
   onExit: () => void;
+  publicMode?: CefrPublicMode;
 }) {
   const task = tasks[activeIdx];
   const [view, setView] = useState<"write" | "result">(grade?.gradable ? "result" : "write");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [coachOpen, setCoachOpen] = useState(true);
+  // No coach for a visitor: it is a signed-in feature behind a signed-in API.
+  const [coachOpen, setCoachOpen] = useState(!publicMode);
   const draftRef = useRef(answer);
   useEffect(() => {
     draftRef.current = answer;
@@ -3157,11 +3245,13 @@ function TaskStudio({
     setSubmitting(true);
     setMessage(null);
     try {
-      const g = await callEngine<WritingGrade>("writing/grade", {
-        item_id: itemId,
-        task_id: task.task,
-        answer: draftRef.current,
-      });
+      const g = publicMode
+        ? await postPublic<WritingGrade>(publicMode, { taskId: task.task, answer: draftRef.current })
+        : await callEngine<WritingGrade>("writing/grade", {
+            item_id: itemId,
+            task_id: task.task,
+            answer: draftRef.current,
+          });
       onGraded(g);
       if (g.gradable) setView("result");
       else
@@ -3174,7 +3264,7 @@ function TaskStudio({
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, itemId, task.task, onGraded]);
+  }, [submitting, itemId, task.task, onGraded, publicMode]);
 
   // Stable onExpire so the timer interval is set once (mirrors the reading runner).
   const submitRef = useRef(submit);
@@ -3209,6 +3299,7 @@ function TaskStudio({
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap"
       />
       {submitting ? <CefrGradingOverlay /> : null}
+      {publicMode ? <FreeTrialStrip copy={publicMode.copy} /> : null}
 
       {/* header */}
       <header
@@ -3396,7 +3487,13 @@ function TaskStudio({
             </div>
           ) : null}
           <div style={{ width: 1, height: 24, background: W_LINE }} />
-          {showResult ? (
+          {showResult && publicMode ? (
+            /* A free grade is a model call: one per task, no re-grade. The
+               paper's other tasks stay open from the switcher. */
+            <Link href={publicMode.exitHref} style={{ ...wPrimaryBtn(false), textDecoration: "none" }}>
+              All free practice
+            </Link>
+          ) : showResult ? (
             <>
               <button type="button" onClick={() => setView("write")} style={wGhostBtn}>
                 Revise answer
@@ -3489,6 +3586,7 @@ function TaskStudio({
                 padding: "clamp(20px,2.6vw,30px)",
               }}
             >
+              {publicMode ? <FreeTrialCard copy={publicMode.copy} /> : null}
               <WritingResult g={grade} />
             </div>
           </main>
@@ -3671,7 +3769,7 @@ function TaskStudio({
               onClose={() => setCoachOpen(false)}
             />
           </aside>
-        ) : (
+        ) : publicMode ? null : (
           <button
             type="button"
             onClick={() => setCoachOpen(true)}

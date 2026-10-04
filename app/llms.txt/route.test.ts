@@ -6,20 +6,33 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { PLAN_ORDER, planTier } from "@/lib/billing/plans";
+import { seededPosts } from "@/test/blog-seed";
 import { absoluteUrl, PLATFORM_FEATURES, PUBLIC_ROUTES } from "@/lib/seo";
 
 import { GET } from "./route";
 
-const body = await GET().text();
+/* Tests have no database: the store hands back the posts the blog migration
+   seeds — the same list production started from. */
+vi.mock("@/lib/blog/store", async () => {
+  const { seededPosts } = await import("@/test/blog-seed");
+  const posts = seededPosts();
+  return { loadPosts: async () => posts, loadPost: async (slug: string) => posts.find((p) => p.slug === slug) };
+});
+
+const body = await (await GET()).text();
 
 describe("/llms.txt", () => {
   it("carries every capability, page and plan the rest of the site publishes", () => {
     for (const f of PLATFORM_FEATURES) expect(body).toContain(f);
     for (const r of PUBLIC_ROUTES) expect(body).toContain(`(${absoluteUrl(r.path)})`);
     for (const id of PLAN_ORDER) expect(body).toContain(`- ${planTier(id).name}:`);
+  });
+
+  it("lists every published article, from the database", () => {
+    for (const p of seededPosts()) expect(body).toContain(`(${absoluteUrl(`/blog/${p.slug}`)})`);
   });
 
   it("states it is not the official exam — CLAUDE.md's disclaimer, on every surface", () => {

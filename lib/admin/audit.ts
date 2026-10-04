@@ -45,7 +45,13 @@ export type AuditAction =
      base, when, and saying what" has no other record, and the detail carries
      the subject and the headcount so the answer does not depend on the
      broadcast row still existing. */
-  | "platform.broadcast";
+  | "platform.broadcast"
+  /* A blog post going public, coming down, or being deleted — what the
+     company says in its own name. Draft saves are not logged: they are
+     nobody's business until a reader can see them. */
+  | "blog.publish"
+  | "blog.unpublish"
+  | "blog.delete";
 
 export interface AuditEntry {
   action: AuditAction;

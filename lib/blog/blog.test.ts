@@ -1,273 +1,234 @@
 /**
- * The blog's invariants — the things a new post can get wrong without anything
+ * The blog's invariants — the things a post can get wrong without anything
  * else noticing.
  *
- * Posts are code (see ./types.ts), so there is no editor to validate them; this
- * file is the editor. Each rule here is one a post author will break sooner or
- * later: a slug copied from another post, a date typed in the wrong order, a
- * link to a page that was renamed, or inline markup the renderer cannot read
- * and would print as literal asterisks.
+ * Posts live in the database now (see ./types.ts), so the rules that used to be
+ * this file run on publish instead — `publishProblems` in ./validate. This file
+ * pins those rules: every seeded post passes them, and each rule is broken on
+ * purpose below and must catch it. A rule that stops catching its own bug is
+ * how a translated paragraph or a dead link would reach the site unnoticed.
  *
- * Whether the pages are reachable — public, in the sitemap, static — is
+ * Whether the pages are reachable — public, in the sitemap — is
  * `app/blog/blog-routes.test.ts`: lib/ may not import from app/.
  */
 
 import { describe, expect, it } from "vitest";
 
 import { en } from "@/lib/i18n/messages/en";
-import { PUBLIC_ROUTES } from "@/lib/seo";
+import { seededPosts } from "@/test/blog-seed";
 
 import {
   CATEGORIES,
   CATEGORY_LABEL,
+  findPost,
   formatPostDate,
-  getPost,
   headingId,
   leadPost,
   otherPosts,
-  POSTS,
   postsForSkill,
   readingMinutes,
   relatedPosts,
   SKILL_TOPIC,
-  type Block,
   type BlogPost,
   type BlogSkill,
 } from ".";
 import { parseInline, plainText } from "./inline";
 import { postToMarkdown } from "./markdown";
+import { blocksToSource, faqToSource, sourceToBlocks, sourceToFaq, sourceToSummary, summaryToSource } from "./source";
+import { draftProblems, publishProblems, RESERVED_SLUGS } from "./validate";
 
-/** Every string in a post that goes through `parseInline`. */
-function inlineStrings(post: BlogPost): string[] {
-  const of = (b: Block): string[] => {
-    switch (b.type) {
-      case "p":
-      case "h2":
-        return [b.text];
-      case "list":
-        return b.items;
-      case "quote":
-        return [b.text];
-      case "tip":
-        return [b.title, b.text];
-      case "example":
-        return [...(b.title ? [b.title] : []), ...b.rows.map((r) => r.text)];
-    }
-  };
-  return post.body.flatMap(of);
-}
+const POSTS = seededPosts();
+const slugsBut = (p: BlogPost) => POSTS.filter((x) => x.slug !== p.slug).map((x) => x.slug);
+const problems = (p: BlogPost) => publishProblems(p, slugsBut(p));
 
-/** Every string of a post a reader can see, markup removed. */
-function allText(post: BlogPost): string[] {
-  return [
-    post.title,
-    post.standfirst,
-    post.author,
-    post.cover.kicker,
-    ...(post.image ? [post.image.alt, post.image.credit ?? ""] : []),
-    ...inlineStrings(post),
-    ...post.body.flatMap((b) => (b.type === "example" ? b.rows.map((r) => r.label) : [])),
-    ...post.body.flatMap((b) => (b.type === "quote" && b.cite ? [b.cite] : [])),
-    ...(post.cta ? [post.cta.title, post.cta.text, post.cta.label] : []),
-    ...post.summary,
-    ...(post.faq ?? []).flatMap((f) => [f.q, f.a]),
-  ].map(plainText);
-}
+/** A seeded post to break, deep-copied so one test's damage stays in it. */
+const base = (): BlogPost => structuredClone(POSTS.find((p) => p.faq?.length && p.cta) ?? POSTS[0]);
+/** The post with one paragraph swapped for `text`. */
+const withParagraph = (text: string): BlogPost => {
+  const p = base();
+  const i = p.body.findIndex((b) => b.type === "p");
+  p.body[i] = { type: "p", text };
+  return p;
+};
 
-/**
- * English function words — the small words that make up a third or more of
- * any English prose and almost none of Uzbek or Russian. Not a language
- * detector; a tripwire, calibrated on the published posts.
- */
-const FUNCTION_WORDS = new Set(
-  (
-    "the a an and or but of to in on at for with from by is are was were be been it that this " +
-    "these those you your not as if what how why when do does can will one have has there they " +
-    "we our their its than then so no more into about each every which who"
-  ).split(" "),
-);
-
-/** Share of `text`'s words that are English function words, and how many words it has. */
-function englishShare(text: string): { share: number; words: number } {
-  const words = text.toLowerCase().match(/[a-z]+(?:'[a-z]+)?/g) ?? [];
-  const hits = words.filter((w) => FUNCTION_WORDS.has(w)).length;
-  return { share: words.length ? hits / words.length : 0, words: words.length };
-}
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const isRealDate = (s: string) =>
-  ISO_DATE.test(s) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s);
-
-describe("the posts", () => {
+describe("the seeded posts", () => {
   it("exist", () => {
     expect(POSTS.length).toBeGreaterThan(0);
   });
 
-  describe("are written in English — every one, every string", () => {
-    /* THE OWNER'S RULE (2026-09-26): every article is in English. The blog is
-       reading practice for people learning English, so a translated article
-       defeats it — and on an Uzbek-default site, translating "for the audience"
-       is exactly the helpful-looking change somebody will make. Only the chrome
-       around the articles is localised (`blog.*` keys). */
-
-    it("uses no Cyrillic and no Uzbek letters", () => {
-      // ʻ (U+02BB) and ʼ (U+02BC) are how Uzbek Latin writes oʻ, gʻ and the
-      // tutuq belgisi; English never needs them. Other Latin letters stay
-      // allowed — Čapek and sælig are English text quoting other languages.
-      for (const p of POSTS) {
-        for (const s of allText(p)) {
-          expect(s, `${p.slug}: Cyrillic in "${s}"`).not.toMatch(/[Ѐ-ӿ]/);
-          expect(s, `${p.slug}: Uzbek letter in "${s}"`).not.toMatch(/[ʻʼ]/);
-        }
-      }
-    });
-
-    it("reads as English paragraph by paragraph", () => {
-      /* Per paragraph, so ONE translated paragraph in an English post is still
-         caught. Only paragraphs of 20+ words: short note-style lines ("Free
-         entry widens access — students, families") legitimately have no
-         function words at all. The lowest published paragraph scores 0.19;
-         Uzbek scores 0. */
-      for (const p of POSTS) {
-        for (const s of allText(p)) {
-          const { share, words } = englishShare(s);
-          if (words < 20) continue;
-          expect(share, `${p.slug}: not English? "${s.slice(0, 80)}…"`).toBeGreaterThanOrEqual(0.12);
-        }
-      }
-    });
-
-    it("reads as English as a whole", () => {
-      for (const p of POSTS) {
-        const { share } = englishShare(allText(p).join(" "));
-        expect(share, `${p.slug}: ${share.toFixed(2)}`).toBeGreaterThanOrEqual(0.25);
-      }
-    });
+  it.each(POSTS.map((p) => [p.slug, p] as const))("%s passes every publishing check", (_slug, p) => {
+    expect(problems(p)).toEqual([]);
   });
 
-  it("have unique, URL-safe slugs", () => {
-    const slugs = POSTS.map((p) => p.slug);
-    expect(new Set(slugs).size).toBe(slugs.length);
-    for (const s of slugs) expect(s).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-  });
-
-  it("have real dates, and an update never precedes publication", () => {
-    for (const p of POSTS) {
-      expect(isRealDate(p.published), `${p.slug}: published ${p.published}`).toBe(true);
-      if (p.updated) {
-        expect(isRealDate(p.updated), `${p.slug}: updated ${p.updated}`).toBe(true);
-        expect(p.updated >= p.published, `${p.slug}: updated before published`).toBe(true);
-      }
-    }
-  });
-
-  it("are sorted newest first", () => {
-    for (let i = 1; i < POSTS.length; i++) {
-      expect(POSTS[i - 1].published >= POSTS[i].published).toBe(true);
-    }
-  });
-
-  it("feature at most one lead story", () => {
+  it("have unique slugs, and at most one lead story", () => {
+    expect(new Set(POSTS.map((p) => p.slug)).size).toBe(POSTS.length);
     expect(POSTS.filter((p) => p.featured).length).toBeLessThanOrEqual(1);
   });
 
-  it("keep the standfirst short enough to be the meta description", () => {
-    // Search results cut a description at roughly this length, and the
-    // standfirst is also the summary on every card.
-    for (const p of POSTS) expect(p.standfirst.length, p.slug).toBeLessThanOrEqual(200);
-  });
-
-  it("belong to a category that has a label", () => {
-    for (const p of POSTS) expect(CATEGORIES).toContain(p.category);
+  it("belong to categories that have a label", () => {
     for (const c of CATEGORIES) expect(en[CATEGORY_LABEL[c]]).toBeTruthy();
   });
+});
 
-  it("use only inline markup the renderer understands", () => {
-    /* ⚠️ THE FAILURE THIS EXISTS FOR IS SILENT. Nested markup — bold inside
-       italic — is not supported, and it does not throw: the parser matches the
-       wrong pair of asterisks and the page prints the leftovers. After parsing,
-       no marker may survive in a text span. */
-    for (const p of POSTS) {
-      for (const s of inlineStrings(p)) {
-        for (const span of parseInline(s)) {
-          if (span.kind !== "text") continue;
-          expect(span.text, `${p.slug}: stray markup in "${s}"`).not.toMatch(/\*|\]\(/);
-        }
-      }
-    }
+describe("publishing refuses a post that breaks a rule", () => {
+  /* Each case is one rule's own bug. If a rule is loosened until its bug gets
+     through, the case fails with the rule's name on it. */
+
+  it("a translated paragraph — the owner's every-article-in-English rule", () => {
+    const uzbek =
+      "Bu maqolada imtihonga qanday tayyorlanish haqida gapiramiz va har bir bosqichni batafsil " +
+      "tushuntiramiz chunki talabalar ko'pincha vaqtni noto'g'ri taqsimlaydi hamda savollarni oxirigacha o'qimaydi";
+    expect(problems(withParagraph(uzbek)).join("\n")).toMatch(/not read as English/i);
   });
 
-  it("link only to pages that exist", () => {
-    // Every public page, every article, and the blog front page. A hash is
-    // allowed on any of them; the page part must still resolve.
-    const known = new Set<string>([
-      ...PUBLIC_ROUTES.map((r) => r.path),
-      ...POSTS.map((p) => `/blog/${p.slug}`),
+  it("Cyrillic anywhere", () => {
+    const p = base();
+    p.title = "Как сдать IELTS";
+    expect(problems(p).join("\n")).toMatch(/Cyrillic/);
+  });
+
+  it("an Uzbek letter anywhere", () => {
+    const p = base();
+    p.standfirst = "Oʻzbekiston uchun.";
+    expect(problems(p).join("\n")).toMatch(/Uzbek letter/);
+  });
+
+  it("a slug that is not URL-safe, or is a page of its own", () => {
+    expect(draftProblems({ ...base(), slug: "Plan Task 2" }).join("\n")).toMatch(/slug/);
+    for (const s of RESERVED_SLUGS) expect(draftProblems({ ...base(), slug: s }).join("\n")).toMatch(/page of its own/);
+  });
+
+  it("an impossible date, or an update before publication", () => {
+    expect(draftProblems({ ...base(), published: "2026-02-30" }).join("\n")).toMatch(/real date/);
+    expect(draftProblems({ ...base(), published: "2026-09-26", updated: "2026-09-01" }).join("\n")).toMatch(
+      /before the publication date/,
+    );
+  });
+
+  it("a standfirst too long to be the meta description", () => {
+    expect(problems({ ...base(), standfirst: "Word ".repeat(50) }).join("\n")).toMatch(/keep it to 200/);
+  });
+
+  it("nested markup the renderer would print literally", () => {
+    expect(problems(withParagraph("The answer is *often **wrong** here* in the exam, so read it twice.")).join("\n")).toMatch(
+      /cannot render/,
+    );
+  });
+
+  it("a link to no page, or an insecure one", () => {
+    expect(problems(withParagraph("Read [this guide](/no-such-page) before the exam day.")).join("\n")).toMatch(
+      /goes to no page/,
+    );
+    expect(problems(withParagraph("Read [this guide](http://example.com) before the exam.")).join("\n")).toMatch(
+      /must be https/,
+    );
+  });
+
+  it("but not a link to another post or a hash on a real page", () => {
+    const other = slugsBut(base())[0];
+    expect(problems(withParagraph(`Read [this](/blog/${other}) and [that](/grade#top) first.`))).toEqual([]);
+  });
+
+  it("a summary point that leans on the one before it", () => {
+    const p = base();
+    p.summary = [...p.summary.slice(0, 1), "This is why the second point fails on its own."];
+    expect(problems(p).join("\n")).toMatch(/leans on the point before it/);
+  });
+
+  it("a summary of one point", () => {
+    expect(problems({ ...base(), summary: ["Only one point is here."] }).join("\n")).toMatch(/two to five/);
+  });
+
+  it("a question that is not a question, or an answer with markup", () => {
+    const p = base();
+    p.faq = [{ q: "Is this a question", a: "It has **bold** in it." }];
+    const out = problems(p).join("\n");
+    expect(out).toMatch(/must end with "\?"/);
+    expect(out).toMatch(/plain text/);
+  });
+
+  it("two headings with the same anchor", () => {
+    const p = base();
+    p.body.push({ type: "h2", text: "Same heading" }, { type: "h2", text: "Same  heading!" });
+    expect(problems(p).join("\n")).toMatch(/share an anchor/);
+  });
+
+  it("a measured-accuracy claim about the grader", () => {
+    expect(problems(withParagraph("Our grader is within half a band of a real examiner, every time.")).join("\n")).toMatch(
+      /accuracy claim/,
+    );
+  });
+
+  it("a photo from another site — next/image would take the page down", () => {
+    const p = { ...base(), image: { src: "https://example.com/x.jpg", alt: "A photo" } };
+    expect(problems(p).join("\n")).toMatch(/file in \/public/);
+    expect(problems({ ...base(), image: { src: "/blog/x.jpg", alt: "A photo" } })).toEqual([]);
+  });
+
+  it("a tip without a title, an example line without a label", () => {
+    const p = base();
+    p.body.push({ type: "tip", title: "", text: "Read the question twice." });
+    p.body.push({ type: "example", rows: [{ label: "", text: "No label here" }] });
+    const out = problems(p).join("\n");
+    expect(out).toMatch(/tip needs a title/);
+    expect(out).toMatch(/needs a label/);
+  });
+});
+
+describe("the editor's text", () => {
+  /* ⚠️ Opening a post and saving it unchanged must store the same blocks — or
+     every save of an old article quietly rewrites it. */
+  it.each(POSTS.map((p) => [p.slug, p] as const))("round-trips %s exactly", (_slug, p) => {
+    expect(sourceToBlocks(blocksToSource(p.body))).toEqual(p.body);
+    expect(sourceToSummary(summaryToSource(p.summary))).toEqual(p.summary);
+    expect(sourceToFaq(faqToSource(p.faq ?? []))).toEqual(p.faq ?? []);
+  });
+
+  it("reads every block type a writer types", () => {
+    const src = [
+      "A paragraph that runs",
+      "over two lines.",
+      "",
+      "## A heading",
+      "",
+      "- one",
+      "- two",
+      "",
+      "1. first",
+      "2. second",
+      "",
+      "> Words worth quoting.",
+      "> — Someone",
+      "",
+      ":::tip Exam tip",
+      "Read it twice.",
+      ":::",
+      "",
+      ":::example Notes",
+      "Where: Samarkand",
+      "When, who: a school trip",
+      ":::",
+    ].join("\n");
+    expect(sourceToBlocks(src)).toEqual([
+      { type: "p", text: "A paragraph that runs over two lines." },
+      { type: "h2", text: "A heading" },
+      { type: "list", items: ["one", "two"] },
+      { type: "list", items: ["first", "second"], ordered: true },
+      { type: "quote", text: "Words worth quoting.", cite: "Someone" },
+      { type: "tip", title: "Exam tip", text: "Read it twice." },
+      { type: "example", title: "Notes", rows: [{ label: "Where", text: "Samarkand" }, { label: "When, who", text: "a school trip" }] },
     ]);
-    for (const p of POSTS) {
-      const hrefs = [
-        ...inlineStrings(p).flatMap((s) =>
-          parseInline(s).flatMap((sp) => (sp.kind === "link" ? [sp.href] : [])),
-        ),
-        ...(p.cta ? [p.cta.href] : []),
-      ];
-      for (const href of hrefs) {
-        if (href.startsWith("/")) {
-          expect(known.has(href.split("#")[0]), `${p.slug} links to ${href}`).toBe(true);
-        } else {
-          expect(href, `${p.slug}: external links must be https`).toMatch(/^https:\/\//);
-        }
-      }
-    }
+  });
+
+  it("reads questions whose answers run over several lines", () => {
+    expect(sourceToFaq("Q: Why?\nA: Because it\nruns on.\n\nQ: And?\nA: Done.")).toEqual([
+      { q: "Why?", a: "Because it runs on." },
+      { q: "And?", a: "Done." },
+    ]);
   });
 });
 
 describe("written to be found — by searchers and by answer engines", () => {
-  const MARKUP = /\*|\]\(/;
-
-  it("summarise every post in two to five self-contained sentences", () => {
-    /* An answer engine lifts ONE point and quotes it alone. A point that opens
-       by leaning on the one before — "This is why…", "It also…" — becomes a
-       sentence about nothing once it is lifted. */
-    for (const p of POSTS) {
-      expect(p.summary.length, p.slug).toBeGreaterThanOrEqual(2);
-      expect(p.summary.length, p.slug).toBeLessThanOrEqual(5);
-      for (const pt of p.summary) {
-        expect(pt, `${p.slug}: a summary point is a whole sentence`).toMatch(/^[A-Z].*[.!?]$/);
-        expect(pt.length, `${p.slug}: "${pt}"`).toBeLessThanOrEqual(220);
-        expect(pt, `${p.slug}: summary points are plain text`).not.toMatch(MARKUP);
-        expect(pt, `${p.slug}: "${pt}" leans on the point before it`).not.toMatch(
-          /^(This|That|These|Those|It|They|He|She|Also|And|But|So)\b/,
-        );
-      }
-    }
-  });
-
-  it("ask real questions and answer them in plain text", () => {
-    for (const p of POSTS) {
-      const faq = p.faq ?? [];
-      expect(new Set(faq.map((f) => f.q)).size, `${p.slug}: repeated question`).toBe(faq.length);
-      for (const f of faq) {
-        expect(f.q, p.slug).toMatch(/\?$/);
-        // FAQPage data carries the answer as-is; markup would print literally.
-        expect(f.a, `${p.slug}: answers are plain text`).not.toMatch(MARKUP);
-        expect(f.a.length, `${p.slug}: "${f.q}" — keep the answer quotable`).toBeLessThanOrEqual(450);
-      }
-    }
-  });
-
-  it("give every section heading a unique anchor", () => {
-    for (const p of POSTS) {
-      // "questions" is the anchor of the FAQ section the page adds itself.
-      const ids = [
-        ...p.body.flatMap((b) => (b.type === "h2" ? [headingId(b.text)] : [])),
-        ...(p.faq?.length ? ["questions"] : []),
-      ];
-      for (const id of ids) expect(id, p.slug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-      expect(new Set(ids).size, `${p.slug}: two headings share an anchor`).toBe(ids.length);
-    }
-  });
-
   it("makes anchors from the words, not the markup", () => {
     expect(headingId("Minute 1: find **every** question")).toBe("minute-1-find-every-question");
     expect(headingId("Čapek's *R.U.R.*")).toBe("capek-s-r-u-r");
@@ -275,10 +236,10 @@ describe("written to be found — by searchers and by answer engines", () => {
 
   it("lists each post under its skill and nowhere else", () => {
     for (const skill of Object.keys(SKILL_TOPIC) as BlogSkill[]) {
-      expect(postsForSkill(skill).every((p) => p.skill === skill)).toBe(true);
+      expect(postsForSkill(POSTS, skill).every((p) => p.skill === skill)).toBe(true);
     }
     const tagged = POSTS.filter((p) => p.skill);
-    const listed = (Object.keys(SKILL_TOPIC) as BlogSkill[]).flatMap(postsForSkill);
+    const listed = (Object.keys(SKILL_TOPIC) as BlogSkill[]).flatMap((s) => postsForSkill(POSTS, s));
     expect(listed.length).toBe(tagged.length);
   });
 
@@ -299,14 +260,19 @@ describe("written to be found — by searchers and by answer engines", () => {
 describe("the front page and related stories", () => {
   it("lead with the featured post, and never repeat it below", () => {
     const featured = POSTS.find((p) => p.featured);
-    if (featured) expect(leadPost()).toBe(featured);
-    expect(otherPosts()).not.toContain(leadPost());
-    expect(otherPosts().length).toBe(POSTS.length - 1);
+    if (featured) expect(leadPost(POSTS)).toBe(featured);
+    expect(otherPosts(POSTS)).not.toContain(leadPost(POSTS));
+    expect(otherPosts(POSTS).length).toBe(POSTS.length - 1);
+  });
+
+  it("have no lead and nothing below when there are no posts", () => {
+    expect(leadPost([])).toBeUndefined();
+    expect(otherPosts([])).toEqual([]);
   });
 
   it("never suggest the post you are reading, or the same post twice", () => {
     for (const p of POSTS) {
-      const r = relatedPosts(p);
+      const r = relatedPosts(POSTS, p);
       expect(r).not.toContain(p);
       expect(new Set(r).size).toBe(r.length);
     }
@@ -314,7 +280,7 @@ describe("the front page and related stories", () => {
 
   it("suggest the same category first", () => {
     for (const p of POSTS) {
-      const r = relatedPosts(p, POSTS.length);
+      const r = relatedPosts(POSTS, p, POSTS.length);
       const firstOther = r.findIndex((x) => x.category !== p.category);
       if (firstOther === -1) continue;
       expect(r.slice(firstOther).every((x) => x.category !== p.category)).toBe(true);
@@ -322,8 +288,8 @@ describe("the front page and related stories", () => {
   });
 
   it("finds posts by slug and nothing else", () => {
-    expect(getPost(POSTS[0].slug)).toBe(POSTS[0]);
-    expect(getPost("no-such-post")).toBeUndefined();
+    expect(findPost(POSTS, POSTS[0].slug)).toBe(POSTS[0]);
+    expect(findPost(POSTS, "no-such-post")).toBeUndefined();
   });
 });
 

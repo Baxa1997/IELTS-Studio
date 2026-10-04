@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Headphones, Lock, Mic, PenLine } from "lucide-react";
+import { BookOpen, GraduationCap, Headphones, Lock, Mic, PenLine } from "lucide-react";
 
 import type { MessageKey, Translate } from "@/lib/i18n";
 import { freePracticePage, signInFor, type PracticeCardSkill } from "@/lib/free-practice/links";
@@ -34,6 +34,7 @@ const SKILL_NAME: Record<PracticeCardSkill, MessageKey> = {
   writing: "nav.writing",
   reading: "nav.reading",
   listening: "nav.listening",
+  cefr: "free.skillCefr",
   speaking: "nav.speaking",
 };
 
@@ -44,6 +45,7 @@ const SKILL_ICON: Record<PracticeCardSkill, React.ReactNode> = {
   writing: <PenLine strokeWidth={1.6} />,
   reading: <BookOpen strokeWidth={1.6} />,
   listening: <Headphones strokeWidth={1.6} />,
+  cefr: <GraduationCap strokeWidth={1.6} />,
   speaking: <Mic strokeWidth={1.6} />,
 };
 
@@ -51,6 +53,7 @@ const SKILL_META: Record<PracticeCardSkill, MessageKey> = {
   writing: "free.writingMeta",
   reading: "free.readingMeta",
   listening: "free.listeningMeta",
+  cefr: "free.cefrMeta",
   speaking: "free.speakingMeta",
 };
 
@@ -82,11 +85,11 @@ function CoverChip({ locked, label }: { locked: boolean; label: string }) {
   );
 }
 
-/* ── the landing section's four cards ──────────────────────────────────── */
+/* ── the landing section's five cards ──────────────────────────────────── */
 
 /**
- * One skill on the landing page. Writing, Reading and Listening go to their
- * page of dated practices; Speaking is locked and goes to sign-in.
+ * One skill on the landing page. Writing, Reading, Listening and CEFR go to
+ * their page of dated practices; Speaking is locked and goes to sign-in.
  */
 export function SkillPracticeCard({ skill, t }: { skill: PracticeCardSkill; t: Translate }) {
   const locked = skill === "speaking";

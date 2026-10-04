@@ -19,6 +19,8 @@ import { freeRunner } from "@/lib/free-practice/links";
 import type { FreeSkill } from "@/lib/free-practice/rotation";
 import type { Translate } from "@/lib/i18n";
 
+import { formatLabel } from "../_lib/labels";
+
 /**
  * The free practice list in the BLOG's card style — the generated cover, the
  * headline, the stretched link (`bl-story` / `bl-lead` / `bl-card` from
@@ -51,24 +53,13 @@ import type { Translate } from "@/lib/i18n";
  */
 function coverIcon(skill: FreeSkill, item: PoolItem): React.ReactNode {
   const props = { strokeWidth: 1.6 };
+  // A CEFR paper is Reading or Writing, and looks like its IELTS namesake.
+  if (skill === "cefr") return item.paper === "writing" ? <PenLine {...props} /> : <BookOpen {...props} />;
   if (skill === "reading") return <BookOpen {...props} />;
   if (skill === "listening") return <Headphones {...props} />;
   if (item.kind === "Academic Task 1") return <BarChart3 {...props} />;
   if (item.kind === "General Training Task 1") return <Mail {...props} />;
   return <PenLine {...props} />;
-}
-
-/** The line under "Test N": the whole test, or one part of it. A writing
- *  task is neither — the exam's Writing test is both tasks — so it names the
- *  task instead. */
-const FORMAT_LABEL = {
-  reading: { full: "free.fullReading", part: "free.partReading" },
-  listening: { full: "free.fullListening", part: "free.partListening" },
-} as const;
-
-function formatLabel(skill: FreeSkill, item: PoolItem, t: Translate): string {
-  if (skill === "writing") return t("free.writingTask", { n: item.kind?.endsWith("Task 2") ? 2 : 1 });
-  return t(FORMAT_LABEL[skill][item.format === "full" ? "full" : "part"]);
 }
 
 /** Everything a cover takes from the practice. */

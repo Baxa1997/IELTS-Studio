@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 
 import { FREE_RUNNER_BASE, freePracticePage, freeRunner, PRACTICE_CARD_SKILLS, signInFor } from "./links";
 import { FREE_LIST_SIZE, FREE_SKILLS, listIndices, recentDays } from "./rotation";
-import { readDone, VISITOR_COOKIE, writeDone } from "./visitor";
+import { readDone, readSpentOn, VISITOR_COOKIE, writeDone, writeSpentOn } from "./visitor";
 
 const mw = readFileSync(join(process.cwd(), "lib/supabase/middleware.ts"), "utf8");
 const list = (name: string) => {
@@ -81,8 +81,31 @@ describe("the done-today record", () => {
   });
 });
 
+describe("the record of which practice the day went on", () => {
+  /* A CEFR Writing paper is three tasks graded one by one; this record is what
+     lets the paper finish after its first grade marked the day done. If it
+     could be forged, it would be a way past the one-a-day rule. */
+  const day = "2026-09-27";
+  const key = "11111111-2222-4333-8444-555555555555";
+
+  it("round-trips, for the right day and skill only", () => {
+    const raw = writeSpentOn(day, "cefr", key);
+    expect(readSpentOn(raw, day, "cefr")).toBe(key);
+    expect(readSpentOn(raw, "2026-09-28", "cefr")).toBeNull();
+    expect(readSpentOn(raw, day, "reading")).toBeNull();
+  });
+
+  it("cannot be edited to name another paper", () => {
+    const raw = writeSpentOn(day, "cefr", key);
+    expect(readSpentOn(raw.replace("1111", "9999"), day, "cefr")).toBeNull();
+    expect(readSpentOn(undefined, day, "cefr")).toBeNull();
+    expect(readSpentOn(`${day}:cefr:${key}`, day, "cefr")).toBeNull();
+  });
+});
+
 describe("the links", () => {
-  it("offers the three free skills, then Speaking behind sign-in", () => {
+  it("offers the free skills, CEFR among them, then Speaking behind sign-in", () => {
+    expect(FREE_SKILLS).toContain("cefr");
     expect(PRACTICE_CARD_SKILLS).toEqual([...FREE_SKILLS, "speaking"]);
     expect(Object.keys(FREE_RUNNER_BASE)).not.toContain("speaking");
   });
@@ -124,13 +147,19 @@ describe("every free practice recommends signing in for more", () => {
       ["app/(studio)/write/free/[id]/page.tsx", "writing"],
       ["app/(studio)/read/free/[id]/page.tsx", "reading"],
       ["app/(studio)/listen/free/[key]/page.tsx", "listening"],
+      ["app/(studio)/cefr/free/[key]/page.tsx", "cefr"],
     ];
     for (const [file, skill] of pages) {
       const src = read(file);
       expect(src, file).toContain(`freeTrialCopy(t, "${skill}")`);
-      expect(src, `${file}: a used day must show the gate`).toMatch(/if \(entry\.done\)[\s\S]{0,120}<FreeTrialGate/);
+      // CEFR's gate opens for the paper the day went on — see the cefr route.
+      expect(src, `${file}: a used day must show the gate`).toMatch(
+        /if \(entry\.done(?: && \(await spentOnToday\(entry\.day, "cefr"\)\) !== entry\.item\.key)?\)[\s\S]{0,120}<FreeTrialGate/,
+      );
       expect(src, `${file}: must check the visitor's list`).toContain(`onTodaysList("${skill}"`);
     }
+    // Every free skill has a runner page in this list.
+    expect(pages.map(([, skill]) => skill).sort()).toEqual([...FREE_SKILLS].sort());
   });
 
   it("shows it while practising and again on the result, in every runner", () => {
@@ -139,12 +168,19 @@ describe("every free practice recommends signing in for more", () => {
       ["app/(studio)/read/_components/reading-runner.tsx", "publicMode.copy"],
       ["app/(studio)/read/_components/test-runner.tsx", "publicMode.copy"],
       ["shared/components/listening/listening-client.tsx", "publicRun.copy"],
+      ["shared/components/cefr/multilevel-client.tsx", "publicMode.copy"],
     ];
     for (const [file, copy] of runners) {
       const src = read(file);
       expect(src, `${file}: no strip while practising`).toContain(`<FreeTrialStrip copy={${copy}} />`);
       expect(src, `${file}: no card on the result`).toContain(`<FreeTrialCard copy={${copy}} />`);
     }
+  });
+
+  it("lays the landing section's cards out for exactly as many skills as it has", () => {
+    // `.bl-grid-N` is sized for N cards; a skill added without it strands one.
+    expect(read("app/_landing/_components/landing-page.tsx")).toContain(`bl-grid-${PRACTICE_CARD_SKILLS.length}`);
+    expect(read("app/_landing/_lib/blog-css.ts")).toContain(`.bl-grid-${PRACTICE_CARD_SKILLS.length}{`);
   });
 
   it("offers it on the practice pages and under the landing section's cards", () => {
@@ -174,6 +210,28 @@ describe("a full test is the whole test, on the full-test runner (owner, 2026-09
     const client = read("shared/components/listening/listening-client.tsx");
     expect(client).toContain("JSON.stringify({ key: practiceKey, answers })");
     expect(read("app/(studio)/listen/free/[key]/page.tsx")).toContain("practiceKey={entry.item.key}");
+  });
+});
+
+describe("a free CEFR paper (owner, 2026-10-04)", () => {
+  const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
+  const client = read("shared/components/cefr/multilevel-client.tsx");
+
+  it("is marked by the list's key, through the app's route — never the engine directly", () => {
+    expect(client).toContain("JSON.stringify({ key: mode.practiceKey, ...body })");
+    expect(read("app/(studio)/cefr/free/[key]/page.tsx")).toContain("practiceKey: entry.item.key");
+    expect(read("app/(studio)/cefr/free/[key]/page.tsx")).toContain('submitUrl: "/api/public/practice/cefr"');
+  });
+
+  it("gives a visitor no coach and no word lookup — both are signed-in APIs", () => {
+    expect(client.match(/const \[coachOpen, setCoachOpen\] = useState\(!publicMode\);/g)).toHaveLength(2);
+    expect(client).toContain("hl.tool === null && !publicMode ? (");
+  });
+
+  it("asks the engine for the paper by the list's own entry", () => {
+    expect(read("app/(studio)/cefr/free/[key]/page.tsx")).toContain(
+      'multilevelPublic<ReadingPaper | WritingPaper>("render", { item_id: entry.item.source })',
+    );
   });
 });
 

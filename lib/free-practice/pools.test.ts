@@ -20,7 +20,7 @@ vi.mock("@/lib/supabase/admin", () => {
     let to = Infinity;
     let count = false;
     const q: Record<string, unknown> = {};
-    for (const m of ["eq", "is", "not", "order"]) q[m] = () => q;
+    for (const m of ["eq", "is", "not", "in", "order"]) q[m] = () => q;
     q.select = (_cols: string, opts?: { count?: string }) => ((count = Boolean(opts?.count)), q);
     q.range = (a: number, b: number) => ((from = a), (to = b), q);
     q.then = (res: (v: unknown) => unknown) => {
@@ -109,5 +109,49 @@ describe("the listening pool", () => {
       ["new-hard", 3],
       ["old-hard", 4],
     ]);
+  });
+});
+
+describe("the CEFR pool", () => {
+  const row = (id: string, paper: "reading" | "writing") =>
+    paper === "reading"
+      ? { id, paper, created_at: id, r1: `${id} gap-fill`, r4: `${id} cities`, r5: `${id} sleep` }
+      : { id, paper, created_at: id, w1: "the club raised its fees", w2: `Should ${id} be banned? Discuss.` };
+
+  it("alternates Reading and Writing papers, each numbered in its own series", async () => {
+    db.tables = {
+      multilevel_items: [row("a", "reading"), row("b", "reading"), row("c", "reading"), row("d", "writing"), row("e", "writing")],
+    };
+    const pool = await loadPool("cefr");
+    expect(pool.map((i) => [i.key, i.paper, i.testNo])).toEqual([
+      ["a", "reading", 1],
+      ["d", "writing", 1],
+      ["b", "reading", 2],
+      ["e", "writing", 2],
+      ["c", "reading", 3],
+    ]);
+    expect(pool.every((i) => i.format === "full")).toBe(true);
+  });
+
+  it("titles a Reading paper by its passages and a Writing paper by its forum question", async () => {
+    db.tables = { multilevel_items: [row("a", "reading"), row("d", "writing")] };
+    const [reading, writing] = await loadPool("cefr");
+    expect(reading.title).toContain("a cities");
+    expect(reading.questions).toBe(35);
+    expect(writing.title).toBe("Should d be banned?");
+    expect(writing.questions).toBeNull();
+  });
+
+  it("is an empty list, not an error, before the library is seeded", async () => {
+    expect(await loadPool("cefr")).toEqual([]);
+  });
+
+  it("reads only papers no account owns, and never their answers", async () => {
+    /* ⚠️ Service role: RLS does not filter this read. A learner's own
+       generated paper must never reach a visitor's list. */
+    const src = (await import("node:fs")).readFileSync(`${process.cwd()}/lib/free-practice/pools.ts`, "utf8");
+    const fn = src.slice(src.indexOf("async function cefrPool"), src.indexOf("export const loadPool"));
+    expect(fn).toContain('.is("organization_id", null)');
+    expect(fn).not.toMatch(/answer_key|model_answer|select\("\*"\)|content\)/);
   });
 });

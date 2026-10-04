@@ -88,11 +88,13 @@ export const BLOG_CSS = `
   @media(max-width:900px){
     .bl-lead{grid-template-columns:minmax(0,1fr);gap:18px}
   }
-  /* Exactly four cards (the free-practice section) must not leave one orphan
-     on a row of its own, which auto-fill does at laptop widths — so they
-     step 4 → 2 → 1 by breakpoint instead. After .bl-grid so it wins. */
-  .bl-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-  @media(max-width:1100px){.bl-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  /* Exactly five cards (the free-practice section: four free skills and
+     Speaking) in one row on a laptop, where auto-fill would strand one on a
+     row of its own — then three and two on a tablet, one per row on a phone.
+     The covers' type is in container units, so it scales down with the
+     narrower cards. After .bl-grid so it wins. */
+  .bl-grid-5{grid-template-columns:repeat(5,minmax(0,1fr))}
+  @media(max-width:1100px){.bl-grid-5{grid-template-columns:repeat(3,minmax(0,1fr))}}
   /* On a phone a column of full-width covers is a lot of scrolling for very
      little reading, so every card below the lead turns into a row — thumbnail
      beside headline — and drops its summary. The lead keeps both. */
@@ -100,7 +102,7 @@ export const BLOG_CSS = `
     .bl-grid{gap:0}
     .bl-card{display:grid;grid-template-columns:minmax(0,38%) minmax(0,1fr);gap:14px;align-items:start;padding:16px 0;border-top:1px solid ${LINE}}
     .bl-card .bl-dek{display:none}
-    .bl-grid-4{grid-template-columns:minmax(0,1fr)}
+    .bl-grid-5{grid-template-columns:minmax(0,1fr)}
   }
 
   /* ── the article ───────────────────────────────────────────────────────── */

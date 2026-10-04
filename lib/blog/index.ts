@@ -1,44 +1,19 @@
 import type { MessageKey } from "@/lib/i18n";
 
 import { plainText } from "./inline";
-import { multilevelExamExplained } from "./posts/multilevel-exam-explained";
-import { oneSkillRetake } from "./posts/one-skill-retake";
-import { planTask2InFiveMinutes } from "./posts/plan-task-2-in-five-minutes";
-import { speakingPart2OneMinutePlan } from "./posts/speaking-part-2-one-minute-plan";
-import { trueFalseNotGiven } from "./posts/true-false-not-given";
-import { whatsNewAtEngProgress } from "./posts/whats-new-at-engprogress";
-import { whyEnglishSpellingIsStrange } from "./posts/why-english-spelling-is-strange";
-import { wordsWithSurprisingPasts } from "./posts/words-with-surprising-pasts";
-import type { Block, BlogCategory, BlogPost, BlogSkill } from "./types";
+import { BLOG_CATEGORIES, type Block, type BlogCategory, type BlogPost, type BlogSkill } from "./types";
 
-export type { Block, BlogCategory, BlogPost, BlogSkill } from "./types";
+export type { Block, BlogCategory, BlogPost, BlogSkill, PostStatus, StoredPost } from "./types";
+export { BLOG_SKILLS } from "./types";
 
-/**
- * Every published post. To publish one: add a file under `posts/`, import it
- * here, deploy. `blog.test.ts` checks the rest — unique slug, valid date, links
- * that resolve, no grading-accuracy claim.
- *
- * Listed in the order they should appear when dates tie; `POSTS` below sorts
- * newest first and keeps this order within a day.
+/*
+ * Pure helpers over a list of posts. The list itself comes from the database —
+ * `loadPosts()` in `./store`, server-only — and arrives newest first, posts of
+ * the same day in their `position` order. Nothing here reads it, so everything
+ * here runs in a test, in a client component, or at build time alike.
  */
-const ALL: BlogPost[] = [
-  multilevelExamExplained,
-  trueFalseNotGiven,
-  whatsNewAtEngProgress,
-  speakingPart2OneMinutePlan,
-  wordsWithSurprisingPasts,
-  planTask2InFiveMinutes,
-  whyEnglishSpellingIsStrange,
-  oneSkillRetake,
-];
 
-/** Newest first. `Array.prototype.sort` is stable, so same-day posts keep
- *  the order of `ALL`. */
-export const POSTS: readonly BlogPost[] = [...ALL].sort((a, b) =>
-  b.published.localeCompare(a.published),
-);
-
-export const CATEGORIES: readonly BlogCategory[] = ["ielts", "multilevel", "english", "stories", "engprogress"];
+export const CATEGORIES: readonly BlogCategory[] = BLOG_CATEGORIES;
 
 export const CATEGORY_LABEL: Record<BlogCategory, MessageKey> = {
   ielts: "blog.catIelts",
@@ -48,27 +23,34 @@ export const CATEGORY_LABEL: Record<BlogCategory, MessageKey> = {
   engprogress: "blog.catEngprogress",
 };
 
-export function getPost(slug: string): BlogPost | undefined {
-  return POSTS.find((p) => p.slug === slug);
+/** Newest first. `Array.prototype.sort` is stable, so same-day posts keep the
+ *  order they came in — the database's `position` order. */
+export function newestFirst<T extends BlogPost>(posts: readonly T[]): T[] {
+  return [...posts].sort((a, b) => b.published.localeCompare(a.published));
 }
 
-/** The lead story: the featured post, or the newest when none is. */
-export function leadPost(): BlogPost {
-  return POSTS.find((p) => p.featured) ?? POSTS[0];
+export function findPost(posts: readonly BlogPost[], slug: string): BlogPost | undefined {
+  return posts.find((p) => p.slug === slug);
+}
+
+/** The lead story: the featured post, or the newest when none is. Undefined
+ *  only when there are no posts at all. */
+export function leadPost(posts: readonly BlogPost[]): BlogPost | undefined {
+  return posts.find((p) => p.featured) ?? posts[0];
 }
 
 /** Everything but the lead, newest first. */
-export function otherPosts(): BlogPost[] {
-  const lead = leadPost();
-  return POSTS.filter((p) => p !== lead);
+export function otherPosts(posts: readonly BlogPost[]): BlogPost[] {
+  const lead = leadPost(posts);
+  return posts.filter((p) => p !== lead);
 }
 
 /**
  * What to read next: same category first, then the newest of the rest. Never
  * the post itself, never a duplicate.
  */
-export function relatedPosts(post: BlogPost, count = 3): BlogPost[] {
-  const others = POSTS.filter((p) => p.slug !== post.slug);
+export function relatedPosts(posts: readonly BlogPost[], post: BlogPost, count = 3): BlogPost[] {
+  const others = posts.filter((p) => p.slug !== post.slug);
   const same = others.filter((p) => p.category === post.category);
   const rest = others.filter((p) => p.category !== post.category);
   return [...same, ...rest].slice(0, count);
@@ -87,8 +69,8 @@ export const SKILL_TOPIC: Record<BlogSkill, string> = {
 
 /** Posts about one practice area, newest first — the "From the blog" list on
  *  that area's marketing page. */
-export function postsForSkill(skill: BlogSkill): BlogPost[] {
-  return POSTS.filter((p) => p.skill === skill);
+export function postsForSkill(posts: readonly BlogPost[], skill: BlogSkill): BlogPost[] {
+  return posts.filter((p) => p.skill === skill);
 }
 
 /**

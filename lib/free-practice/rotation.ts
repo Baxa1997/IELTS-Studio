@@ -2,7 +2,9 @@
  * Which free practice a visitor gets today — pure, so the rule is testable.
  *
  * THE RULE (owner, 2026-09-27): one free Writing, Reading and Listening
- * practice per day, and different visitors get a different mix. So each
+ * practice per day, and different visitors get a different mix. CEFR
+ * (Multilevel) joined them on 2026-10-04 (owner: "for practices need to add
+ * the CEFR practice also") — one paper a day, Reading or Writing. So each
  * visitor starts at their own place in each pool (an offset hashed from their
  * visitor id) and moves one step along it every day:
  *
@@ -19,7 +21,7 @@
  * midnight wherever the server happens to run.
  */
 
-export const FREE_SKILLS = ["writing", "reading", "listening"] as const;
+export const FREE_SKILLS = ["writing", "reading", "listening", "cefr"] as const;
 export type FreeSkill = (typeof FREE_SKILLS)[number];
 
 export function isFreeSkill(v: unknown): v is FreeSkill {
