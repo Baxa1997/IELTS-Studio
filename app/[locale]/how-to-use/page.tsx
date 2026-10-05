@@ -5,7 +5,7 @@ import { LearnerGuide, learnerMetadata } from "@/app/how-to-use/_components/lear
 import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "@/lib/i18n/locales";
 
 /**
- * The learner's guide in a language that is not the default: `/en/how-to-use`
+ * The learner's guide in a language that is not the default: `/uz/how-to-use`
  * and `/ru/how-to-use`.
  *
  * ⚠️ `dynamicParams = false` IS LOAD-BEARING, exactly as it is for the landing
@@ -15,7 +15,7 @@ import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "@/lib/i18n/local
  * turns every other segment back into a 404 and makes both pages static at
  * build time.
  *
- * It also means `/uz/how-to-use` is a 404: Uzbek is the default locale and the
+ * It also means `/en/how-to-use` is a 404: English is the default locale and the
  * default owns the unprefixed URL, so the params are derived from
  * `DEFAULT_LOCALE` rather than typed out.
  */

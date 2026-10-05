@@ -143,10 +143,12 @@ handles that. It is about what a file is expected to explain.
 - **NO USER-FACING COPY AS STRING LITERALS** in the app shell or marketing
   surfaces — keys in `lib/i18n/messages/en.ts`, which the other locales (`uz`,
   `ru`) are typed against. Exam content and grader output stay English on
-  purpose. ⚠️ **`en` is the SOURCE locale but `uz` is the DEFAULT** — `/` is
-  Uzbek and English lives at `/en` (`DEFAULT_LOCALE` in `lib/i18n/locales.ts`).
-  The two are different decisions and the fallback follows `SOURCE_LOCALE`;
-  conflating them broke four things silently.
+  purpose. ⚠️ **`en` is both the SOURCE locale and (since 2026-10-05) the
+  DEFAULT** — `/` is English, Uzbek lives at `/uz` and Russian at `/ru`
+  (`DEFAULT_LOCALE` in `lib/i18n/locales.ts`). They are still two different
+  decisions: the fallback follows `SOURCE_LOCALE`, the bare URL follows
+  `DEFAULT_LOCALE`; conflating them broke four things silently when they
+  differed.
 - **RESPECT THE CLIENT BOUNDARY.** A `"use client"` module may export a
   component to a server module, never a value: strings, arrays and config
   arrive as client references and produce junk without an error.

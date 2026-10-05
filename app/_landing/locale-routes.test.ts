@@ -10,7 +10,7 @@ import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
  *
  * A cookie is invisible to a crawler — Googlebot sends no `ep-locale`, so a
  * cookie-only site has exactly one indexable version however many languages it
- * renders. That is why `/uz` and `/ru` exist as real routes. Four things then
+ * renders. That is why the non-default locales (`/uz`, `/ru`) exist as real routes. Four things then
  * have to stay in step, and nothing in the type system makes them:
  *
  *   · the route must be PUBLIC, or the middleware 307s crawlers to /sign-in and
@@ -51,7 +51,7 @@ describe("the localised landing routes", () => {
 
   it("keep the default language on the bare URL", () => {
     /* The one thing that must never quietly change: `/` is the indexed page and
-       every backlink points at it. A canonical of `/uz` would 301 away the
+       every backlink points at it. A canonical of `/en` would 301 away the
        site's most valuable URL. WHICH language `/` answers in is a product
        decision and may move again — that it is the unprefixed one may not. */
     expect(landing).toMatch(/locale === DEFAULT_LOCALE \? "\/" : `\/\$\{locale\}`/);
@@ -59,9 +59,9 @@ describe("the localised landing routes", () => {
 
   it("send an unmatched language to English, not to the default", () => {
     /* `x-default` is for the searcher whose language is none of the three. That
-       person is not an Uzbek speaker, so pointing it at `/` — which is now the
-       Uzbek page — would hand every unmatched international visitor the
-       local-market copy. It follows SOURCE_LOCALE instead. */
+       person should get English. While Uzbek was the default, pointing it at
+       `/` would have handed them the local-market copy, so it follows
+       SOURCE_LOCALE rather than DEFAULT_LOCALE — today both are English. */
     expect(landing).toMatch(/"x-default":\s*SOURCE_LOCALE/);
   });
 

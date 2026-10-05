@@ -27,8 +27,8 @@ const PUBLIC_PATHS = [
   // listed here or the middleware 307s every logged-out visitor AND every
   // crawler to /sign-in — which would make the localised pages worse than not
   // having them, since Google would index a redirect where the hreflang
-  // promised a page. Uzbek is the default and lives at "/" above, so there is
-  // no "/uz": that path is a 404 by design, and it is listed anyway so it
+  // promised a page. English is the default and lives at "/" above, so there is
+  // no "/en": that path is a 404 by design, and it is listed anyway so it
   // ANSWERS 404 instead of redirecting a crawler to the sign-in page.
   "/en",
   "/ru",

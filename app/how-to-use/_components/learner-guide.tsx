@@ -35,7 +35,7 @@ import {
  * ⚠️ IT TAKES ITS LOCALE FROM THE URL, NOT FROM THE COOKIE, for the reason
  * `landing-page.tsx` sets out at length: a cookie is invisible to a crawler, so
  * a cookie-only page has exactly one indexable version however many languages
- * it can render. `/how-to-use` is Uzbek, `/en/how-to-use` and `/ru/how-to-use`
+ * it can render. `/how-to-use` is English, `/uz/how-to-use` and `/ru/how-to-use`
  * are real routes, and the three declare each other with `hreflang`.
  *
  * THE LEFT SIDEBAR IS THE TAB LIST (owner's call, arrived at the hard way).
@@ -161,13 +161,13 @@ export function LearnerGuide({ locale }: { locale: Locale }) {
 
   return (
     /* ⚠️ `pin`, NOT `initial`: the page's own locale, and the cookie does not
-       get a vote. On /en/how-to-use the page is English whatever `ep-locale`
+       get a vote. On /uz/how-to-use the page is Uzbek whatever `ep-locale`
        says, so the client chrome inside — header, picker, theme toggle — has to
        STAY there, not merely start there. Same reasoning as the landing page,
        where `initial` shipped an Uzbek page wearing an English header. */
     <LocaleProvider pin={locale}>
       {/* The root layout is static and sets `<html lang>` to the default, so a
-          generated /ru page would claim to be Uzbek — wrong for a screen reader
+          generated /ru page would claim to be English — wrong for a screen reader
           picking its voice and for the browser's offer to translate. Corrected
           before first paint, the same trick as the theme's no-flash script. */}
       <script

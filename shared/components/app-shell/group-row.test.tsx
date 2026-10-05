@@ -63,7 +63,7 @@ const { SidebarNav } = await import("./sidebar-nav");
  * label.
  *
  * ⚠️ `pin`, NOT the cookie. The rail's labels come from `useT`, and with no
- * provider above it that resolves to `DEFAULT_LOCALE` — which is Uzbek, so this
+ * provider above it that resolves to `DEFAULT_LOCALE` — which was Uzbek for a while, so this
  * whole file went red the day the default moved and every `groupRow("Teaching")`
  * stopped finding a row. Pinning states the assumption these tests were already
  * making silently, and keeps them about the disclosure rather than about which

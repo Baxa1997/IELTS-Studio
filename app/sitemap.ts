@@ -42,9 +42,8 @@ function pages(lastModified: Date): MetadataRoute.Sitemap {
   return PUBLIC_ROUTES.flatMap((route) => {
     const many = LOCALISED.has(route.path);
     /* A single-language route is served unprefixed, i.e. at the DEFAULT
-       locale's URL — but being at that URL does not make it that language.
-       The marketing pages below the landing page are all still written in
-       English while the default locale is Uzbek. */
+       locale's URL. The marketing pages below the landing page are written
+       in English, which is also the default locale. */
     const locales = many ? LOCALES : [DEFAULT_LOCALE];
     return locales.map((locale) => ({
       url: absoluteUrl(localePath(route.path, locale)),

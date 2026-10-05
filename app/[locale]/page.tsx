@@ -15,7 +15,7 @@ import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "@/lib/i18n/local
  * that do not exist at all. Pinning the params to the locale list turns every
  * other segment back into a 404, and makes both pages static at build time.
  *
- * It also means `/uz` is now a 404 rather than a page: Uzbek became the default
+ * It also means `/en` is a 404 rather than a page: English is the default
  * locale and the default owns `/`. The prefix belongs to whichever locales are
  * NOT default, which is why the params below are derived from `DEFAULT_LOCALE`
  * instead of being typed out.

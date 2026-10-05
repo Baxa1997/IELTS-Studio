@@ -29,14 +29,13 @@ export type Locale = (typeof LOCALES)[number];
 
 /**
  * The locale served when nobody has chosen one, and the one that owns the
- * UNPREFIXED URL. Uzbek: the learners are in Uzbekistan, the centres teach in
- * Uzbek, and the exam being in English is a reason to translate the chrome
- * AROUND the exam, not a reason to greet a first-time visitor in a language
- * they may be here to learn.
+ * UNPREFIXED URL. English (since 2026-10-05; it was Uzbek before): `/` is
+ * English, `/uz` and `/ru` are the prefixed routes. Uzbek and Russian stay one
+ * click away in the picker, and a visitor who chose one keeps it via the cookie.
  *
  * ⚠️ THIS CONSTANT IS TWO DECISIONS AT ONCE, so know what you move when you
  * move it. It is (a) the fallback when the cookie is absent or junk, and (b)
- * the locale with no path prefix — `/` is Uzbek, `/en` and `/ru` are real
+ * the locale with no path prefix — `/` is English, `/uz` and `/ru` are real
  * routes. Flipping it flips both: `app/[locale]/page.tsx` derives its static
  * params from it, `sitemap.ts` and `landingMetadata` derive their URL shape
  * from it, and `locale-provider.tsx` derives the prefixes it strips from it.
@@ -46,7 +45,7 @@ export type Locale = (typeof LOCALES)[number];
  * `SOURCE_LOCALE` below, which is English because English is the dictionary
  * every other one is typed against.
  */
-export const DEFAULT_LOCALE: Locale = "uz";
+export const DEFAULT_LOCALE: Locale = "en";
 
 /** The dictionary every other dictionary is typed against, and therefore the
  *  one a missing key falls back to. Deliberately independent of

@@ -5,7 +5,7 @@ import { CentersGuide, centersMetadata } from "@/app/how-to-use/education-center
 import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "@/lib/i18n/locales";
 
 /**
- * The education-centre guide at `/en/how-to-use/education-centers` and
+ * The education-centre guide at `/uz/how-to-use/education-centers` and
  * `/ru/how-to-use/education-centers`. `dynamicParams = false` for the same
  * reason as every other route under `[locale]` — see the learner guide one
  * level up.

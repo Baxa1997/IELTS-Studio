@@ -1,8 +1,8 @@
 import type { DocsCopy } from "./types";
 
 /**
- * Uzbek — the DEFAULT locale, so this is what `/how-to-use` itself serves and
- * what most visitors read. English lives at `/en/how-to-use`.
+ * Uzbek, served at `/uz/how-to-use`. English is the default locale and owns
+ * `/how-to-use` itself.
  *
  * TERMINOLOGY FOLLOWS `lib/i18n/messages/uz.ts`, which is the established
  * vocabulary of the rest of the product: Yozish / Oʻqish / Tinglash / Gapirish
