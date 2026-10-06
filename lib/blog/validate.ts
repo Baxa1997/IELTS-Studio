@@ -1,6 +1,7 @@
 import { PUBLIC_ROUTES } from "@/lib/seo";
 
 import { headingId } from ".";
+import { isYoutubeId } from "./video";
 import { parseInline, plainText } from "./inline";
 import { BLOG_CATEGORIES, BLOG_SKILLS, type Block, type BlogPost } from "./types";
 
@@ -30,6 +31,23 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set(["preview", "feed"]);
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MARKUP = /\*|\]\(/;
+
+/**
+ * Where a post's pictures may live: a file in /public, or an upload in the
+ * `blog` storage bucket (migration 20261006130000), which the editor's Media
+ * tab writes to.
+ *
+ * ⚠️ NO OTHER HOST. The cover goes through next/image, which THROWS on a host
+ * next.config.ts does not list — an https photo from anywhere else would take
+ * the whole article page down, not just leave a broken picture. next.config
+ * lists exactly this bucket's path; the two must move together.
+ */
+export const BLOG_BUCKET = "blog";
+const BUCKET_URL = /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/blog\/[A-Za-z0-9._\/-]+$/;
+export const isBlogImageSrc = (src: string): boolean => /^\/[^/]/.test(src) || BUCKET_URL.test(src);
+
+/** Keywords: a handful of real searches, not a tag cloud. */
+export const MAX_KEYWORDS = 10;
 
 export const isRealDate = (s: string | undefined): boolean =>
   !!s && ISO_DATE.test(s) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s);
@@ -68,7 +86,11 @@ export function inlineStrings(post: BlogPost): string[] {
     switch (b.type) {
       case "p":
       case "h2":
+      case "h3":
         return [b.text];
+      case "image":
+      case "video":
+        return [];
       case "list":
         return b.items;
       case "quote":
@@ -93,6 +115,8 @@ export function allText(post: BlogPost): string[] {
     ...inlineStrings(post),
     ...post.body.flatMap((b) => (b.type === "example" ? b.rows.map((r) => r.label) : [])),
     ...post.body.flatMap((b) => (b.type === "quote" && b.cite ? [b.cite] : [])),
+    ...post.body.flatMap((b) => (b.type === "image" ? [b.alt, b.caption ?? ""] : b.type === "video" ? [b.title ?? ""] : [])),
+    ...(post.keywords ?? []),
     ...(post.cta ? [post.cta.title, post.cta.text, post.cta.label] : []),
     ...post.summary,
     ...(post.faq ?? []).flatMap((f) => [f.q, f.a]),
@@ -135,6 +159,13 @@ export function publishProblems(post: BlogPost, others: Iterable<string>): strin
   if (!post.cover.kicker.trim()) out.push("The cover word is empty.");
   if (post.body.length === 0) out.push("The article has no body.");
   for (const b of post.body) {
+    if (b.type === "image") {
+      if (!isBlogImageSrc(b.src)) out.push(`A picture must be uploaded in the editor or be a file in /public: ${b.src.slice(0, 80)}`);
+      // The words a screen reader says and Google Images indexes — never optional.
+      if (!b.alt.trim()) out.push("Every picture in the article needs alt text.");
+    }
+    if (b.type === "video" && !isYoutubeId(b.id)) out.push(`Not a YouTube video id: "${b.id.slice(0, 40)}"`);
+    if (b.type === "h3" && !b.text.trim()) out.push("A sub-heading is empty.");
     if (b.type === "tip" && !b.title.trim()) out.push("A tip needs a title — `:::tip Exam tip`.");
     if (b.type === "example" && b.rows.some((r) => !r.label.trim())) out.push("Every line of an example needs a label — `Label: text`.");
     if (b.type === "list" && b.items.some((it) => !it.trim())) out.push("A list has an empty item.");
@@ -206,7 +237,10 @@ export function publishProblems(post: BlogPost, others: Iterable<string>): strin
   }
 
   // "questions" is the anchor of the FAQ section the page adds itself.
-  const ids = [...post.body.flatMap((b) => (b.type === "h2" ? [headingId(b.text)] : [])), ...(faq.length ? ["questions"] : [])];
+  const ids = [
+    ...post.body.flatMap((b) => (b.type === "h2" || b.type === "h3" ? [headingId(b.text)] : [])),
+    ...(faq.length ? ["questions"] : []),
+  ];
   for (const id of ids) if (!SLUG.test(id)) out.push(`A heading has no usable anchor: "${id}"`);
   if (new Set(ids).size !== ids.length) out.push("Two headings share an anchor — reword one.");
 
@@ -215,12 +249,18 @@ export function publishProblems(post: BlogPost, others: Iterable<string>): strin
   }
 
   if (post.image) {
-    /* ⚠️ A FILE IN /public ONLY. The cover is drawn by next/image, which
-       throws on any host next.config.ts does not list — and it lists none —
-       so an https photo would take the whole article page down. */
-    if (!/^\/[^/]/.test(post.image.src)) out.push("The photo must be a file in /public, like /blog/cover.jpg.");
+    // See `isBlogImageSrc`: any other host would take the article page down.
+    if (!isBlogImageSrc(post.image.src)) out.push("The cover photo must be uploaded in the editor or be a file in /public, like /blog/cover.jpg.");
     if (!post.image.alt.trim()) out.push("The photo needs alt text.");
   }
+  const keywords = post.keywords ?? [];
+  if (keywords.length > MAX_KEYWORDS) out.push(`${keywords.length} keywords — keep it to ${MAX_KEYWORDS} real searches.`);
+  for (const k of keywords) {
+    if (k !== k.trim().toLowerCase() || !k) out.push(`Keywords are lower-case and trimmed: "${k}"`);
+    if (k.length > 60) out.push(`A keyword is a search, not a sentence: "${k.slice(0, 60)}…"`);
+  }
+  if (new Set(keywords).size !== keywords.length) out.push("A keyword is listed twice.");
+
   if (post.cta && ![post.cta.title, post.cta.text, post.cta.href, post.cta.label].every((s) => s.trim())) {
     out.push("The closing panel needs a title, text, link and button label — or none of them.");
   }

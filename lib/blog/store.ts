@@ -26,10 +26,24 @@ export const BLOG_TAG = "blog";
 
 /** Every column a rendered post needs. */
 export const POST_COLUMNS =
-  "slug, category, skill, title, standfirst, author, published, updated, cover_kicker, image, featured, summary, faq, body, cta";
+  "slug, category, skill, title, standfirst, author, published, updated, cover_kicker, image, featured, summary, faq, body, cta, keywords";
+
+/**
+ * The same list without `keywords`, for a database that has not had migration
+ * 20261006130000 yet.
+ *
+ * ⚠️ DEPLOY ORDER: the app can ship before that migration is applied, and a
+ * select naming a missing column FAILS WHOLE — the blog, the landing section
+ * and the sitemap would all go empty. Every read retries with this list on
+ * "column does not exist" (Postgres 42703), so the only thing a late migration
+ * costs is the keywords themselves.
+ */
+export const LEGACY_POST_COLUMNS = POST_COLUMNS.replace(", keywords", "");
+export const isMissingColumn = (e: { code?: string } | null): boolean => e?.code === "42703";
 
 /** …and what only the editor needs on top. */
 export const STORED_COLUMNS = `id, status, position, updated_at, ${POST_COLUMNS}`;
+export const LEGACY_STORED_COLUMNS = `id, status, position, updated_at, ${LEGACY_POST_COLUMNS}`;
 
 type Row = Record<string, unknown>;
 
@@ -43,6 +57,7 @@ export function rowToPost(r: Row): BlogPost {
   const faq = arr<{ q: string; a: string }>(r.faq);
   const image = r.image as BlogPost["image"] | null;
   const cta = r.cta as BlogPost["cta"] | null;
+  const keywords = arr<string>(r.keywords).filter((k) => typeof k === "string" && k);
   return {
     slug: str(r.slug),
     category: str(r.category) as BlogCategory,
@@ -60,6 +75,7 @@ export function rowToPost(r: Row): BlogPost {
     body: arr<Block>(r.body),
     // Any field keeps it: a draft's half-written panel must survive a reload.
     ...(cta && (cta.title || cta.text || cta.href || cta.label) ? { cta } : {}),
+    ...(keywords.length ? { keywords } : {}),
   };
 }
 
@@ -91,6 +107,7 @@ export function postToRow(post: BlogPost): Row {
     faq: post.faq ?? [],
     body: post.body,
     cta: post.cta ?? null,
+    keywords: post.keywords ?? [],
   };
 }
 
@@ -99,17 +116,21 @@ export function postToRow(post: BlogPost): Row {
    hour. `loadPosts` below catches it for the one render. */
 const loadPublished = unstable_cache(
   async (): Promise<BlogPost[]> => {
-    const { data, error } = await createAdminClient()
-      .from("blog_posts")
-      .select(POST_COLUMNS)
-      .eq("status", "published")
-      .order("published", { ascending: false })
-      .order("position", { ascending: true })
-      .order("slug", { ascending: true });
+    const read = (columns: string) =>
+      createAdminClient()
+        .from("blog_posts")
+        .select(columns)
+        .eq("status", "published")
+        .order("published", { ascending: false })
+        .order("position", { ascending: true })
+        .order("slug", { ascending: true });
+    let { data, error } = await read(POST_COLUMNS);
+    if (isMissingColumn(error)) ({ data, error } = await read(LEGACY_POST_COLUMNS));
     if (error) throw new Error(`blog_posts: ${error.message}`);
-    return (data ?? []).map(rowToPost);
+    return ((data ?? []) as unknown as Row[]).map(rowToPost);
   },
-  ["blog-posts-v1"],
+  // v2: posts carry `keywords` — a v1 entry cached before the deploy lacks it.
+  ["blog-posts-v2"],
   { tags: [BLOG_TAG], revalidate: 3600 },
 );
 
@@ -126,6 +147,16 @@ export const loadPosts = cache(async (): Promise<BlogPost[]> => {
     return [];
   }
 });
+
+/** One post by id, drafts included, uncached — for the editor and the
+ *  preview, both of which run `requireSuperAdmin()` before calling it. */
+export async function loadStoredPost(id: string): Promise<StoredPost | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const read = (columns: string) => createAdminClient().from("blog_posts").select(columns).eq("id", id).maybeSingle();
+  let { data, error } = await read(STORED_COLUMNS);
+  if (isMissingColumn(error)) ({ data, error } = await read(LEGACY_STORED_COLUMNS));
+  return data ? rowToStored(data as unknown as Row) : null;
+}
 
 export async function loadPost(slug: string): Promise<BlogPost | undefined> {
   return (await loadPosts()).find((p) => p.slug === slug);

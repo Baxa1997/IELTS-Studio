@@ -9,6 +9,7 @@ import {
   MUTED,
   SANS,
   STRONG,
+  WELL,
   WHITE,
 } from "./design";
 
@@ -110,6 +111,12 @@ export const BLOG_CSS = `
   .bl-prose{font-family:${SANS};color:${STRONG}}
   .bl-prose p{font-size:18.5px;line-height:1.75;margin:0 0 24px;text-wrap:pretty}
   .bl-prose h2{font-family:${DISPLAY};font-weight:600;font-size:25px;line-height:1.25;letter-spacing:-.02em;color:${INK};margin:44px 0 14px;text-wrap:balance}
+  .bl-prose h3{font-family:${DISPLAY};font-weight:600;font-size:20px;line-height:1.3;letter-spacing:-.015em;color:${INK};margin:32px 0 10px;text-wrap:balance}
+  .bl-prose figure.bl-media{margin:32px 0}
+  .bl-prose figure.bl-media img{display:block;width:100%;height:auto;border-radius:14px}
+  .bl-prose figure.bl-media figcaption{margin-top:10px;font-size:14px;line-height:1.5;color:${MUTED}}
+  .bl-prose .bl-video{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:${WELL}}
+  .bl-prose .bl-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
   .bl-prose strong{color:${INK};font-weight:700}
   .bl-prose a{color:${BRAND};font-weight:600;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
   .bl-prose a:hover{text-decoration-thickness:2px}

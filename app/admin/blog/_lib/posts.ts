@@ -1,7 +1,7 @@
 import "server-only";
 
 import { newestFirst, type StoredPost } from "@/lib/blog";
-import { rowToStored, STORED_COLUMNS } from "@/lib/blog/store";
+import { isMissingColumn, LEGACY_STORED_COLUMNS, rowToStored, STORED_COLUMNS } from "@/lib/blog/store";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -10,18 +10,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 
 export async function listStoredPosts(): Promise<{ posts: StoredPost[]; error: string | null }> {
-  const { data, error } = await createAdminClient()
-    .from("blog_posts")
-    .select(STORED_COLUMNS)
-    .order("published", { ascending: false })
-    .order("position", { ascending: true })
-    .order("slug", { ascending: true });
+  const read = (columns: string) =>
+    createAdminClient()
+      .from("blog_posts")
+      .select(columns)
+      .order("published", { ascending: false })
+      .order("position", { ascending: true })
+      .order("slug", { ascending: true });
+  // See LEGACY_POST_COLUMNS: the keywords migration may not be applied yet.
+  let { data, error } = await read(STORED_COLUMNS);
+  if (isMissingColumn(error)) ({ data, error } = await read(LEGACY_STORED_COLUMNS));
   if (error) return { posts: [], error: error.message };
-  return { posts: newestFirst((data ?? []).map(rowToStored)), error: null };
+  return { posts: newestFirst(((data ?? []) as unknown as Record<string, unknown>[]).map(rowToStored)), error: null };
 }
 
-export async function getStoredPost(id: string): Promise<StoredPost | null> {
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
-  const { data } = await createAdminClient().from("blog_posts").select(STORED_COLUMNS).eq("id", id).maybeSingle();
-  return data ? rowToStored(data) : null;
-}
+export { loadStoredPost as getStoredPost } from "@/lib/blog/store";

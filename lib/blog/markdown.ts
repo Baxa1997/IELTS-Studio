@@ -45,6 +45,12 @@ function block(b: Block, link: (s: string) => string): string[] {
       return [link(b.text)];
     case "h2":
       return [`## ${b.text}`];
+    case "h3":
+      return [`### ${b.text}`];
+    case "image":
+      return [`![${b.alt}](${link(b.src)})${b.caption ? ` — ${b.caption}` : ""}`];
+    case "video":
+      return [`[Video${b.title ? `: ${b.title}` : ""}](https://www.youtube.com/watch?v=${b.id})`];
     case "list":
       return b.items.map((it, i) => `${b.ordered ? `${i + 1}.` : "-"} ${link(it)}`);
     case "quote":

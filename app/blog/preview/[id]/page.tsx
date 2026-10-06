@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { relatedPosts } from "@/lib/blog";
-import { loadPosts, rowToStored, STORED_COLUMNS } from "@/lib/blog/store";
+import { loadPosts, loadStoredPost } from "@/lib/blog/store";
 import { requireSuperAdmin } from "@/lib/auth";
 import { absoluteUrl } from "@/lib/seo";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 import { ArticleView } from "../../_components/article-view";
 
@@ -34,9 +33,8 @@ export default async function BlogPreviewPage({ params }: { params: Promise<{ id
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
 
-  const { data } = await createAdminClient().from("blog_posts").select(STORED_COLUMNS).eq("id", id).maybeSingle();
-  if (!data) notFound();
-  const post = rowToStored(data);
+  const post = await loadStoredPost(id);
+  if (!post) notFound();
   const published = await loadPosts();
 
   return (

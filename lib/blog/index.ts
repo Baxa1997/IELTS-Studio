@@ -94,6 +94,7 @@ function blockText(b: Block): string {
   switch (b.type) {
     case "p":
     case "h2":
+    case "h3":
       return b.text;
     case "list":
       return b.items.join(" ");
@@ -103,6 +104,10 @@ function blockText(b: Block): string {
       return `${b.title} ${b.text}`;
     case "example":
       return [b.title ?? "", ...b.rows.map((r) => `${r.label} ${r.text}`)].join(" ");
+    case "image":
+      return b.caption ?? "";
+    case "video":
+      return "";
   }
 }
 

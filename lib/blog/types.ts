@@ -45,7 +45,25 @@ export type Block =
   /** A boxed aside — "Exam tip", "Try this". */
   | { type: "tip"; title: string; text: string }
   /** Labelled lines, e.g. a Part 2 note map or a weak/stronger sentence pair. */
-  | { type: "example"; title?: string; rows: { label: string; text: string }[] };
+  | { type: "example"; title?: string; rows: { label: string; text: string }[] }
+  /** A sub-heading inside an h2 section. Gets an anchor like an h2. */
+  | { type: "h3"; text: string }
+  /**
+   * A picture in the article. `src` is a file in /public or an upload in the
+   * `blog` storage bucket — see `isBlogImageSrc` in ./validate. `alt` is
+   * required to publish: it is what a screen reader says and what Google
+   * Images indexes. `caption` is plain text.
+   */
+  | { type: "image"; src: string; alt: string; caption?: string }
+  /**
+   * A YouTube video, stored as its 11-character id rather than a URL, so the
+   * renderer decides the embed address (the privacy-enhanced domain) and a
+   * pasted link can never smuggle in some other host.
+   */
+  | { type: "video"; id: string; title?: string };
+
+/** Every block type, for the editor and the sanitiser — derived lists track this. */
+export const BLOCK_TYPES = ["p", "h2", "h3", "list", "quote", "tip", "example", "image", "video"] as const satisfies readonly Block["type"][];
 
 export interface BlogPost {
   /** The URL segment: `/blog/<slug>`. Never change one after it ships — it is
@@ -93,6 +111,13 @@ export interface BlogPost {
   body: Block[];
   /** The panel after the last paragraph — where to practise what was read. */
   cta?: { title: string; text: string; href: string; label: string };
+  /**
+   * The searches this post is written for, lower-case — `meta keywords`, the
+   * BlogPosting `keywords`, and what the editor's SEO checks look for in the
+   * title, standfirst and first paragraph. Google ignores the meta tag itself;
+   * the value is in writing the post AROUND them, which the checks enforce.
+   */
+  keywords?: string[];
 }
 
 export type PostStatus = "draft" | "published";

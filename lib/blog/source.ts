@@ -1,4 +1,5 @@
 import type { Block, BlogPost } from "./types";
+import { youtubeId } from "./video";
 
 /**
  * The text the /admin/blog editor shows for a post's body, FAQ and summary —
@@ -25,6 +26,12 @@ import type { Block, BlogPost } from "./types";
  *     :::example Optional title
  *     Label: text
  *     :::
+ *
+ *     ### A sub-heading
+ *
+ *     ![Alt text](/blog/photo.jpg "Optional caption")
+ *
+ *     ::youtube dQw4w9WgXcQ Optional title
  *
  * Inline markup is the renderer's own (`**bold**`, `*italic*`, `[label](/path)`)
  * and passes through untouched.
@@ -54,8 +61,19 @@ function blockToSource(b: Block): string {
       return [`:::example${b.title ? ` ${b.title}` : ""}`, ...b.rows.map((r) => `${r.label}: ${r.text}`), ":::"].join(
         "\n",
       );
+    case "h3":
+      return `### ${b.text}`;
+    case "image":
+      return `![${b.alt}](${b.src}${b.caption ? ` "${b.caption}"` : ""})`;
+    case "video":
+      return `::youtube ${b.id}${b.title ? ` ${b.title}` : ""}`;
   }
 }
+
+/* One-line blocks. A caption may not contain a double quote — it ends the
+   caption — which the editor's caption field strips. */
+const IMAGE = /^!\[([^\]]*)\]\((\S+)(?:\s+"([^"]*)")?\)$/;
+const VIDEO = /^::youtube\s+(\S+)(?:\s+(.*))?$/;
 
 const BULLET = /^-\s+(.*)$/;
 const NUMBERED = /^\d+\.\s+(.*)$/;
@@ -96,10 +114,34 @@ export function sourceToBlocks(src: string): Block[] {
       continue;
     }
 
-    // Everything else is a run of non-blank lines.
+    const image = IMAGE.exec(line);
+    if (image) {
+      out.push({ type: "image", src: image[2], alt: image[1].trim(), ...(image[3]?.trim() ? { caption: image[3].trim() } : {}) });
+      i++;
+      continue;
+    }
+    const video = VIDEO.exec(line);
+    if (video) {
+      out.push({ type: "video", id: youtubeId(video[1]) ?? video[1], ...(video[2]?.trim() ? { title: video[2].trim() } : {}) });
+      i++;
+      continue;
+    }
+
+    // Everything else is a run of non-blank lines, up to the next one-line block.
     const run: string[] = [];
-    while (i < lines.length && lines[i].trim() && !/^:::(tip|example)\b/.test(lines[i].trim())) {
+    while (
+      i < lines.length &&
+      lines[i].trim() &&
+      !/^:::(tip|example)\b/.test(lines[i].trim()) &&
+      !(run.length && (IMAGE.test(lines[i].trim()) || VIDEO.test(lines[i].trim())))
+    ) {
       run.push(lines[i++].trim());
+    }
+
+    if (run[0].startsWith("### ")) {
+      out.push({ type: "h3", text: run[0].slice(4).trim() });
+      if (run.length > 1) out.push({ type: "p", text: run.slice(1).join(" ") });
+      continue;
     }
 
     if (run[0].startsWith("## ")) {

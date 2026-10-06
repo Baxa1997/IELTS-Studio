@@ -6,7 +6,7 @@ import { recordAdminAction } from "@/lib/admin/audit";
 import { requireSuperAdmin } from "@/lib/auth";
 import type { PostStatus } from "@/lib/blog";
 import { formToPost, type PostForm } from "@/lib/blog/form";
-import { BLOG_TAG, postToRow } from "@/lib/blog/store";
+import { BLOG_TAG, isMissingColumn, postToRow } from "@/lib/blog/store";
 import { draftProblems, publishProblems } from "@/lib/blog/validate";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -84,6 +84,9 @@ export async function savePost(id: string | null, form: Partial<PostForm>, inten
     ? admin.from("blog_posts").update(row).eq("id", id).select("id")
     : admin.from("blog_posts").insert(row).select("id");
   const { data, error } = await write;
+  if (isMissingColumn(error)) {
+    return { ok: false, problems: ["The database is missing the keywords column — apply migration 20261006130000_blog_keywords_and_images.sql in the Supabase SQL editor, then save again."] };
+  }
   if (error || !data?.length) return { ok: false, problems: [`Could not save: ${error?.message ?? "no row written"}`] };
   const savedId = data[0].id as string;
 

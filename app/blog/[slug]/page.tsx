@@ -58,6 +58,7 @@ export async function generateMetadata({
   return {
     title: post.title,
     description: post.standfirst,
+    ...(post.keywords?.length ? { keywords: post.keywords } : {}),
     alternates: blogAlternates(path),
     openGraph: {
       type: "article",
@@ -137,6 +138,7 @@ function articleGraph(post: BlogPost, url: string) {
         articleSection: t(CATEGORY_LABEL[post.category]),
         ...(post.skill ? { about: { "@type": "Thing", name: SKILL_TOPIC[post.skill] } } : {}),
         wordCount: wordCount(post),
+        ...(post.keywords?.length ? { keywords: post.keywords.join(", ") } : {}),
         url,
         mainEntityOfPage: { "@type": "WebPage", "@id": url, ...(practice ? { relatedLink: [practice] } : {}) },
         image: `${url}/opengraph-image`,

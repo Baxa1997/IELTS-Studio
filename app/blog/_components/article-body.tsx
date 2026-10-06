@@ -14,6 +14,7 @@ import {
 } from "@/app/_landing/_lib/design";
 import { headingId, type Block, type BlogPost } from "@/lib/blog";
 import { parseInline } from "@/lib/blog/inline";
+import { youtubeEmbed } from "@/lib/blog/video";
 
 /**
  * A post's body, block by block. Typography lives in `.bl-prose` (blog-css.ts)
@@ -45,6 +46,39 @@ function BlockView({ block: b }: { block: Block }) {
         <h2 id={headingId(b.text)}>
           <Inline text={b.text} />
         </h2>
+      );
+    case "h3":
+      return (
+        <h3 id={headingId(b.text)}>
+          <Inline text={b.text} />
+        </h3>
+      );
+    case "image":
+      return (
+        <figure className="bl-media">
+          {/* A plain <img>, not next/image: an article picture has no known
+              size, and `fill` would need a sized frame that crops it. Lazy, so
+              a long article does not fetch every picture up front. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={b.src} alt={b.alt} loading="lazy" decoding="async" />
+          {b.caption ? <figcaption>{b.caption}</figcaption> : null}
+        </figure>
+      );
+    case "video":
+      return (
+        <figure className="bl-media">
+          <div className="bl-video">
+            <iframe
+              src={youtubeEmbed(b.id)}
+              title={b.title || "Video"}
+              loading="lazy"
+              allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </div>
+          {b.title ? <figcaption>{b.title}</figcaption> : null}
+        </figure>
       );
     case "list": {
       const L = b.ordered ? "ol" : "ul";
