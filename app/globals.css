@@ -5121,14 +5121,16 @@
    page half-painted — the lesson from the Practice AI hero. */
 
 .sa-row:hover {
-  background: #fbfbf9;
+  /* ⚠️ A TOKEN, NEVER A LITERAL: this was #fbfbf9, which in dark mode painted
+     a near-white band behind light text and erased the row it was hovering. */
+  background: var(--tk-well);
 }
 
 .sa-act {
   width: 32px;
   height: 32px;
-  border: 1px solid #e0ded8;
-  background: #fff;
+  border: 1px solid var(--tk-line);
+  background: var(--tk-panel);
   border-radius: 8px;
   display: grid;
   place-items: center;
@@ -5138,19 +5140,19 @@
     border-color 0.12s;
 }
 .sa-act:hover {
-  background: #f4f3ef;
+  background: var(--tk-warm-well);
 }
 .sa-act--go:hover {
-  background: #f1f0fb;
-  border-color: #c9c7e4;
+  background: var(--tk-indigo-soft);
+  border-color: var(--tk-indigo-line);
 }
 .sa-act--warn:hover {
-  background: #fdf4e7;
-  border-color: #ebd3a8;
+  background: var(--tk-slate-amber-bg);
+  border-color: var(--tk-slate-amber-line);
 }
 .sa-act--danger:hover {
-  background: #fbedeb;
-  border-color: #eabcb6;
+  background: var(--tk-slate-red-bg);
+  border-color: var(--tk-line);
 }
 
 /* WHY THESE ARE `sa-` AND NOT `ad-`.
@@ -5195,7 +5197,7 @@
 
 /* Menu and alert rows share one hover, so a dropdown never feels inert. */
 .sa-menu-item:hover {
-  background: #f4f3ef;
+  background: var(--tk-warm-well);
 }
 .sa-act:disabled {
   cursor: default;
