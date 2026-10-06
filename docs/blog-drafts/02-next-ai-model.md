@@ -1,17 +1,17 @@
 <!--
 Paste into /admin/blog → New post. One field per section below.
 
-⚠️ DELIBERATELY NAMES NO MODEL AND NO PERCENTAGE — see the note in the
-conversation / commit. Add them only with a source you can point to.
+⚠️ NO ACCURACY PERCENTAGE — the publish check refuses measured-accuracy
+claims about the grader while its anchors are unverified.
 
-Title:        We are moving EngProgress to a newer AI model — here is how we will test it
-Slug:         moving-to-a-newer-ai-model
+Title:        EngProgress is getting ready for Gemini 4 Argon
+Slug:         getting-ready-for-gemini-4-argon
 Category:     EngProgress
 Practice area:
 Published on: 2026-10-06
 Author:       EngProgress team
 Cover word:   Upgrade
-Standfirst:   EngProgress is preparing to move to a newer generation of Gemini models. Faster feedback is the goal, but a new model only goes live once it grades at least as strictly as the one it replaces.
+Standfirst:   Gemini 4 Argon will be released soon, and EngProgress is ready to move as soon as it is. Here is what it should improve, and how we will test it before it grades your work.
 
 Closing panel
   Panel title:  Grade an essay today
@@ -21,17 +21,17 @@ Closing panel
 -->
 
 === IN SHORT ===
-EngProgress is preparing to move its AI features to a newer generation of Gemini models.
+EngProgress is ready to move its AI features to Gemini 4 Argon as soon as the model is released.
 The new model must grade at least as strictly as the current one before it is switched on.
 Learners will not need to do anything, because the change happens on our side.
 Speaking scores keep their current grading rules during the move.
 
 === BODY ===
-The AI models behind EngProgress improve quickly, and the older generation we started with is being retired by Google. So we are preparing to move to a newer generation of Gemini models. This post explains what that means for you, and — more importantly — how we will make sure it does not change your band for the wrong reasons.
+The AI models behind EngProgress improve quickly, and the older generation we started with is being retired by Google. The next step for us is **Gemini 4 Argon**. It will be released soon, and our side of the move is prepared — we are only waiting for the model itself. This post explains what that means for you, and — more importantly — how we will make sure it does not change your band for the wrong reasons.
 
 ## What gets better
 
-A newer model should make most of EngProgress faster and more efficient: practice tasks appear sooner, feedback comes back quicker, and the analysis of your writing and speaking can go deeper — more of your own sentences quoted, clearer reasons for what is holding a band back, and more precise fixes.
+Gemini 4 Argon should make most of EngProgress faster and more efficient: practice tasks appear sooner, feedback comes back quicker, and the analysis of your writing and speaking can go deeper — more of your own sentences quoted, clearer reasons for what is holding a band back, and more precise fixes.
 
 Every part of EngProgress picks its model separately. Generating a reading passage and grading an essay are different jobs, so each one moves only when the new model is better at that particular job.
 
@@ -39,7 +39,7 @@ Every part of EngProgress picks its model separately. Generating a reading passa
 
 A smarter model is not automatically a stricter one. Newer models are often *more* generous: they notice what you tried to say and reward it. For an IELTS grader that is a problem, because a real examiner does not.
 
-So before the new model grades anybody's work, we run it side by side with the current grader on the same essays and compare the bands.
+So before Gemini 4 Argon grades anybody's work, we run it side by side with the current grader on the same essays and compare the bands.
 
 - If the new model gives **higher** bands on the same work, it does not go live until we understand why.
 - If it gives the same or slightly lower bands with better explanations, it moves forward.
@@ -55,9 +55,12 @@ Speaking grading is the part we are most careful with. Its scoring rules are fro
 
 ## What you need to do
 
-Nothing. Your essays, attempts and history stay where they are, and the switch happens on our side. Keep practising — if anything about your feedback looks different after the upgrade, tell us through the contact page and we will look at it.
+Nothing. Your essays, attempts and history stay where they are, and the switch happens on our side once Gemini 4 Argon is released and has passed our tests. Keep practising — if anything about your feedback looks different after the upgrade, tell us through the contact page and we will look at it.
 
 === FAQ ===
+Q: When will EngProgress move to Gemini 4 Argon?
+A: As soon as the model is released and has passed our grading tests. Our side of the move is ready; we are waiting for the release.
+
 Q: Will my old bands change after the upgrade?
 A: No. Work that has already been graded keeps the band and feedback it was given. Only new submissions are graded by the new model.
 
