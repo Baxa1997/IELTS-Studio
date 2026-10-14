@@ -18,7 +18,9 @@ interface AssembledPrompt {
   user: string;
 }
 
-const TR_LABEL: Record<GradeEssayInput["taskType"], string> = {
+/** What the first criterion is called on each task — exported so a result
+ *  screen names it the way the grader was told to grade it. */
+export const TR_LABEL: Record<GradeEssayInput["taskType"], string> = {
   task1_academic: "Task Achievement",
   task1_general: "Task Achievement",
   task2: "Task Response",

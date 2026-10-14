@@ -4,6 +4,7 @@ import { cache } from "react";
 
 import { composeTestSubtitle } from "@/lib/reading/titles";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { WRITING_TASK } from "@/lib/writing/exam-tasks";
 
 import { alternate, mixSlots } from "./mix";
 import type { FreeSkill } from "./rotation";
@@ -87,12 +88,10 @@ export const MINUTES = {
 /** A full Multilevel Reading paper: Parts 1–5 hold questions 1–35. */
 const CEFR_READING_QUESTIONS = 35;
 
-/** The exam's own names for the writing tasks, and the time each is given. */
-export const WRITING_TASK: Record<string, { kind: string; minutes: number }> = {
-  task2: { kind: "Task 2", minutes: 40 },
-  task1_academic: { kind: "Academic Task 1", minutes: 20 },
-  task1_general: { kind: "General Training Task 1", minutes: 20 },
-};
+/** The exam's own names for the writing tasks, and the time each is given —
+ *  defined in lib/writing/exam-tasks so the /grade checker's browser code can
+ *  read the same numbers. Re-exported for this module's importers. */
+export { WRITING_TASK };
 
 /** The first sentence of a prompt, for a card — the full text is on the page. */
 function firstSentence(text: string, max = 110): string {

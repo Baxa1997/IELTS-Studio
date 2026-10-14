@@ -11,6 +11,7 @@ import {
 import { checkAndRecord, clientIp, hashIp } from "@/lib/public-grader/rate-limit";
 import { toPublicTeaser } from "@/lib/public-grader/teaser";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { figureToText } from "@/lib/writing/figure";
 
 // Grades through the same server-side AI service as the app (skill + anchors +
 // usage logging), then caps the output depth for the anonymous preview.
@@ -21,15 +22,16 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * POST /api/public/grade  — the no-login grader.
- * Body: { promptId, essay }
+ * POST /api/public/grade  — the no-login grader, IELTS tabs (Task 1 and Task 2).
+ * Body: { taskType?, promptId? | customPrompt?, essay }
  *
  * No auth. Defended by (1) a DB-backed per-IP + global rate limit, (2) word-count
- * bounds, and (3) a fixed prompt allow-list. Returns a depth-capped teaser, never
- * the full grade.
+ * bounds, and (3) a fixed prompt allow-list for the samples. The CEFR tab has its
+ * own route beside this one (./cefr), because its grader is the engine's.
  */
 export async function POST(req: Request): Promise<Response> {
   const body = (await req.json().catch(() => ({}))) as {
+    taskType?: unknown;
     promptId?: unknown;
     customPrompt?: unknown;
     essay?: unknown;
@@ -66,10 +68,13 @@ export async function POST(req: Request): Promise<Response> {
     const grade = await gradeEssay({
       taskType: task.taskType,
       promptText: task.promptText,
+      // An Academic sample's chart, so the grader checks the reported numbers —
+      // the same input the signed-in studio and the daily practice send.
+      ...(task.figure ? { figure: figureToText(task.figure) } : {}),
       essayText: essay,
       meta: { organizationId: PUBLIC_ORG_ID, userId: null },
     });
-    return NextResponse.json({ teaser: toPublicTeaser(grade) });
+    return NextResponse.json({ teaser: toPublicTeaser(grade, task.taskType) });
   } catch (err) {
     console.error("[public.grade] failed:", err);
     return fail(502, "grade_failed");

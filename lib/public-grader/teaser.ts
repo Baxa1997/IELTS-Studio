@@ -9,7 +9,8 @@
  * testable.
  */
 
-import type { Criterion, EssayGrade } from "@/lib/ai/schema";
+import { TR_LABEL } from "@/lib/ai/prompts";
+import type { Criterion, EssayGrade, EssayTaskType } from "@/lib/ai/schema";
 
 export interface TeaserCriterion {
   key: Criterion;
@@ -21,6 +22,8 @@ export interface TeaserCriterion {
 }
 
 export interface PublicTeaser {
+  /** What was graded — Task 1 names its first criterion differently. */
+  taskType: EssayTaskType;
   overallBand: number;
   bandWithFixes: number;
   /** The one criterion holding the band back (matches the internal "Fix this first"). */
@@ -32,17 +35,19 @@ export interface PublicTeaser {
 
 const CRITERION_ORDER: Criterion[] = ["TR", "CC", "LR", "GRA"];
 
-const CRITERION_LABEL: Record<Criterion, string> = {
-  TR: "Task Response",
+/** TR is left out on purpose: it is Task Response on Task 2 and Task
+ *  Achievement on Task 1, and `TR_LABEL` — what the grader itself is told —
+ *  decides which. */
+const CRITERION_LABEL: Record<Exclude<Criterion, "TR">, string> = {
   CC: "Coherence & Cohesion",
   LR: "Lexical Resource",
   GRA: "Grammar Range & Accuracy",
 };
 
-export function toPublicTeaser(grade: EssayGrade): PublicTeaser {
+export function toPublicTeaser(grade: EssayGrade, taskType: EssayTaskType = "task2"): PublicTeaser {
   const criteria: TeaserCriterion[] = CRITERION_ORDER.map((key) => ({
     key,
-    label: CRITERION_LABEL[key],
+    label: key === "TR" ? TR_LABEL[taskType] : CRITERION_LABEL[key],
     band: grade.criteria[key].band,
     evidence: grade.criteria[key].evidence,
     whatCapsIt: grade.criteria[key].what_caps_it,
@@ -50,6 +55,7 @@ export function toPublicTeaser(grade: EssayGrade): PublicTeaser {
   }));
 
   return {
+    taskType,
     overallBand: grade.overall_band,
     bandWithFixes: grade.band_with_fixes,
     blocker: grade.score_blocker,

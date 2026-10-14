@@ -20,6 +20,12 @@ import type { PoolItem } from "./pools";
  */
 export class EngineUnavailable extends Error {}
 
+/** Whether the engine can be reached at all — so a route can refuse BEFORE it
+ *  charges the visitor a free grade for a call that cannot happen. */
+export function engineConfigured(): boolean {
+  return Boolean(serverEnv.aiEngine);
+}
+
 /** What the engine is asked for: the whole test, or one part of it. The part
  *  is only sent for a part — an engine older than whole-test support reads a
  *  missing `part` as a bad request rather than as the wrong practice. */
@@ -38,14 +44,17 @@ export async function listeningPublic<T>(path: "render" | "grade", body: unknown
 
 /**
  * The engine's `/multilevel/public/*` — today's free CEFR paper, served and
- * marked. Rendering and marking a Reading paper are quick; grading a Writing
- * task is a model call, so it gets most of the route's 60-second window.
+ * marked, and (`writing/grade-own`) the /grade checker's answer to a task the
+ * visitor brought themselves. Rendering and marking a Reading paper are quick;
+ * grading a Writing task is a model call, so it gets most of the route's
+ * 60-second window.
  */
 export async function multilevelPublic<T>(
-  path: "render" | "reading/grade" | "writing/grade",
+  path: "render" | "reading/grade" | "writing/grade" | "writing/grade-own",
   body: unknown,
 ): Promise<T> {
-  return enginePublic<T>(`/multilevel/public/${path}`, body, path === "writing/grade" ? 55_000 : 20_000);
+  const slow = path === "writing/grade" || path === "writing/grade-own";
+  return enginePublic<T>(`/multilevel/public/${path}`, body, slow ? 55_000 : 20_000);
 }
 
 async function enginePublic<T>(path: string, body: unknown, timeoutMs: number): Promise<T> {

@@ -1,108 +1,107 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Check, FileUp, ListChecks, PenLine, Plus } from "lucide-react";
 
-import { BrandLogo } from "@/shared/components/brand/logo";
-import { getSession, roleHome } from "@/lib/auth";
+import {
+  BODY,
+  BRAND,
+  BRAND_FILL,
+  BRAND_TINT,
+  BRAND_TINT_LINE,
+  DISPLAY,
+  DISPLAY_LG,
+  DISPLAY_XL,
+  FAINT,
+  INK,
+  LEDE,
+  LINE,
+  PANEL,
+  RADIUS,
+  RULE,
+  SANS,
+  SHELL,
+  STRONG,
+  WELL,
+  cardStyle,
+  eyebrow,
+} from "@/app/_landing/_lib/design";
+import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
+import { translator, type MessageKey } from "@/lib/i18n";
+import { SOURCE_LOCALE } from "@/lib/i18n/locales";
 import { absoluteUrl, getSiteUrl } from "@/lib/seo";
 
 import { PublicGrader } from "./_components/grader";
-import { BRAND, BRAND_FILL, FAINT, PAGE_GRAD_BOTTOM, PAGE_GRAD_TOP, PANEL, SLATE_BODY, SLATE_BODY as MUTED, SLATE_INK as INK, SLATE_LINE as LINE, SLATE_STRONG, WARM_LINE_SOFT, WELL as SOFT, WHITE } from "@/lib/theme/tokens";
+import { GRADE_CSS } from "./_lib/grade-css";
 
-// ---- Brand tokens (mirrors the internal writing studio / essay-feedback look) --
-const SANS = "var(--font-hanken), system-ui, sans-serif";
-const SERIF = "var(--font-newsreader), Georgia, serif";
-const SOFT_LINE = WARM_LINE_SOFT;
+/**
+ * /grade — the free writing checker: IELTS Task 1, Task 2 and CEFR Multilevel
+ * writing, graded with no account.
+ *
+ * ENGLISH ON EVERY LOCALE, like the blog and the free practice (see
+ * app/practice/[skill]/page.tsx): the questions and every word the grader
+ * writes back are English, and a page whose chrome switched language halfway
+ * down would read as a mistake. The copy is keyed all the same — swapping
+ * `SOURCE_LOCALE` for the visitor's locale is the whole change the day that
+ * decision moves. The header island and the footer, outside `<main>`, follow
+ * the visitor's language as on every marketing page.
+ *
+ * ⚠️ STATIC, ON PURPOSE. It used to call `getSession()` to show "Open your
+ * dashboard", which made every visit render per request. The site header now
+ * reads the session in the browser (SiteNav), so nothing here depends on the
+ * request and the page is served from cache — it is the front door's "Start
+ * free assessment" target, so it is the second page most visitors load.
+ */
 
-// ---- SEO -------------------------------------------------------------------
-
-const PAGE_TITLE = "Free IELTS Writing Checker — Instant AI Band Score & Fixes";
-const PAGE_DESCRIPTION =
-  "Check your IELTS Writing Task 2 essay online, free. Paste your text or upload a photo/PDF and " +
-  "get an instant, examiner-strict band for all four criteria plus your top 3 fixes. " +
-  "Conservative grading you can trust on exam day. No sign-up needed.";
+const t = translator(SOURCE_LOCALE);
 
 export const metadata: Metadata = {
-  title: PAGE_TITLE,
-  description: PAGE_DESCRIPTION,
+  title: t("grade.metaTitle"),
+  description: t("grade.metaDesc"),
   keywords: [
     "IELTS writing checker",
     "IELTS essay checker",
+    "IELTS writing task 1 checker",
     "IELTS writing task 2 checker",
+    "IELTS letter checker",
     "IELTS band score checker",
+    "CEFR writing checker",
+    "Multilevel writing checker",
     "free IELTS writing correction",
     "AI IELTS grader",
-    "IELTS writing practice",
     "check IELTS essay from photo",
   ],
   alternates: { canonical: "/grade" },
   openGraph: {
     type: "website",
     url: "/grade",
-    title: PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
+    title: t("grade.metaTitle"),
+    description: t("grade.metaDesc"),
   },
   twitter: {
     card: "summary_large_image",
-    title: PAGE_TITLE,
-    description: PAGE_DESCRIPTION,
+    title: t("grade.metaTitle"),
+    description: t("grade.metaDesc"),
   },
 };
 
-export const dynamic = "force-dynamic";
-
-// The FAQ renders on the page AND feeds the FAQPage JSON-LD from one array, so the
+// The FAQ renders on the page AND feeds the FAQPage JSON-LD from one list, so the
 // structured data always matches the visible content (a Google requirement).
-const FAQS: Array<{ q: string; a: string }> = [
-  {
-    q: "How accurate is the AI band score?",
-    a:
-      "The grader is grounded in the official public IELTS band descriptors and anchored to " +
-      "annotated sample essays at every band. It scores each criterion separately, with evidence, " +
-      "and it is deliberately conservative: when your essay sits between two bands, it rounds " +
-      "down — so the band you see here is one you can defend on exam day.",
-  },
-  {
-    q: "Is this IELTS writing checker really free?",
-    a:
-      "Yes. You can grade an essay here without creating an account. A free account unlocks the " +
-      "full report — the evidence behind every score, what is capping each criterion, sentence-level " +
-      "fixes, and the revision loop where you rewrite and re-grade the same essay.",
-  },
-  {
-    q: "Can I upload a photo or PDF of my essay?",
-    a:
-      "Yes — upload a photo of your handwritten essay or a PDF and we transcribe it exactly as " +
-      "written (no corrections), so the grader sees your real writing. Review the text, then grade.",
-  },
-  {
-    q: "What does the checker grade?",
-    a:
-      "IELTS Writing Task 2 essays, on the same four criteria as the real exam: Task Response, " +
-      "Coherence & Cohesion, Lexical Resource, and Grammatical Range & Accuracy. You get a band per " +
-      "criterion, an overall band, and your top 3 fixes.",
-  },
-  {
-    q: "Which IELTS writing checker gives the closest band to a real examiner?",
-    a:
-      "The only honest test is whether your practice band matches your exam-day band. EngProgress is " +
-      "built for exactly that: grading is grounded in the official public band descriptors, anchored " +
-      "to annotated sample essays at every band, and kept deliberately conservative so it never flatters you. " +
-      "Whichever checker you use, prefer one that shows evidence for every score and errs low — an " +
-      "inflated band is the most expensive kind of wrong.",
-  },
-  {
-    q: "Why is my band here lower than on other AI checkers?",
-    a:
-      "Because we refuse to inflate. Most free tools flatter you with a band you will not get in the " +
-      "exam. Our grader is deliberately conservative: between two bands it rounds down and tells you " +
-      "exactly what is missing for the higher one. A real 6.5 you can trust beats a false 7.0.",
-  },
-  {
-    q: "Is EngProgress affiliated with IELTS?",
-    a:
-      "No. EngProgress is not affiliated with or endorsed by IELTS®, the British Council, IDP, or " +
-      "Cambridge Assessment English. All practice questions are original and written for practice.",
-  },
+const FAQ: { q: MessageKey; a: MessageKey }[] = [
+  { q: "grade.faq1q", a: "grade.faq1a" },
+  { q: "grade.faq2q", a: "grade.faq2a" },
+  { q: "grade.faq3q", a: "grade.faq3a" },
+  { q: "grade.faq4q", a: "grade.faq4a" },
+  { q: "grade.faq5q", a: "grade.faq5a" },
+  { q: "grade.faq6q", a: "grade.faq6a" },
+  { q: "grade.faq7q", a: "grade.faq7a" },
+  { q: "grade.faq8q", a: "grade.faq8a" },
+];
+
+const POINTS: MessageKey[] = ["grade.pointFree", "grade.pointUpload", "grade.pointStrict"];
+
+const STEPS: { title: MessageKey; body: MessageKey; icon: React.ReactNode }[] = [
+  { title: "grade.step1T", body: "grade.step1B", icon: <ListChecks size={18} strokeWidth={2} /> },
+  { title: "grade.step2T", body: "grade.step2B", icon: <FileUp size={18} strokeWidth={2} /> },
+  { title: "grade.step3T", body: "grade.step3B", icon: <PenLine size={18} strokeWidth={2} /> },
 ];
 
 function jsonLd() {
@@ -111,21 +110,21 @@ function jsonLd() {
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      name: "EngProgress IELTS Writing Checker",
+      name: t("grade.appName"),
       url: absoluteUrl("/grade"),
       applicationCategory: "EducationalApplication",
       operatingSystem: "Web",
-      description: PAGE_DESCRIPTION,
+      description: t("grade.metaDesc"),
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
       publisher: { "@type": "Organization", name: "EngProgress", url: site },
     },
     {
       "@context": "https://schema.org",
       "@type": "FAQPage",
-      mainEntity: FAQS.map((f) => ({
+      mainEntity: FAQ.map((f) => ({
         "@type": "Question",
-        name: f.q,
-        acceptedAnswer: { "@type": "Answer", text: f.a },
+        name: t(f.q),
+        acceptedAnswer: { "@type": "Answer", text: t(f.a) },
       })),
     },
     {
@@ -133,116 +132,240 @@ function jsonLd() {
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "EngProgress", item: site },
-        { "@type": "ListItem", position: 2, name: "Free IELTS Writing Checker", item: absoluteUrl("/grade") },
+        { "@type": "ListItem", position: 2, name: t("grade.appName"), item: absoluteUrl("/grade") },
       ],
     },
   ];
 }
 
-// ---- Page --------------------------------------------------------------------
-
-export default async function PublicGradePage() {
-  // Optional: signed-in visitors get a shortcut to the full app, but no redirect —
-  // the page is intentionally reachable by anyone.
-  const session = await getSession();
-
-  const navBtn: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    height: 38,
-    padding: "0 16px",
-    borderRadius: 10,
-    fontSize: 14,
-    fontWeight: 700,
-    textDecoration: "none",
-  };
-
+export default function PublicGradePage() {
   return (
-    <div style={{ minHeight: "100dvh", background: `linear-gradient(180deg, ${PAGE_GRAD_TOP}, ${PAGE_GRAD_BOTTOM})`, fontFamily: SANS, color: INK }}>
+    <>
+      <style>{GRADE_CSS}</style>
       <script
         type="application/ld+json"
         // Structured data for rich results — WebApplication + FAQPage + breadcrumbs.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd()) }}
       />
 
-      {/* ---- Header (same bar as the internal feedback page) ---- */}
-      <header style={{ height: 60, background: PANEL, borderBottom: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}>
-        <Link href="/" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }} aria-label="EngProgress home">
-          <BrandLogo tone="dark" fontSize={19} />
-        </Link>
-        <nav style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {session ? (
-            <Link href={roleHome(session.role)} style={{ ...navBtn, border: `1px solid ${WARM_LINE_SOFT}`, background: SOFT, color: SLATE_STRONG }}>
-              Open your dashboard
-            </Link>
-          ) : (
-            <>
-              <Link href="/sign-in" style={{ ...navBtn, color: SLATE_STRONG }}>
-                Sign in
-              </Link>
-              <Link href="/sign-in" style={{ ...navBtn, background: BRAND_FILL, color: WHITE, boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
-                Create free account
-              </Link>
-            </>
-          )}
-        </nav>
-      </header>
+      {/* ---- Hero ---- */}
+      <section
+        style={{
+          ...SHELL,
+          maxWidth: 1180,
+          padding: "clamp(30px,5vw,56px) 28px clamp(22px,3.5vw,34px)",
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 10,
+            border: `1px solid ${BRAND_TINT_LINE}`,
+            background: BRAND_TINT,
+            color: BRAND,
+            borderRadius: RADIUS.pill,
+            padding: "8px 16px",
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+          }}
+        >
+          <span
+            aria-hidden
+            style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND_FILL }}
+          />
+          {t("grade.eyebrow")}
+        </div>
+        {/* <h1 style={{ ...DISPLAY_XL, margin: "20px auto 0", maxWidth: 780 }}>
+          {t("grade.titleA")} <span style={{ color: BRAND }}>{t("grade.titleB")}</span>
+        </h1> */}
+        {/* <p style={{ ...LEDE, margin: "18px auto 0", maxWidth: 640 }}>{t("grade.lead")}</p> */}
+        <ul
+          style={{
+            listStyle: "none",
+            padding: 0,
+            margin: "22px 0 0",
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: "10px 22px",
+          }}
+        >
+          {POINTS.map((p) => (
+            <li
+              key={p}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                fontSize: 14.5,
+                fontWeight: 600,
+                color: STRONG,
+              }}
+            >
+              <span aria-hidden style={{ display: "inline-flex", color: BRAND }}>
+                <Check size={16} strokeWidth={2.6} />
+              </span>
+              {t(p)}
+            </li>
+          ))}
+        </ul>
+      </section>
 
-      <main style={{ maxWidth: 1040, margin: "0 auto", padding: "36px 24px 56px" }}>
-        {/* ---- Hero — short ---- */}
-        <section style={{ textAlign: "center", marginBottom: 26 }}>
-          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, letterSpacing: ".12em", color: BRAND, textTransform: "uppercase" }}>
-            Free IELTS Writing checker
-          </p>
-          <h1 style={{ margin: "10px 0 0", fontFamily: SERIF, fontSize: "clamp(30px, 4.6vw, 42px)", lineHeight: 1.12, fontWeight: 600, letterSpacing: "-.015em", color: INK }}>
-            Paste your essay. Get a real band.
-          </h1>
-          <p style={{ margin: "12px auto 0", fontSize: 16, lineHeight: 1.6, color: MUTED, maxWidth: 600 }}>
-            Grade your own writing — text, photo, or PDF — or write to a sample question first.
-            Scored on the four examiner criteria, conservatively: your 6.5 here is a real 6.5 on exam day.
-          </p>
-        </section>
+      {/* ---- The checker, on its own ground so the white card reads as the
+              object on the page ---- */}
+      <section
+        id="checker"
+        style={{
+          background: WELL,
+          borderTop: `1px solid ${RULE}`,
+          borderBottom: `1px solid ${RULE}`,
+        }}
+      >
+        <div
+          style={{
+            ...SHELL,
+            maxWidth: 1180,
+            padding: "clamp(22px,3vw,34px) 28px clamp(30px,4vw,48px)",
+          }}
+        >
+          {/* The grader is a client component and reads its copy from `useT()`;
+              pinned so it renders the same English as the page around it,
+              whatever language the visitor's cookie says. */}
+          <LocaleProvider pin={SOURCE_LOCALE}>
+            <PublicGrader />
+          </LocaleProvider>
+        </div>
+      </section>
 
-        {/* ---- The grader ---- */}
-        <PublicGrader />
+      {/* ---- How it works ---- */}
+      <section style={{ ...SHELL, maxWidth: 1180, padding: "clamp(40px,5vw,64px) 28px 0" }}>
+        <div style={eyebrow(true)}>{t("grade.howEyebrow")}</div>
+        <h2 style={{ ...DISPLAY_LG, margin: "14px 0 0" }}>{t("grade.howTitle")}</h2>
+        <ol
+          style={{
+            listStyle: "none",
+            padding: 0,
+            margin: "26px 0 0",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(min(260px,100%),1fr))",
+            gap: 18,
+          }}
+        >
+          {STEPS.map((s, i) => (
+            <li key={s.title} style={cardStyle(24)}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span
+                  aria-hidden
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: RADIUS.icon,
+                    background: BRAND_TINT,
+                    color: BRAND,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flex: "none",
+                  }}
+                >
+                  {s.icon}
+                </span>
+                <span
+                  style={{
+                    fontFamily: DISPLAY,
+                    fontWeight: 600,
+                    fontSize: 13,
+                    color: FAINT,
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  0{i + 1}
+                </span>
+              </div>
+              <h3
+                style={{
+                  fontFamily: DISPLAY,
+                  fontWeight: 600,
+                  fontSize: 19,
+                  letterSpacing: "-0.01em",
+                  color: INK,
+                  margin: "16px 0 0",
+                }}
+              >
+                {t(s.title)}
+              </h3>
+              <p style={{ fontSize: 15.5, lineHeight: 1.6, color: BODY, margin: "8px 0 0" }}>
+                {t(s.body)}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </section>
 
-        {/* ---- FAQ (collapsed — matches the FAQPage JSON-LD) ---- */}
-        <section style={{ marginTop: 56 }}>
-          <h2 style={{ margin: 0, fontFamily: SERIF, fontSize: 25, fontWeight: 600, letterSpacing: "-.01em", color: INK }}>
-            Frequently asked questions
-          </h2>
-          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 9 }}>
-            {FAQS.map((f) => (
-              <details key={f.q} style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 13, padding: "15px 18px" }}>
-                <summary style={{ cursor: "pointer", fontSize: 15, fontWeight: 700, color: INK, listStyle: "none" }}>{f.q}</summary>
-                <p style={{ margin: "10px 0 0", fontSize: 14.5, lineHeight: 1.65, color: MUTED }}>{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        {/* ---- Footer ---- */}
-        <footer style={{ marginTop: 44, borderTop: `1px solid ${SOFT_LINE}`, paddingTop: 18, display: "flex", flexWrap: "wrap", gap: 14, alignItems: "baseline", justifyContent: "space-between" }}>
-          <p style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: FAINT, maxWidth: 620 }}>
-            Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge
-            Assessment English. All questions are original and written for practice.
-          </p>
-          <nav style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-            <Link href="/" style={footLink}>Home</Link>
-            <Link href="/#pricing" style={footLink}>Pricing</Link>
-            <Link href="/privacy" style={footLink}>Privacy</Link>
-            <Link href="/terms" style={footLink}>Terms</Link>
-            <Link href="/sign-in" style={footLink}>Sign up</Link>
-          </nav>
-        </footer>
-      </main>
-    </div>
+      {/* ---- FAQ (collapsed — the same list as the FAQPage JSON-LD) ---- */}
+      <section
+        style={{
+          ...SHELL,
+          maxWidth: 900,
+          padding: "clamp(44px,5.5vw,72px) 28px clamp(40px,5vw,64px)",
+        }}
+      >
+        <h2 style={{ ...DISPLAY_LG, margin: 0, textAlign: "center" }}>{t("grade.faqTitle")}</h2>
+        <div style={{ marginTop: 26, display: "flex", flexDirection: "column", gap: 10 }}>
+          {FAQ.map((f) => (
+            <details
+              key={f.q}
+              className="gr-faq"
+              style={{
+                background: PANEL,
+                border: `1px solid ${LINE}`,
+                borderRadius: 16,
+                padding: "16px 20px",
+              }}
+            >
+              <summary
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 14,
+                  fontFamily: SANS,
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: INK,
+                }}
+              >
+                {t(f.q)}
+                <span
+                  aria-hidden
+                  className="gr-faq-plus"
+                  style={{ display: "inline-flex", color: BRAND, flex: "none" }}
+                >
+                  <Plus size={18} strokeWidth={2.2} />
+                </span>
+              </summary>
+              <p style={{ margin: "12px 0 0", fontSize: 15, lineHeight: 1.65, color: BODY }}>
+                {t(f.a)}
+              </p>
+            </details>
+          ))}
+        </div>
+        <p
+          style={{
+            margin: "30px 0 0",
+            fontSize: 12.5,
+            lineHeight: 1.6,
+            color: FAINT,
+            textAlign: "center",
+          }}
+        >
+          {t("lp.disclaimer")} {t("grade.original")}
+        </p>
+      </section>
+    </>
   );
 }
-
-const footLink: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 600,
-  color: SLATE_BODY,
-  textDecoration: "none",
-};

@@ -319,10 +319,14 @@ export function LandingPage({ locale }: { locale: Locale }) {
         <SiteHeader />
         <main>
           <Hero t={t} />
+          {/* FIRST AFTER THE HERO — the owner's call (2026-10-14). The free
+              practice is the one thing on this page a visitor can USE without an
+              account, so it sits where the hero's second button can jump to it
+              in one short scroll, ahead of the stats and the product tour. */}
+          <PracticeTodaySection t={t} />
           <Stats t={t} />
           <HeroProcessDemo />
           <DemoSection t={t} />
-          <PracticeTodaySection t={t} />
           <BlogSection t={t} locale={locale} />
           <ResultsSection t={t} />
           <Platform t={t} />
@@ -406,8 +410,13 @@ function Hero({ t }: { t: Translate }) {
           >
             {t("lp.ctaStart")}
           </Link>
+          {/* A HASH, NOT "/#free-practice". The same component renders every
+              locale's landing page — the default one at `/` and the prefixed
+              ones — and a rooted href would carry a reader on a prefixed page
+              off to the default-language one to scroll it. `section[id]` in
+              globals.css gives the target its sticky-header clearance. */}
           <Link
-            href="/how-to-use"
+            href={`#${FREE_PRACTICE_ID}`}
             className="lp-ghost"
             style={{ ...ghostButton(), display: "inline-flex", alignItems: "center", gap: 10 }}
           >
@@ -427,7 +436,7 @@ function Hero({ t }: { t: Translate }) {
             >
               ▶
             </span>
-            {t("lp.ctaHow")}
+            {t("lp.ctaPractice")}
           </Link>
         </div>
 
@@ -490,6 +499,9 @@ function Stats({ t }: { t: Translate }) {
     </section>
   );
 }
+
+/** The free-practice section's anchor — the hero's second button jumps to it. */
+const FREE_PRACTICE_ID = "free-practice";
 
 /** The four skill chips under the hero. Same keys the sidebar and the skill
  *  cards use — a learner should not meet three different words for "Reading". */
@@ -934,10 +946,16 @@ function DemoSection({ t }: { t: Translate }) {
  * STATIC, LIKE THE REST OF THE PAGE. The cards name the skill, not the
  * practice: which practice a visitor gets is decided per visitor on the
  * practice page, and reading a cookie here would make the front door dynamic.
+ *
+ * ⚠️ NO `lp-below-fold` HERE, unlike the sections further down. It now sits
+ * straight under the hero, where it is on screen within one scroll — and
+ * `content-visibility:auto` would hold it at a 760px placeholder until then, so
+ * on a phone (five cards stacked, far taller than 760px) the page would jump
+ * right where the reader is looking, and land the hero button's jump short.
  */
 function PracticeTodaySection({ t }: { t: Translate }) {
   return (
-    <section id="free-practice" className="lp-below-fold" style={{ ...SHELL, padding: "56px 28px 20px" }}>
+    <section id={FREE_PRACTICE_ID} style={{ ...SHELL, padding: "56px 28px 20px" }}>
       <Head eyebrow={t("free.eyebrow")} title={t("free.title")} sub={t("free.sub")} />
       <div className="bl-grid bl-grid-5" style={{ marginTop: 36 }}>
         {PRACTICE_CARD_SKILLS.map((s) => (

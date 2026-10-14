@@ -44,6 +44,11 @@ const SAME_ON_PURPOSE: Record<string, string> = {
   "write.acadT1": "IELTS module name, used in English in UZ/RU classrooms",
   "write.acadT2": "IELTS module name, used in English in UZ/RU classrooms",
   "write.gt": "IELTS module name, used in English in UZ/RU classrooms",
+  /* The /grade checker. "Writing" is the paper's own name and stays English in
+     UZ/RU, as in write.hub; "band" is the IELTS score's name, as in
+     write.anyBand. */
+  "grade.tabCefr": "the exam section's name — Writing stays English in UZ/RU",
+  "grade.plusBand": "band is the IELTS score's own name in UZ/RU classrooms",
   "su.email": "Uzbek uses the English word for an email address",
   /* The tail of "By creating an account you agree to our X and Y." Uzbek puts
      the verb last, so the sentence needs a piece AFTER the second link and this
@@ -127,5 +132,18 @@ describe("the dictionaries", () => {
       .filter((l) => /^\s*"/.test(l) && /[a-zA-Z]'[a-zA-Z]/.test(l))
       .map((l) => l.trim());
     expect(bad, "use ʻ (U+02BB) in oʻ / gʻ").toEqual([]);
+  });
+
+  it("writes Uzbek in the Latin script, with no Cyrillic letter inside it", () => {
+    /* ⚠️ A CYRILLIC LETTER IN A LATIN WORD IS INVISIBLE. `е`, `н` and `и` look
+       like their Latin twins in most fonts, so "Essени" — the landing page's
+       final button until 2026-10-14 — reads as "Esseni" to a reviewer, passes
+       every other check here, and fails search, copy-paste and a screen reader.
+       Uzbek here is Latin-only; a word typed on a Russian layout is the usual
+       way one gets in. */
+    const mixed = keys
+      .filter((k) => /[Ѐ-ӿ]/.test(DICTIONARIES.uz[k]))
+      .map((k) => `uz ${k}: "${DICTIONARIES.uz[k]}"`);
+    expect(mixed).toEqual([]);
   });
 });

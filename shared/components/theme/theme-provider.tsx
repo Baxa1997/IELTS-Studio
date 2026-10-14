@@ -9,7 +9,13 @@ import {
   useSyncExternalStore,
 } from "react";
 
-import { isThemeMode, resolveTheme, THEME_STORAGE_KEY, type ThemeMode } from "@/lib/theme/mode";
+import {
+  DEFAULT_THEME_MODE,
+  isThemeMode,
+  resolveTheme,
+  THEME_STORAGE_KEY,
+  type ThemeMode,
+} from "@/lib/theme/mode";
 
 interface ThemeCtx {
   /** What the user chose: light, dark, or follow the OS. */
@@ -57,7 +63,8 @@ function readMode(): ThemeMode {
     // Site data blocked (private window, embedded webview, a hardened browser).
     // `ThemeScript` hit the same wall and left the page light; agree with it.
   }
-  return "system";
+  // Never chosen: the default, which is light — not the OS. See lib/theme/mode.
+  return DEFAULT_THEME_MODE;
 }
 
 function modeSnapshot(): ThemeMode {
@@ -65,11 +72,11 @@ function modeSnapshot(): ThemeMode {
   return cachedMode;
 }
 
-/** The server has no localStorage. "system" is also what `ThemeScript` assumes
- *  for a reader who has never chosen, so the first frame agrees with the class
- *  that script already put on <html>. */
+/** The server has no localStorage. The default is also what `ThemeScript`
+ *  assumes for a reader who has never chosen, so the first frame agrees with the
+ *  class that script already put on <html>. */
 function modeServerSnapshot(): ThemeMode {
-  return "system";
+  return DEFAULT_THEME_MODE;
 }
 
 function subscribeMode(listener: () => void): () => void {

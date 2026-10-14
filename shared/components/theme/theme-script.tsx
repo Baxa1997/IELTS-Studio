@@ -1,4 +1,4 @@
-import { THEME_STORAGE_KEY } from "@/lib/theme/mode";
+import { DEFAULT_THEME_MODE, THEME_STORAGE_KEY } from "@/lib/theme/mode";
 
 /**
  * The no-flash script. Renders as a synchronous <script> in <head>, so it runs
@@ -15,12 +15,16 @@ import { THEME_STORAGE_KEY } from "@/lib/theme/mode";
  * webviews. An exception here happens before hydration and would take the whole
  * page down, so the body is wrapped in a bare try/catch whose fallback is
  * simply "stay light".
+ *
+ * A reader with no stored choice gets `DEFAULT_THEME_MODE` — light, NOT their
+ * OS setting (see lib/theme/mode). The OS is consulted only when "system" has
+ * actually been chosen.
  */
 const SCRIPT = `
 (function(){
   try {
     var m = localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});
-    if (m !== "light" && m !== "dark" && m !== "system") m = "system";
+    if (m !== "light" && m !== "dark" && m !== "system") m = ${JSON.stringify(DEFAULT_THEME_MODE)};
     var dark = m === "dark" ||
       (m === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
     var el = document.documentElement;

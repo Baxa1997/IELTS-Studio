@@ -23,8 +23,21 @@ export type ThemeMode = "light" | "dark" | "system";
 
 export const THEME_MODES: ThemeMode[] = ["light", "dark", "system"];
 
-/** The `localStorage` key. Also hard-coded inside `ThemeScript`'s source string,
- *  which cannot import it — change one and you must change the other. */
+/**
+ * What a reader who has never chosen gets: LIGHT, whatever their OS is set to.
+ *
+ * ⚠️ NOT "system", and that is the owner's call (2026-10-14), not an oversight.
+ * It used to be "system", so every visitor on a dark-mode phone or laptop met
+ * the site dark on their first visit — the product's own first impression, and
+ * the one its screenshots and marketing are drawn in, is light. Following the
+ * device is still one tap away in Settings; it is just no longer what happens
+ * by default. `ThemeScript`, the provider's fallback and its server snapshot all
+ * read this one constant, so they cannot disagree about the first frame.
+ */
+export const DEFAULT_THEME_MODE: ThemeMode = "light";
+
+/** The `localStorage` key. `ThemeScript` interpolates it into its source string,
+ *  so the two cannot drift. */
 export const THEME_STORAGE_KEY = "ep-theme";
 
 export function isThemeMode(v: unknown): v is ThemeMode {
