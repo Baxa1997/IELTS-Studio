@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
+import nextConfig, { DEFAULT_LOCALE_REDIRECTS } from "@/next.config";
 
 /**
  * THE LANDING PAGE IS THREE URLS AND THEY HAVE TO AGREE.
@@ -47,6 +48,19 @@ describe("the localised landing routes", () => {
   it("declare each other with hreflang, and name an x-default", () => {
     expect(landing).toMatch(/alternates:\s*\{[\s\S]{0,400}languages:/);
     expect(landing).toContain('"x-default"');
+  });
+
+  it("send the default language's own prefix to the bare URL, permanently", async () => {
+    /* ⚠️ NOT A 404. /en was the indexed English page until English became the
+       default; when it 404'd, the ChatGPT referrals through it went with it. A
+       permanent redirect carries every old URL, landing and guides alike, to
+       its unprefixed address — and is derived, so the next flip is covered. */
+    expect(DEFAULT_LOCALE_REDIRECTS).toEqual([
+      { source: `/${DEFAULT_LOCALE}`, destination: "/", permanent: true },
+      { source: `/${DEFAULT_LOCALE}/:path*`, destination: "/:path*", permanent: true },
+    ]);
+    const live = await nextConfig.redirects!();
+    for (const r of DEFAULT_LOCALE_REDIRECTS) expect(live).toContainEqual(r);
   });
 
   it("keep the default language on the bare URL", () => {

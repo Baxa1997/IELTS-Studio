@@ -1,5 +1,26 @@
 import type { NextConfig } from "next";
 
+import { DEFAULT_LOCALE } from "./lib/i18n/locales";
+
+/**
+ * The default locale owns the UNPREFIXED URLs, so its own prefix must never
+ * answer — but it must not 404 either.
+ *
+ * ⚠️ THAT 404 COST REAL TRAFFIC. English was at `/en` from 2026-09-19 to
+ * 2026-10-05, the URL search engines indexed as the English page and the one
+ * `x-default` pointed at. When English became the default it moved to `/`, and
+ * `/en`, `/en/how-to-use` and `/en/how-to-use/education-centers` simply went
+ * away; the ChatGPT referrals that came through them fell with them. A
+ * permanent redirect hands each old URL's standing to its new address.
+ *
+ * DERIVED, so the next flip of `DEFAULT_LOCALE` redirects whichever prefix it
+ * orphans instead of repeating this.
+ */
+export const DEFAULT_LOCALE_REDIRECTS = [
+  { source: `/${DEFAULT_LOCALE}`, destination: "/", permanent: true },
+  { source: `/${DEFAULT_LOCALE}/:path*`, destination: "/:path*", permanent: true },
+];
+
 const nextConfig: NextConfig = {
   // The AI grader reads the `ielts-examiner` skill (rubric, taxonomy, anchors,
   // output schema) from disk at runtime. Trace those files into the server
@@ -20,7 +41,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [{ protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/blog/**" }],
   },
   async redirects() {
-    return [{ source: "/multilevel", destination: "/cefr", permanent: false }];
+    return [{ source: "/multilevel", destination: "/cefr", permanent: false }, ...DEFAULT_LOCALE_REDIRECTS];
   },
 
   experimental: {

@@ -135,7 +135,7 @@ const PRACTICE_ROUTES = FREE_SKILLS.map((skill) => ({
  */
 export const PUBLIC_ROUTES = [
   { path: "/", label: "EngProgress — IELTS and CEFR practice with AI band feedback", section: "product", priority: 1, changeFrequency: "weekly" },
-  { path: "/grade", label: "Free IELTS Writing checker — paste an essay, get a band per criterion", section: "product", priority: 0.85, changeFrequency: "monthly" },
+  { path: "/grade", label: "Free IELTS and CEFR writing checker — Task 1, Task 2 and Multilevel writing, a band or level per criterion, no account needed", section: "product", priority: 0.85, changeFrequency: "monthly" },
   { path: "/demo", label: "Interactive product demo", section: "product", priority: 0.8, changeFrequency: "monthly" },
   { path: "/ielts-practice", label: "IELTS practice — all four skills", section: "product", priority: 0.8, changeFrequency: "monthly" },
   { path: "/ielts-writing-practice", label: "IELTS Writing practice", section: "product", priority: 0.8, changeFrequency: "monthly" },

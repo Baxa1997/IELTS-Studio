@@ -28,8 +28,10 @@ const PUBLIC_PATHS = [
   // crawler to /sign-in — which would make the localised pages worse than not
   // having them, since Google would index a redirect where the hreflang
   // promised a page. English is the default and lives at "/" above, so there is
-  // no "/en": that path is a 404 by design, and it is listed anyway so it
-  // ANSWERS 404 instead of redirecting a crawler to the sign-in page.
+  // no "/en" page: next.config.ts permanently redirects it (and everything
+  // under it) to the unprefixed URL before this runs. Still listed, so that if
+  // the redirect ever goes the path at least answers instead of sending a
+  // crawler to the sign-in page.
   "/en",
   "/ru",
   "/uz",
