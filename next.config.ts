@@ -21,6 +21,27 @@ export const DEFAULT_LOCALE_REDIRECTS = [
   { source: `/${DEFAULT_LOCALE}/:path*`, destination: "/:path*", permanent: true },
 ];
 
+/**
+ * Public pages that were deleted but whose job lives on at another URL. Each
+ * was in the sitemap, so Google knows it; a permanent redirect hands its
+ * standing to the page that does that job now.
+ *
+ * ⚠️ NOT LEFT TO THE MIDDLEWARE. A path outside PUBLIC_PATHS 307s a logged-out
+ * visitor — every crawler — to /sign-in, which Google reads as a soft-404; and
+ * a signed-in visitor got a plain 404. `/sign-up` sat in exactly that state
+ * from 2026-09-05. `/cambridge-ielts-practice` was let through to a deliberate
+ * 404 (GONE_PATHS in lib/supabase/middleware.ts) — but its content had MOVED to
+ * a tab of the learner guide, and moved content is what a 301 is for. Only
+ * `/vs/*`, which has no successor, still 404s on purpose.
+ *
+ * A test holds every destination to PUBLIC_ROUTES, so none of these can point
+ * at a page that has since gone too.
+ */
+export const RETIRED_PAGE_REDIRECTS = [
+  { source: "/sign-up", destination: "/sign-in", permanent: true },
+  { source: "/cambridge-ielts-practice", destination: "/how-to-use", permanent: true },
+];
+
 const nextConfig: NextConfig = {
   // The AI grader reads the `ielts-examiner` skill (rubric, taxonomy, anchors,
   // output schema) from disk at runtime. Trace those files into the server
@@ -41,7 +62,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [{ protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/blog/**" }],
   },
   async redirects() {
-    return [{ source: "/multilevel", destination: "/cefr", permanent: false }, ...DEFAULT_LOCALE_REDIRECTS];
+    return [
+      { source: "/multilevel", destination: "/cefr", permanent: false },
+      ...DEFAULT_LOCALE_REDIRECTS,
+      ...RETIRED_PAGE_REDIRECTS,
+    ];
   },
 
   experimental: {
