@@ -122,13 +122,16 @@ const PUBLIC_PATHS = [
  *
  * Any unknown path redirects a logged-out visitor to sign-in (see below), which
  * is fine for a typo but wrong for a URL Google has indexed: a redirect to a
- * login page reads as a soft-404 and the old URL lingers in the index. These
- * three were live, indexed marketing pages until the owner removed them, so
- * they are let through to render a real 404 and drop out cleanly.
+ * login page reads as a soft-404 and the old URL lingers in the index. The two
+ * competitor comparisons under /vs were live, indexed marketing pages until the
+ * owner removed them, and nothing replaced them, so they are let through to
+ * render a real 404 and drop out cleanly. (/cambridge-ielts-practice was here
+ * too until its content was recognised as MOVED, not gone — it now 301s; see
+ * RETIRED_PAGE_REDIRECTS in next.config.ts.)
  *
  * Safe to delete once they have disappeared from search results.
  */
-const GONE_PATHS = ["/cambridge-ielts-practice", "/vs"];
+const GONE_PATHS = ["/vs"];
 
 function isPublicPath(pathname: string): boolean {
   // APIs authenticate themselves; redirecting them to /sign-in would be wrong.
