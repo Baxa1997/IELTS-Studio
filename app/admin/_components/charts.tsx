@@ -84,7 +84,7 @@ export function TrendChart({
         </defs>
 
         {/* Baseline and midline, so the eye has something to measure against. */}
-        <line x1="0" y1={y(0)} x2={W} y2={y(0)} stroke={LINE} strokeWidth="1" />
+        <line x1="0" y1={y(0)} x2={W} y2={y(0)} style={{ stroke: LINE }} strokeWidth="1" />
         <line
           x1="0"
           y1={y(peak / 2)}

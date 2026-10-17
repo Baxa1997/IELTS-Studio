@@ -62,15 +62,15 @@ export function PlatformChart({
       >
         <defs>
           <linearGradient id="ad-practice-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={INDIGO} stopOpacity={0.22} />
-            <stop offset="100%" stopColor={INDIGO} stopOpacity={0} />
+            <stop offset="0%" style={{ stopColor: INDIGO }} stopOpacity={0.22} />
+            <stop offset="100%" style={{ stopColor: INDIGO }} stopOpacity={0} />
           </linearGradient>
         </defs>
         <path d={`M0 ${H * 0.33} L${W} ${H * 0.33}`} style={{ stroke: SOFT_RULE }} strokeWidth={1} />
         <path d={`M0 ${H * 0.66} L${W} ${H * 0.66}`} style={{ stroke: SOFT_RULE }} strokeWidth={1} />
         <path d={line(p, true)} fill="url(#ad-practice-fill)" />
         <path d={line(s)} fill="none" style={{ stroke: SERIES_2 }} strokeWidth={2} strokeLinejoin="round" />
-        <path d={line(p)} fill="none" stroke={INDIGO} strokeWidth={2.2} strokeLinejoin="round" />
+        <path d={line(p)} fill="none" style={{ stroke: INDIGO }} strokeWidth={2.2} strokeLinejoin="round" />
       </svg>
       <div
         style={{
