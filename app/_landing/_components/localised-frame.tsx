@@ -1,5 +1,5 @@
 import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
-import { HTML_LANG, type Locale } from "@/lib/i18n/locales";
+import type { Locale } from "@/lib/i18n/locales";
 
 import { INK, PANEL, SANS } from "../_lib/design";
 import { landingManrope, landingSora } from "../_lib/fonts";
@@ -25,10 +25,13 @@ import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "./design-chrome
  * static layout and cannot read the cookie — so a statically generated /uz or
  * /ru page would ship claiming to be English: wrong for a screen reader, which
  * picks its voice from the attribute, and for the browser's offer to translate.
- * The provider corrects it after hydration; the script corrects it before first
- * paint, the same trick as the theme's no-flash script. The real fix is a
- * `[locale]` segment at the ROOT so the layout owns the attribute, which means
- * moving every public route under it.
+ * The provider corrects it after hydration and on every in-app navigation;
+ * before the first paint, the root layout's LangScript sets it from the URL's
+ * /uz or /ru prefix. ⚠️ NOT A <script> HERE: one used to be, and on a
+ * navigation React created it in the browser, where it never ran, and logged
+ * "Encountered a script tag while rendering React component" (2026-10-17). The
+ * real fix is a `[locale]` segment at the ROOT so the layout owns the
+ * attribute, which means moving every public route under it.
  *
  * STATIC. Nothing here reads the request; the header learns about a session in
  * the browser (`SiteNav`).
@@ -48,11 +51,6 @@ export function LocalisedFrame({
 }) {
   return (
     <LocaleProvider pin={locale}>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `document.documentElement.lang=${JSON.stringify(HTML_LANG[locale])}`,
-        }}
-      />
       <div
         className={`${landingSora.variable} ${landingManrope.variable}`}
         style={{ background: PANEL, fontFamily: SANS, color: INK, minHeight: "100%" }}

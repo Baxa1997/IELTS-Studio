@@ -8,7 +8,7 @@ import type { RenderView } from "@/shared/components/listening/types";
 import { FreeTrialGate } from "@/shared/components/practice/free-trial-nudge";
 import { onTodaysList } from "@/lib/free-practice/assignment";
 import { freeTrialCopy } from "@/lib/free-practice/copy";
-import { listeningPublic, publicTarget } from "@/lib/free-practice/engine";
+import { listeningPublic, logEngineFailure, publicTarget } from "@/lib/free-practice/engine";
 import { freePracticePage } from "@/lib/free-practice/links";
 import { translator } from "@/lib/i18n";
 import { SOURCE_LOCALE } from "@/lib/i18n/locales";
@@ -60,7 +60,7 @@ export default async function FreeListeningPage({ params }: { params: Promise<{ 
   try {
     view = await listeningPublic<RenderView>("render", publicTarget(entry.item));
   } catch (err) {
-    console.error("[listen/free] engine render failed:", err);
+    logEngineFailure("listen/free", err);
   }
 
   return (

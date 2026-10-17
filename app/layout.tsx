@@ -11,6 +11,7 @@ import {
   SEO_KEYWORDS,
   SITE_NAME,
 } from "@/lib/seo";
+import { LangScript } from "@/shared/components/i18n/lang-script";
 import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
 import { DEFAULT_LOCALE, HTML_LANG } from "@/lib/i18n/locales";
 import { ThemeFab } from "@/shared/components/theme/theme-fab";
@@ -106,8 +107,19 @@ export default function RootLayout({
      better — see its effect on `HTML_LANG` — and that attribute is what a
      screen reader switches voice on, and what the browser picks hyphenation and
      spell-check from. */
+  /* `suppressHydrationWarning` on <html> too, for the same narrow reason as on
+     <body> below — its OWN attributes only, every mismatch inside still reported.
+     Our two pre-paint scripts write them before React hydrates, on purpose:
+     ThemeScript sets `class="dark"` and `color-scheme`, LangScript sets `lang`
+     on /uz and /ru. React then finds attributes the server never sent and logs
+     a hydration error for a page that is exactly as intended — a red Issue on
+     every dark-mode load in dev, which is how a real one gets missed. */
   return (
-    <html lang={HTML_LANG[DEFAULT_LOCALE]} className={`${geistMono.variable} h-full antialiased`}>
+    <html
+      lang={HTML_LANG[DEFAULT_LOCALE]}
+      className={`${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
       {/* `suppressHydrationWarning` for the BODY TAG ONLY, and only its own
           attributes — React still reports every mismatch inside it.
 
@@ -126,8 +138,11 @@ export default function RootLayout({
             {children} and a dark-mode user sees a white page flash on every
             cold load. (<head> would do equally well; <body> is used so this
             layout never has to render a manual <head> alongside the metadata
-            Next injects into it.) */}
+            Next injects into it.) The language script sits beside it for the
+            same reason, and because a script here is only ever hydrated —
+            never created by React in the browser, where it would not run. */}
         <ThemeScript />
+        <LangScript />
         {/* No `initial` here ON PURPOSE. This layout is the root of the STATIC
             tree as well — the marketing pages and the front door — and reading
             the locale cookie to pass one down would make every route in the app

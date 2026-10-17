@@ -7,7 +7,7 @@ import type { ReadingPaper, WritingPaper } from "@/shared/components/cefr/types"
 import { FreeTrialGate } from "@/shared/components/practice/free-trial-nudge";
 import { onTodaysList } from "@/lib/free-practice/assignment";
 import { freeTrialCopy } from "@/lib/free-practice/copy";
-import { multilevelPublic } from "@/lib/free-practice/engine";
+import { logEngineFailure, multilevelPublic } from "@/lib/free-practice/engine";
 import { freePracticePage } from "@/lib/free-practice/links";
 import { spentOnToday } from "@/lib/free-practice/visitor";
 import { translator } from "@/lib/i18n";
@@ -62,7 +62,7 @@ export default async function FreeCefrPage({ params }: { params: Promise<{ key: 
   try {
     paper = await multilevelPublic<ReadingPaper | WritingPaper>("render", { item_id: entry.item.source });
   } catch (err) {
-    console.error("[cefr/free] engine render failed:", err);
+    logEngineFailure("cefr/free", err);
   }
 
   return (

@@ -26,6 +26,24 @@ export function engineConfigured(): boolean {
   return Boolean(serverEnv.aiEngine);
 }
 
+/**
+ * Logs a free page's failed engine call.
+ *
+ * ⚠️ A WARNING, NOT AN ERROR, ONLY WHEN THE ENGINE IS SIMPLY NOT CONFIGURED IN
+ * DEVELOPMENT — a local machine without AI_ENGINE_URL / AI_ENGINE_KEY, which
+ * is most of them (see above). Next's dev overlay shows every server
+ * console.error as a red Issue, and this one is not a bug: the page is already
+ * telling the reader "not right now". In production, and wherever the engine
+ * IS configured, a failure is a real fault and is logged as one.
+ */
+export function logEngineFailure(where: string, err: unknown): void {
+  if (!engineConfigured() && process.env.NODE_ENV !== "production") {
+    console.warn(`[${where}] no AI engine configured — set AI_ENGINE_URL and AI_ENGINE_KEY to use it locally.`);
+    return;
+  }
+  console.error(`[${where}] engine render failed:`, err);
+}
+
 /** What the engine is asked for: the whole test, or one part of it. The part
  *  is only sent for a part — an engine older than whole-test support reads a
  *  missing `part` as a bad request rather than as the wrong practice. */
