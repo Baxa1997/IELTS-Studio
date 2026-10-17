@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { PublicCefrRunner, type ReadingPaper, type WritingPaper } from "@/shared/components/cefr/multilevel-client";
+import { PublicCefrRunner } from "@/shared/components/cefr/public-runner";
+import type { ReadingPaper, WritingPaper } from "@/shared/components/cefr/types";
 import { FreeTrialGate } from "@/shared/components/practice/free-trial-nudge";
 import { onTodaysList } from "@/lib/free-practice/assignment";
 import { freeTrialCopy } from "@/lib/free-practice/copy";

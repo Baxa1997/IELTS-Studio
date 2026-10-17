@@ -168,7 +168,8 @@ describe("every free practice recommends signing in for more", () => {
       ["app/(studio)/read/_components/reading-runner.tsx", "publicMode.copy"],
       ["app/(studio)/read/_components/test-runner.tsx", "publicMode.copy"],
       ["shared/components/listening/listening-client.tsx", "publicRun.copy"],
-      ["shared/components/cefr/multilevel-client.tsx", "publicMode.copy"],
+      ["shared/components/cefr/reading-runner.tsx", "publicMode.copy"],
+      ["shared/components/cefr/writing-runner.tsx", "publicMode.copy"],
     ];
     for (const [file, copy] of runners) {
       const src = read(file);
@@ -215,17 +216,19 @@ describe("a full test is the whole test, on the full-test runner (owner, 2026-09
 
 describe("a free CEFR paper (owner, 2026-10-04)", () => {
   const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
-  const client = read("shared/components/cefr/multilevel-client.tsx");
+  const CEFR = "shared/components/cefr";
 
   it("is marked by the list's key, through the app's route — never the engine directly", () => {
-    expect(client).toContain("JSON.stringify({ key: mode.practiceKey, ...body })");
+    expect(read(`${CEFR}/api.ts`)).toContain("JSON.stringify({ key: mode.practiceKey, ...body })");
     expect(read("app/(studio)/cefr/free/[key]/page.tsx")).toContain("practiceKey: entry.item.key");
     expect(read("app/(studio)/cefr/free/[key]/page.tsx")).toContain('submitUrl: "/api/public/practice/cefr"');
   });
 
   it("gives a visitor no coach and no word lookup — both are signed-in APIs", () => {
-    expect(client.match(/const \[coachOpen, setCoachOpen\] = useState\(!publicMode\);/g)).toHaveLength(2);
-    expect(client).toContain("hl.tool === null && !publicMode ? (");
+    for (const runner of ["reading-runner.tsx", "writing-runner.tsx"]) {
+      expect(read(`${CEFR}/${runner}`), runner).toContain("const [coachOpen, setCoachOpen] = useState(!publicMode);");
+    }
+    expect(read(`${CEFR}/reading-runner.tsx`)).toContain("hl.tool === null && !publicMode ? (");
   });
 
   it("asks the engine for the paper by the list's own entry", () => {
