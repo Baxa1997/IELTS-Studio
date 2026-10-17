@@ -254,7 +254,7 @@ export const ru: Messages = {
   "lp.gradeFree": "Проверить эссе бесплатно",
   "lp.buildPlan": "Составить план",
   "lp.statNew": "Новых учеников за месяц",
-  "lp.statNewNote": "против 650 в прошлом месяце",
+  "lp.statNewNote": "против 1150 в прошлом месяце",
   "lp.statCenters": "Учебные центры",
   "lp.statCentersNote": "Школы и центры IELTS на платформе",
   "lp.statUsers": "Всего пользователей",

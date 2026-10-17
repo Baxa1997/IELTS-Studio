@@ -259,7 +259,7 @@ export const uz: Messages = {
   "lp.gradeFree": "Esseni bepul baholash",
   "lp.buildPlan": "Rejangizni tuzing",
   "lp.statNew": "Shu oydagi yangi oʻquvchilar",
-  "lp.statNewNote": "oʻtgan oyda 650 ta edi",
+  "lp.statNewNote": "oʻtgan oyda 1150 ta edi",
   "lp.statCenters": "Taʼlim markazlari",
   "lp.statCentersNote": "Platformadagi maktab va IELTS markazlari",
   "lp.statUsers": "Jami foydalanuvchilar",

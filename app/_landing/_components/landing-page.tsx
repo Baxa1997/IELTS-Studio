@@ -16,7 +16,12 @@ import { DemoTabs } from "@/app/_landing/_components/demo-tabs";
 import { HeroProcessDemo } from "@/app/_landing/_components/hero-process-demo";
 import { LiveStat, LiveStatsStyles } from "@/app/_landing/_components/live-stat";
 import { landingManrope, landingSora } from "@/app/_landing/_lib/fonts";
-import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/_components/design-chrome";
+import {
+  CentersBand,
+  DESIGN_CSS,
+  SiteFooter,
+  SiteHeader,
+} from "@/app/_landing/_components/design-chrome";
 import {
   BODY,
   BRAND,
@@ -104,7 +109,7 @@ const STATS: {
 }[] = [
   {
     labelKey: "lp.statNew",
-    value: 1100,
+    value: 1645,
     suffix: "+",
     // delta: "12.4%",
     noteKey: "lp.statNewNote",
@@ -118,14 +123,14 @@ const STATS: {
   },
   {
     labelKey: "lp.statUsers",
-    value: 3000,
+    value: 4300,
     suffix: "+",
     noteKey: "lp.statUsersNote",
     icon: "checks",
   },
   {
     labelKey: "lp.statTasks",
-    value: 6500,
+    value: 10000,
     suffix: "+",
     noteKey: "lp.statTasksNote",
     brand: true,

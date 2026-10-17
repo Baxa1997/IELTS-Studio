@@ -275,7 +275,7 @@ export const en = {
   "lp.gradeFree": "Grade an essay free",
   "lp.buildPlan": "Build your plan",
   "lp.statNew": "New learners this month",
-  "lp.statNewNote": "vs. 650 last month",
+  "lp.statNewNote": "vs. 1150 last month",
   "lp.statCenters": "Education centers",
   "lp.statCentersNote": "Schools and IELTS centers onboard",
   "lp.statUsers": "Total users",
@@ -345,11 +345,10 @@ export const en = {
   "free.fullCefrWriting": "Full CEFR writing",
   "free.writingTask": "Writing Task {n}",
   "free.doneTitle": "Done for today",
-  "free.doneBody": "Your next free practice arrives tomorrow. Sign in to get more free practices today.",
-  "free.newToday":
-    "New today",
-  "free.availableToday":
-    "Today's free practice is ready — pick any one below.",
+  "free.doneBody":
+    "Your next free practice arrives tomorrow. Sign in to get more free practices today.",
+  "free.newToday": "New today",
+  "free.availableToday": "Today's free practice is ready — pick any one below.",
   "free.usedToday":
     "Today's free practice is used. Sign in to get more free practices, or come back tomorrow.",
   "free.otherSkills": "The other skills",
@@ -364,27 +363,41 @@ export const en = {
   "free.runnerTitleCefr": "Today's free CEFR practice",
   "free.emptyPool": "No practice is ready here yet — new ones are on their way. Check back soon.",
   "free.allFreePractice": "All free practice",
-  "free.metaDescWriting": "A new IELTS Writing task every day — Task 1 or Task 2 — graded by the AI examiner with a band per criterion. Free, with no account needed.",
-  "free.metaDescReading": "A new IELTS Reading practice every day — full tests and single passages, marked instantly with the reason behind each answer. Free, with no account needed.",
-  "free.metaDescListening": "A new IELTS Listening practice every day — full four-part tests and single parts with original audio, marked instantly. Free, with no account needed.",
-  "free.metaDescCefr": "A new CEFR Multilevel (Uzbekistan DTM) practice every day — full Reading and Writing papers, marked with an indicative CEFR level. Free, with no account needed.",
+  "free.metaDescWriting":
+    "A new IELTS Writing task every day — Task 1 or Task 2 — graded by the AI examiner with a band per criterion. Free, with no account needed.",
+  "free.metaDescReading":
+    "A new IELTS Reading practice every day — full tests and single passages, marked instantly with the reason behind each answer. Free, with no account needed.",
+  "free.metaDescListening":
+    "A new IELTS Listening practice every day — full four-part tests and single parts with original audio, marked instantly. Free, with no account needed.",
+  "free.metaDescCefr":
+    "A new CEFR Multilevel (Uzbekistan DTM) practice every day — full Reading and Writing papers, marked with an indicative CEFR level. Free, with no account needed.",
   "free.faqTitle": "Questions about the free practice",
   "free.faqAccountQ": "Do I need an account to practise?",
-  "free.faqAccountA": "No. One practice a day in each skill is free with no account, and it is marked the moment you finish. A free account brings more practice every day.",
+  "free.faqAccountA":
+    "No. One practice a day in each skill is free with no account, and it is marked the moment you finish. A free account brings more practice every day.",
   "free.faqMarkedQ": "How is the free practice marked?",
-  "free.faqMarkedAWriting": "By the same AI examiner a signed-in learner gets: a band for each of the four criteria, with evidence quoted from your answer. It is deliberately strict, and the bands are practice estimates, not official results.",
-  "free.faqMarkedAReading": "Instantly, against the answer key, with the reason behind each answer. A full test has three passages; a part is one passage from a full test.",
-  "free.faqMarkedAListening": "Instantly, against the answer key, question by question. A full test has four parts and 40 questions; a part is one recording from a full test.",
-  "free.faqMarkedACefr": "A Reading paper is marked instantly against the answer key, and a full paper also shows an indicative CEFR level. Each Writing task is graded by the AI on five criteria, with an estimated CEFR level and a model answer to compare.",
+  "free.faqMarkedAWriting":
+    "By the same AI examiner a signed-in learner gets: a band for each of the four criteria, with evidence quoted from your answer. It is deliberately strict, and the bands are practice estimates, not official results.",
+  "free.faqMarkedAReading":
+    "Instantly, against the answer key, with the reason behind each answer. A full test has three passages; a part is one passage from a full test.",
+  "free.faqMarkedAListening":
+    "Instantly, against the answer key, question by question. A full test has four parts and 40 questions; a part is one recording from a full test.",
+  "free.faqMarkedACefr":
+    "A Reading paper is marked instantly against the answer key, and a full paper also shows an indicative CEFR level. Each Writing task is graded by the AI on five criteria, with an estimated CEFR level and a model answer to compare.",
   "free.faqOriginalQ": "Are these real exam papers?",
-  "free.faqOriginalA": "No. Every passage, recording and task is original, written in the format of the exam. EngProgress is an independent practice platform, not affiliated with any exam board.",
+  "free.faqOriginalA":
+    "No. Every passage, recording and task is original, written in the format of the exam. EngProgress is an independent practice platform, not affiliated with any exam board.",
   "free.faqDailyQ": "How often is there new practice?",
-  "free.faqDailyA": "Every day. A new practice arrives at the top of your list at midnight, Tashkent time, and the list moves on by one practice a day.",
+  "free.faqDailyA":
+    "Every day. A new practice arrives at the top of your list at midnight, Tashkent time, and the list moves on by one practice a day.",
   "free.faqTimeQ": "How long does one practice take?",
-  "free.faqTimeAWriting": "As long as in the exam: {t1} minutes for Task 1 and {t2} minutes for Task 2.",
-  "free.faqTimeAReading": "A full test takes {full} minutes, as in the exam; a single passage about {part}.",
+  "free.faqTimeAWriting":
+    "As long as in the exam: {t1} minutes for Task 1 and {t2} minutes for Task 2.",
+  "free.faqTimeAReading":
+    "A full test takes {full} minutes, as in the exam; a single passage about {part}.",
   "free.faqTimeAListening": "A full test takes about {full} minutes; a single part about {part}.",
-  "free.faqTimeACefr": "A Reading paper takes {reading} minutes, as in the exam; a Writing paper about {writing} minutes for its three tasks.",
+  "free.faqTimeACefr":
+    "A Reading paper takes {reading} minutes, as in the exam; a Writing paper about {writing} minutes for its three tasks.",
   "free.fromBlog": "Read before you practise",
   "free.ogNoAccount": "no account needed",
 
@@ -425,8 +438,10 @@ export const en = {
   "grade.aimCefr": "{lo}–{hi} words · {level} level",
   "grade.question": "The question",
   "grade.optional": "optional",
-  "grade.phTask1Academic": "Paste the Task 1 question — or leave this blank to grade the report on its own.",
-  "grade.phTask1General": "Paste the letter task — or leave this blank to grade the letter on its own.",
+  "grade.phTask1Academic":
+    "Paste the Task 1 question — or leave this blank to grade the report on its own.",
+  "grade.phTask1General":
+    "Paste the letter task — or leave this blank to grade the letter on its own.",
   "grade.phTask2": "Paste the Task 2 question — or leave this blank to grade the essay on its own.",
   "grade.phCefr": "Paste the task — or leave this blank to grade your answer as this task.",
   "grade.noChart":
@@ -494,13 +509,15 @@ export const en = {
   "grade.improve": "To improve",
   "grade.suggested": "Suggested fixes",
   "grade.notGradable": "That answer couldn't be graded — write a little more and try again.",
-  "grade.cefrNote": "An indicative CEFR level from an AI examiner, for practice — not an official Multilevel result.",
+  "grade.cefrNote":
+    "An indicative CEFR level from an AI examiner, for practice — not an official Multilevel result.",
   "grade.howEyebrow": "How it works",
   "grade.howTitle": "Three steps, about a minute",
   "grade.step1T": "Pick the task",
   "grade.step1B": "Task 1, Task 2 or a CEFR Multilevel task — each is marked on its own criteria.",
   "grade.step2T": "Write, paste or upload",
-  "grade.step2B": "Use your own question, one of ours, or none at all. A photo of handwriting works too.",
+  "grade.step2B":
+    "Use your own question, one of ours, or none at all. A photo of handwriting works too.",
   "grade.step3T": "Get the score and the fixes",
   "grade.step3B":
     "A band for every criterion — or an indicative CEFR level — with what is holding it back and the fix that matters most.",
@@ -558,7 +575,8 @@ export const en = {
   "blog.inShort": "In short",
   "blog.faqTitle": "Questions readers ask",
   "blog.practiceEyebrow": "Try it today",
-  "blog.practiceBody": "Put this article to work: a new practice every day, marked the moment you finish. No account needed.",
+  "blog.practiceBody":
+    "Put this article to work: a new practice every day, marked the moment you finish. No account needed.",
   "blog.rss": "EngProgress blog — RSS feed",
   "blog.home": "Home",
   "blog.metaTitle": "Blog — IELTS tips, English stories and news",
