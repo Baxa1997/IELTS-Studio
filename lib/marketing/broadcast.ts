@@ -4,6 +4,7 @@ import { sendEmail } from "@/lib/email/send";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { resolveAddress } from "./audience";
+import { bodyToHtml, cleanBody, htmlToText, isHtmlBody } from "./email-html";
 import { isSafeUrl, renderHtml, renderText, type BroadcastLink } from "./render";
 import { unsubscribePostUrl, unsubscribeUrl } from "./unsubscribe";
 
@@ -56,14 +57,12 @@ export async function createBroadcast(args: {
   createdBy: string | null;
 }): Promise<{ id: string | null; error: string | null; queued: number }> {
   const subject = args.subject.trim();
-  const body = args.body.trim();
+  const body = storedBody(args.body);
   if (subject.length < 3) return { id: null, error: "Give it a subject.", queued: 0 };
-  if (body.length < 10) return { id: null, error: "The message is empty.", queued: 0 };
+  if (!hasWords(body)) return { id: null, error: "The message is empty.", queued: 0 };
   if (args.profileIds.length === 0) return { id: null, error: "Nobody is selected.", queued: 0 };
 
-  const links = args.links
-    .map((l) => ({ label: l.label.trim() || l.url.trim(), url: l.url.trim() }))
-    .filter((l) => l.url && isSafeUrl(l.url));
+  const links = safeLinks(args.links);
 
   const admin = createAdminClient();
 
@@ -132,6 +131,59 @@ export async function createBroadcast(args: {
   }
 
   return { id: String(broadcast.id), error: null, queued };
+}
+
+/** The body as the table keeps it: the editor's HTML, cleaned (email-html.ts);
+ *  a plain-text body from an older client, as typed. */
+function storedBody(raw: string): string {
+  return isHtmlBody(raw) ? cleanBody(raw) : raw.trim();
+}
+
+/** Ten characters of actual words — an editor full of empty paragraphs is
+ *  `<p></p><p></p>`, which is longer than that and says nothing. */
+function hasWords(body: string): boolean {
+  return htmlToText(bodyToHtml(body)).length >= 10;
+}
+
+function safeLinks(links: BroadcastLink[]): BroadcastLink[] {
+  return links
+    .map((l) => ({ label: l.label.trim() || l.url.trim(), url: l.url.trim() }))
+    .filter((l) => l.url && isSafeUrl(l.url));
+}
+
+/**
+ * The message as it stands, to ONE address, before it goes to everybody.
+ *
+ * Same renderer and same headers as the real send, so what arrives is what a
+ * learner will get; only the subject says it is a test, and the greeting is the
+ * "there" anyone without a first name gets. Nothing is queued or recorded.
+ *
+ * The caller passes the signed-in admin's own address — see `sendTestEmail`.
+ * The unsubscribe link in it is minted for that admin's auth id, which has no
+ * profile row, so following it changes nothing (`applyUnsubscribe` finds no
+ * one to opt out).
+ */
+export async function sendTestMessage(args: {
+  to: string;
+  userId: string;
+  subject: string;
+  body: string;
+  links: BroadcastLink[];
+}): Promise<{ sent: boolean; detail?: string }> {
+  const body = storedBody(args.body);
+  if (!hasWords(body)) return { sent: false, detail: "Write the message first." };
+  const links = safeLinks(args.links);
+  const link = unsubscribeUrl(args.userId);
+  return sendEmail({
+    to: args.to,
+    subject: `[Test] ${args.subject.trim() || "(no subject yet)"}`,
+    text: renderText({ body, links, name: "there", unsubscribeUrl: link }),
+    html: renderHtml({ body, links, name: "there", unsubscribeUrl: link }),
+    headers: {
+      "List-Unsubscribe": `<${unsubscribePostUrl(args.userId)}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
+  });
 }
 
 /**

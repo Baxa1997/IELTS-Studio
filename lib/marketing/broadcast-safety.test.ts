@@ -182,9 +182,31 @@ describe("rendering the message", () => {
   });
 
   it("turns a blank line into a paragraph", async () => {
+    // A body typed before the rich editor: the greeting plus its two paragraphs.
     const { renderHtml } = await import("./render");
     const html = renderHtml(base);
-    expect(html.match(/<p style="margin:0 0 14px">/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(html.match(/<p style="margin:0 0 14px/g)?.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("keeps the editor's formatting, cleaned, when the body is HTML", async () => {
+    const { renderHtml, renderText } = await import("./render");
+    const body = `<p>Hello <strong>there</strong></p><p onclick="x()">Two</p><script>alert(1)</script>`;
+    const html = renderHtml({ ...base, body });
+    expect(html).toMatch(/<strong style="[^"]+">there<\/strong>/);
+    expect(html).not.toMatch(/onclick|<script/);
+    expect(html).not.toContain("&lt;p&gt;");
+    expect(renderText({ ...base, body })).toContain("Hello there\n\nTwo");
+  });
+
+  it("carries the logo and no tracking pixel", async () => {
+    /* The light branded design stops at the mark in the header: every extra
+       remote image, a 1×1 tracker above all, spends deliverability the same
+       sender's password resets depend on. */
+    const { renderHtml } = await import("./render");
+    const html = renderHtml(base);
+    const images = html.match(/<img [^>]*>/g) ?? [];
+    expect(images).toHaveLength(1);
+    expect(images[0]).toMatch(/src="https:\/\/[^"]+\/logo\.png"/);
   });
 
   it("sends a text part at all", async () => {
@@ -207,7 +229,7 @@ describe("rendering the message", () => {
 describe("the server actions guard themselves", () => {
   const actions = read("../../app/admin/marketing/actions.ts");
 
-  for (const fn of ["uploadAssets", "composeBroadcast", "drainBroadcast"]) {
+  for (const fn of ["uploadAssets", "uploadEmailImage", "sendTestEmail", "composeBroadcast", "drainBroadcast"]) {
     it(`${fn} calls requireSuperAdmin before doing anything`, () => {
       /* A server action is an RPC endpoint any signed-in account can POST to.
          The guard on the page that renders the form protects the form, not
@@ -218,6 +240,16 @@ describe("the server actions guard themselves", () => {
       expect(body).toMatch(/await requireSuperAdmin\(\)/);
     });
   }
+
+  it("sends a test only to the admin who pressed the button", () => {
+    /* A "send a test to…" box would turn this action into a way to mail any
+       address from our domain with our template on it. */
+    const start = actions.indexOf("export async function sendTestEmail");
+    const body = actions.slice(start, actions.indexOf("\n}\n", start));
+    expect(body).toMatch(/const to = user\.email;/);
+    expect(body).toMatch(/sendTestMessage\(\{\s*to,/);
+    expect(body).not.toMatch(/formData\.get\("(to|email|address)/);
+  });
 
   it("never lets the browser name an address", () => {
     /* The form sends profile ids and the addresses are re-resolved server-side.

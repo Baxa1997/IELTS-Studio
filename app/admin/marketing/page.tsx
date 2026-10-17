@@ -32,7 +32,7 @@ export const dynamic = "force-dynamic";
  * the teacher who picks their material. They can still be chosen by hand.
  */
 export default async function MarketingPage() {
-  await requireSuperAdmin();
+  const { user } = await requireSuperAdmin();
 
   /* ONE LISTING, SLICED THREE WAYS. `loadAudience` paginates the whole
      `auth.users` table through the Admin API, so calling it once per segment
@@ -45,13 +45,12 @@ export default async function MarketingPage() {
   const learners = everyone.filter((r) => inSegment(r, "learners"));
   const staff = everyone.filter((r) => inSegment(r, "staff"));
 
-
   return (
     <Surface>
       <PageTitle
         eyebrow="Platform"
         title="Broadcast"
-        subtitle="Email learners about new practice content. Everyone here has an account and a working address; anyone who has unsubscribed is listed but cannot be selected."
+        subtitle="Email learners about new practice content. Write it like a blog post, send yourself a test, then send it to everyone you picked."
       />
 
       {!bucketReady ? (
@@ -80,6 +79,7 @@ export default async function MarketingPage() {
         staff={staff}
         everyone={everyone}
         uploadsEnabled={bucketReady}
+        testAddress={user.email ?? null}
       />
 
       <Card style={{ marginTop: 20 }}>

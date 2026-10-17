@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useTransition } from "react";
 
+import { EditorBanner as Banner, EditorSection as Section } from "@/app/admin/_components/editor-chrome";
 import { FAINT, INK, LINE, MUTED, Pill, SANS, SERIF, TONE } from "@/app/admin/_components/ui";
 import { BLOG_SKILLS, headingId, SKILL_TOPIC, type Block, type PostStatus } from "@/lib/blog";
 import { formToPost, postToForm, type PostForm } from "@/lib/blog/form";
@@ -440,20 +441,6 @@ function Contents({ body, onJump }: { body: Block[]; onJump: (index: number) => 
   );
 }
 
-function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
-  return (
-    <section style={{ border: `1px solid ${LINE}`, borderRadius: 14, background: PANEL, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-      <div>
-        <h2 style={{ margin: 0, fontFamily: SANS, fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", fontWeight: 700, color: FAINT }}>
-          {title}
-        </h2>
-        {note ? <p style={{ margin: "5px 0 0", fontSize: 11.5, color: FAINT, lineHeight: 1.45 }}>{note}</p> : null}
-      </div>
-      {children}
-    </section>
-  );
-}
-
 function Field({ label, note, children }: { label: string; note?: string; children: React.ReactNode }) {
   return (
     <label style={{ display: "block", minWidth: 0 }}>
@@ -461,27 +448,6 @@ function Field({ label, note, children }: { label: string; note?: string; childr
       {children}
       {note ? <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 4, lineHeight: 1.45 }}>{note}</span> : null}
     </label>
-  );
-}
-
-function Banner({ tone, children }: { tone: "red" | "green"; children: React.ReactNode }) {
-  const t = TONE[tone];
-  return (
-    <div
-      role={tone === "red" ? "alert" : "status"}
-      style={{
-        fontFamily: SANS,
-        fontSize: 13.5,
-        lineHeight: 1.5,
-        color: t.ink,
-        background: t.tint,
-        border: `1px solid ${t.border}`,
-        borderRadius: 10,
-        padding: "11px 13px",
-      }}
-    >
-      {children}
-    </div>
   );
 }
 

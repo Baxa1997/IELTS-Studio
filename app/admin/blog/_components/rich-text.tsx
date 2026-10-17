@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 
+import { ToolButton as Btn, ToolSep as Sep } from "@/app/admin/_components/editor-chrome";
 import { FAINT, INK, LINE, MUTED, SANS, SERIF, TONE } from "@/app/admin/_components/ui";
 import type { Block } from "@/lib/blog";
 import { sourceToBlocks } from "@/lib/blog/source";
@@ -233,51 +234,6 @@ const small: React.CSSProperties = {
   padding: "6px 11px",
   cursor: "pointer",
 };
-
-function Btn({
-  label,
-  active,
-  disabled,
-  onClick,
-  children,
-}: {
-  label: string;
-  active?: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      aria-pressed={active}
-      disabled={disabled}
-      // Keep the selection: a mousedown on a button would otherwise blur the editor first.
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={onClick}
-      style={{
-        display: "inline-grid",
-        placeItems: "center",
-        width: 32,
-        height: 32,
-        borderRadius: 8,
-        border: 0,
-        cursor: disabled ? "default" : "pointer",
-        opacity: disabled ? 0.4 : 1,
-        color: active ? TONE.indigo.ink : INK,
-        background: active ? TONE.indigo.tint : "transparent",
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Sep() {
-  return <span aria-hidden style={{ width: 1, height: 20, background: LINE, margin: "0 4px" }} />;
-}
 
 /* The document's typography — close to the article page, in the admin's tokens
    so it holds in both themes. */
