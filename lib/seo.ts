@@ -189,6 +189,10 @@ export const PUBLIC_ROUTES = [
   { path: "/ielts-speaking-practice", label: "IELTS Speaking practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
   { path: "/cefr-multilevel-practice", label: "CEFR / Multilevel (Uzbekistan DTM) practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
   { path: "/for-education-centers", label: "For education centres — teachers, groups, homework and reports", section: "product", priority: 0.8, changeFrequency: "monthly" },
+  // The two free score calculators. Spelled out because lib/ may not import
+  // app/(tools)/_lib/page-meta.ts; app/(tools)/tools-routes.test.ts holds the two in step.
+  { path: "/ielts-band-score-calculator", label: "IELTS band score calculator — overall band with the official rounding rule, Listening and Reading score tables, CEFR level", section: "product", priority: 0.85, changeFrequency: "monthly" },
+  { path: "/multilevel-score-calculator", label: "Multilevel (CEFR) score calculator — level from the four section scores, Writing and Speaking conversion table", section: "product", priority: 0.85, changeFrequency: "monthly" },
   { path: "/how-to-use", label: "How to use EngProgress — learner guide", section: "product", priority: 0.7, changeFrequency: "monthly" },
   { path: "/how-to-use/education-centers", label: "How to use EngProgress — education centre guide", section: "product", priority: 0.7, changeFrequency: "monthly" },
   // The front page only. The articles are listed from lib/blog by the sitemap

@@ -16,7 +16,13 @@ import { DEFAULT_LOCALE, HTML_LANG, LOCALES, localePath } from "@/lib/i18n/local
  * and a test asserts the two sets are equal. Grow them together or the picker
  * offers a URL this sitemap does not claim.
  */
-const LOCALISED = new Set(["/", "/how-to-use", "/how-to-use/education-centers"]);
+const LOCALISED = new Set([
+  "/",
+  "/how-to-use",
+  "/how-to-use/education-centers",
+  "/ielts-band-score-calculator",
+  "/multilevel-score-calculator",
+]);
 
 /** Rebuilt from the cached post list; a save in /admin refreshes it. */
 export const revalidate = 3600;

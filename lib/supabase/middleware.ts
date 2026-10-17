@@ -92,6 +92,9 @@ const PUBLIC_PATHS = [
   "/ielts-speaking-practice",
   "/cefr-multilevel-practice",
   "/for-education-centers",
+  // The free score calculators (and their /uz, /ru versions, under the prefixes above).
+  "/ielts-band-score-calculator",
+  "/multilevel-score-calculator",
   "/robots.txt",
   "/sitemap.xml",
 ];

@@ -92,6 +92,7 @@ const COLUMNS: { heading: MessageKey; links: { label: MessageKey; href: string }
       { label: "mk.footCenterGuide", href: "/how-to-use/education-centers" },
       { label: "mk.footCambridge", href: "/how-to-use#cambridge-style" },
       { label: "mk.footGrader", href: "/grade" },
+      { label: "mk.footCalculator", href: "/ielts-band-score-calculator" },
       { label: "mk.footDemo", href: "/demo" },
       { label: "mk.footPricing", href: "/#pricing" },
     ],
