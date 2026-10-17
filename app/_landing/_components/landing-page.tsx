@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Band9Card } from "@/app/_landing/_components/band9-card";
 import { LeadStory, StoryRow } from "@/app/_landing/_components/blog-stories";
 import { SkillPracticeCard } from "@/app/_landing/_components/practice-cards";
+import { PracticePicks } from "@/app/_landing/_components/practice-picks";
 import { BLOG_CSS } from "@/app/_landing/_lib/blog-css";
 import { DEMO_TABS } from "@/app/_landing/_lib/demo-content";
 import { DeferredReportShowcase } from "@/app/_landing/_components/deferred-report-showcase";
@@ -22,6 +23,7 @@ import {
   BRAND_PANEL,
   BRAND_TINT,
   BRAND_TINT_LINE,
+  CTA_FILL,
   DISPLAY,
   DISPLAY_LG,
   DISPLAY_XL,
@@ -42,17 +44,18 @@ import {
   WELL,
   WHITE,
   cardStyle,
+  ctaButton,
   eyebrow,
   ghostButton,
+  outlineButton,
   solidButton,
 } from "@/app/_landing/_lib/design";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
 import { leadPost, otherPosts } from "@/lib/blog";
 import { loadPosts } from "@/lib/blog/store";
-import { PRACTICE_CARD_SKILLS } from "@/lib/free-practice/links";
+import { PRACTICE_CARD_SKILLS, type PracticeCardSkill } from "@/lib/free-practice/links";
 import {
   getSiteUrl,
-  LANDING_DESCRIPTION,
   organization,
   PLATFORM_FEATURES,
   PREVIEW_IMAGE,
@@ -357,11 +360,14 @@ function Hero({ t }: { t: Translate }) {
 
         <p style={{ ...LEDE, maxWidth: 600, margin: "24px 0 0" }}>{t("lp.heroLead")}</p>
 
+        {/* The owner's call (2026-10-17): the start button filled ORANGE, in
+            light as well as dark, and the practice button beside it OUTLINED
+            in the same orange — a primary and its partner, not two pills. */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 34 }}>
           <Link
             href="/grade"
-            className="lp-solid"
-            style={{ ...solidButton(), display: "inline-block" }}
+            className="lp-cta"
+            style={{ ...ctaButton(), display: "inline-block" }}
           >
             {t("lp.ctaStart")}
           </Link>
@@ -372,17 +378,19 @@ function Hero({ t }: { t: Translate }) {
               globals.css gives the target its sticky-header clearance. */}
           <Link
             href={`#${FREE_PRACTICE_ID}`}
-            className="lp-ghost"
-            style={{ ...ghostButton(), display: "inline-flex", alignItems: "center", gap: 10 }}
+            className="lp-outline"
+            style={{ ...outlineButton(), display: "inline-flex", alignItems: "center", gap: 10 }}
           >
+            {/* CTA_FILL, not CTA_LINE, under the white glyph: the line's dark
+                value is the lighter orange, and white on it drops to 3.8:1. */}
             <span
               aria-hidden
               style={{
                 width: 22,
                 height: 22,
                 borderRadius: "50%",
-                background: BRAND_TINT,
-                color: BRAND,
+                background: CTA_FILL,
+                color: WHITE,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -912,11 +920,17 @@ function PracticeTodaySection({ t }: { t: Translate }) {
   return (
     <section id={FREE_PRACTICE_ID} style={{ ...SHELL, padding: "56px 28px 20px" }}>
       <Head eyebrow={t("free.eyebrow")} title={t("free.title")} sub={t("free.sub")} />
-      <div className="bl-grid bl-grid-5" style={{ marginTop: 36 }}>
-        {PRACTICE_CARD_SKILLS.map((s) => (
-          <SkillPracticeCard key={s} skill={s} t={t} />
-        ))}
-      </div>
+      {/* Every card renders here with its skill's generic copy; the browser
+          fills in the visitor's own practice and puts one in the "Start here"
+          frame — see practice-picks. */}
+      <PracticePicks
+        moreLabel={t("free.morePicks")}
+        cards={
+          Object.fromEntries(
+            PRACTICE_CARD_SKILLS.map((s) => [s, <SkillPracticeCard key={s} skill={s} t={t} />]),
+          ) as Record<PracticeCardSkill, React.ReactNode>
+        }
+      />
       {/* The owner's rule: wherever the free practice is offered, say that an
           account brings more of it. */}
       <div style={{ textAlign: "center", marginTop: 26 }}>

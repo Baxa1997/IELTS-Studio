@@ -89,13 +89,22 @@ export const BLOG_CSS = `
   @media(max-width:900px){
     .bl-lead{grid-template-columns:minmax(0,1fr);gap:18px}
   }
-  /* Exactly five cards (the free-practice section: four free skills and
-     Speaking) in one row on a laptop, where auto-fill would strand one on a
-     row of its own — then three and two on a tablet, one per row on a phone.
-     The covers' type is in container units, so it scales down with the
-     narrower cards. After .bl-grid so it wins. */
-  .bl-grid-5{grid-template-columns:repeat(5,minmax(0,1fr))}
-  @media(max-width:1100px){.bl-grid-5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  /* Exactly four cards — the landing's "More picked for you" row: the
+     free-practice section's five (four free skills and Speaking) less the one
+     in the "Start here" frame — in one row on a laptop, where auto-fill would
+     strand one on a row of its own; then two on a tablet, one on a phone. The
+     covers' type is in container units, so it scales down with the narrower
+     cards. After .bl-grid so it wins. */
+  .bl-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media(max-width:1100px){.bl-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  /* The "Start here" frame: the SAME card as the row's, laid out wide — cover
+     beside the text — in a well that says it comes first. Stacks on a tablet. */
+  .lp-pick-featured{border:1px solid ${LINE};border-radius:24px;padding:clamp(14px,2.2vw,22px);background:${WELL}}
+  .lp-pick-featured .bl-card{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:clamp(20px,3vw,40px);align-items:center}
+  @media(max-width:860px){.lp-pick-featured .bl-card{grid-template-columns:minmax(0,1fr);gap:16px}}
+  /* A pick's facts line, held to two lines. A class, not an inline style, so
+     the phone rule below can still hide it in a row card. */
+  .lp-pick-facts{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   /* On a phone a column of full-width covers is a lot of scrolling for very
      little reading, so every card below the lead turns into a row — thumbnail
      beside headline — and drops its summary. The lead keeps both. */
@@ -103,7 +112,11 @@ export const BLOG_CSS = `
     .bl-grid{gap:0}
     .bl-card{display:grid;grid-template-columns:minmax(0,38%) minmax(0,1fr);gap:14px;align-items:start;padding:16px 0;border-top:1px solid ${LINE}}
     .bl-card .bl-dek{display:none}
-    .bl-grid-5{grid-template-columns:minmax(0,1fr)}
+    .bl-grid-4{grid-template-columns:minmax(0,1fr)}
+    /* …except the "Start here" card, which stays a full card: cover on top,
+       its facts kept, no row rule. */
+    .lp-pick-featured .bl-card{grid-template-columns:minmax(0,1fr);padding:0;border-top:0}
+    .lp-pick-featured .bl-card .bl-dek{display:-webkit-box}
   }
 
   /* ── the article ───────────────────────────────────────────────────────── */

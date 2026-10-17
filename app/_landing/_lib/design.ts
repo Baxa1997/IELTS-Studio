@@ -31,6 +31,18 @@ export const BRAND_FILL = "var(--mk-brand-fill)";
  *  needs a hover that keeps its label legible, so this one darkens in both. */
 export const BRAND_FILL_DEEP = "var(--mk-brand-fill-deep)";
 
+/** The front door's call to action — "Start free assessment", and the Start
+ *  on a practice picked for the visitor. ORANGE IN BOTH THEMES (owner,
+ *  2026-10-17), unlike `BRAND_FILL`, which is burgundy in light. Carries WHITE. */
+export const CTA_FILL = "var(--mk-cta-fill)";
+/** Its hover: darker in both themes, so the white label only gains contrast. */
+export const CTA_FILL_DEEP = "var(--mk-cta-fill-deep)";
+/** The outlined partner of a `CTA_FILL` button: its border AND its label. A
+ *  step lighter than the fill in dark, where the fill's orange is 3.7:1. */
+export const CTA_LINE = "var(--mk-cta-line)";
+/** The outlined button's hover ground. */
+export const CTA_TINT = "var(--mk-cta-tint)";
+
 /* The hero panel on the front door and sign-in: a three-stop brand gradient
  * carrying white copy. Deep in dark for that reason — see the note in
  * globals.css. Identical to the literals they replaced in light. */
@@ -310,6 +322,66 @@ export function solidButton(size: "md" | "lg" = "lg"): React.CSSProperties {
     fontSize: size === "lg" ? 16 : 15,
     padding: size === "lg" ? "17px 34px" : "12px 26px",
     borderRadius: RADIUS.pill,
+  };
+}
+
+/**
+ * Solid orange pill — the front door's one call to action. Pair it with the
+ * `lp-cta` class, which owns the hover.
+ *
+ * ⚠️ THE HOVER IS `!important` IN THE CLASS, AND HAS TO BE. This style sets
+ * the background inline, and an inline style beats any class rule — so a plain
+ * `.lp-cta:hover{background:…}` would never show. (`.lp-solid:hover` has that
+ * problem; it is left alone here.)
+ */
+export function ctaButton(size: "md" | "lg" = "lg"): React.CSSProperties {
+  return { ...solidButton(size), background: CTA_FILL, color: WHITE };
+}
+
+/** Outlined pill in the call to action's colour — no fill, a coloured border
+ *  and label. The `lp-outline` class gives it its tinted hover. */
+export function outlineButton(): React.CSSProperties {
+  return {
+    cursor: "pointer",
+    background: "transparent",
+    color: CTA_LINE,
+    border: `1.5px solid ${CTA_LINE}`,
+    fontFamily: SANS,
+    fontWeight: 700,
+    fontSize: 16,
+    padding: "15.5px 30px", // 1.5px border: the same height as the solid pill
+    borderRadius: RADIUS.pill,
+    whiteSpace: "nowrap",
+  };
+}
+
+/** `ctaButton` at card size — the Start on a practice card. */
+export function ctaPill(): React.CSSProperties {
+  return {
+    background: CTA_FILL,
+    color: WHITE,
+    borderRadius: RADIUS.pill,
+    padding: "9px 18px",
+    fontFamily: SANS,
+    fontSize: 14,
+    fontWeight: 700,
+    whiteSpace: "nowrap",
+  };
+}
+
+/** `outlineButton` at card size: the 1.5px border sits inside the same
+ *  height as `ctaPill`, so the two line up across a row of cards. */
+export function outlinePill(): React.CSSProperties {
+  return {
+    background: "transparent",
+    color: CTA_LINE,
+    border: `1.5px solid ${CTA_LINE}`,
+    borderRadius: RADIUS.pill,
+    padding: "7.5px 16.5px",
+    fontFamily: SANS,
+    fontSize: 14,
+    fontWeight: 700,
+    whiteSpace: "nowrap",
   };
 }
 

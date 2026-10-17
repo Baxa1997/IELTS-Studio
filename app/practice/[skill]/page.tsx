@@ -9,14 +9,23 @@ import { postsForSkill } from "@/lib/blog";
 import { loadPosts } from "@/lib/blog/store";
 import { practiceList } from "@/lib/free-practice/assignment";
 import { practiceFaq } from "@/lib/free-practice/faq";
-import { FREE_PAGE_DESCRIPTION, FREE_PAGE_TITLE, freePracticePage, signInFor } from "@/lib/free-practice/links";
+import {
+  FREE_PAGE_DESCRIPTION,
+  FREE_PAGE_SEO_TITLE,
+  FREE_PAGE_TITLE,
+  freePracticePage,
+  signInFor,
+} from "@/lib/free-practice/links";
 import { FREE_SKILLS, isFreeSkill, type FreeSkill } from "@/lib/free-practice/rotation";
 import { translator, type MessageKey } from "@/lib/i18n";
 import { HTML_LANG, SOURCE_LOCALE } from "@/lib/i18n/locales";
 
 import { FreePracticeGrid } from "./_components/free-practice-grid";
+import { HowItWorks } from "./_components/how-it-works";
+import { PracticeFacts } from "./_components/practice-facts";
 import { PracticeFaq } from "./_components/practice-faq";
-import { practiceName } from "./_lib/labels";
+import { practiceFacts, practiceSummary } from "./_lib/facts";
+import { practiceName } from "@/lib/free-practice/labels";
 import { practiceGraph } from "./_lib/structured-data";
 
 /**
@@ -59,7 +68,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { skill } = await params;
   if (!isFreeSkill(skill)) return {};
-  const title = t(TITLE[skill]);
+  // The search headline, not the heading — see FREE_PAGE_SEO_TITLE.
+  const title = t(FREE_PAGE_SEO_TITLE[skill]);
   const description = t(FREE_PAGE_DESCRIPTION[skill]);
   const path = freePracticePage(skill);
   /* No `images`: ./opengraph-image.tsx draws this page's card, and file-based
@@ -114,7 +124,13 @@ export default async function FreePracticePage({ params }: { params: Promise<{ s
         >
           {t(TITLE[skill])}
         </h1>
-        <p style={{ ...LEDE, maxWidth: 680, margin: "14px 0 0" }}>{t("free.pageLead")}</p>
+        {/* Answer-first: what a practice is, how long, how it is marked — the
+            paragraph a search snippet or an answer engine quotes. */}
+        <p style={{ ...LEDE, maxWidth: 760, margin: "14px 0 0" }}>{practiceSummary(skill, t)}</p>
+        <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: BODY, maxWidth: 680, margin: "12px 0 0" }}>
+          {t("free.pageLead")}
+        </p>
+        <PracticeFacts facts={practiceFacts(skill, t)} label={t("free.factsLabel")} />
       </header>
 
       <MorePracticeBanner skill={skill} t={t} />
@@ -148,6 +164,8 @@ export default async function FreePracticePage({ params }: { params: Promise<{ s
         // A pool with nothing in it yet — CEFR until its library is seeded.
         <p style={{ ...LEDE, margin: "8px 0 0" }}>{t("free.emptyPool")}</p>
       )}
+
+      <HowItWorks t={t} />
 
       <OtherSkills current={skill} />
 

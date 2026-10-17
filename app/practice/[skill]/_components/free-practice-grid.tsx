@@ -3,6 +3,7 @@ import { BarChart3, BookOpen, Headphones, Mail, PenLine } from "lucide-react";
 
 import { GeneratedCover } from "@/app/_landing/_components/blog-stories";
 import {
+  BODY,
   BRAND,
   COVER_RING,
   DISPLAY,
@@ -15,11 +16,14 @@ import {
   solidButton,
 } from "@/app/_landing/_lib/design";
 import type { PoolItem } from "@/lib/free-practice/assignment";
+import { formatLabel } from "@/lib/free-practice/labels";
 import { freeRunner } from "@/lib/free-practice/links";
+import { CEFR_READING_QUESTIONS, MINUTES } from "@/lib/free-practice/pools";
 import type { FreeSkill } from "@/lib/free-practice/rotation";
-import type { Translate } from "@/lib/i18n";
+import type { MessageKey, Translate } from "@/lib/i18n";
 
-import { formatLabel } from "../_lib/labels";
+import { practiceSections, type PracticeSection } from "../_lib/sections";
+import { PaperTabs } from "./paper-tabs";
 
 /**
  * The free practice list in the BLOG's card style — the generated cover, the
@@ -39,8 +43,10 @@ import { formatLabel } from "../_lib/labels";
  * same grading, on our own free page.
  *
  * Today's new practice leads, wide; the rest of the visitor's twenty follow in
- * the grid. Every card opens — when today's free practice is already used, the
- * runner page says so and recommends signing in, rather than the card locking.
+ * the grid — under a heading that names them, and for CEFR on a tab per
+ * paper, Reading apart from Writing (../_lib/sections, ./paper-tabs). Every
+ * card opens — when today's free practice is already used, the runner page
+ * says so and recommends signing in, rather than the card locking.
  */
 
 /**
@@ -139,7 +145,7 @@ function LeadPractice({ skill, item, t }: { skill: FreeSkill; item: PoolItem; t:
       </GeneratedCover>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <Facts item={item} t={t} />
-        <h2
+        <h3
           lang="en"
           style={{
             fontFamily: DISPLAY,
@@ -156,7 +162,7 @@ function LeadPractice({ skill, item, t }: { skill: FreeSkill; item: PoolItem; t:
           <Link href={href} className="bl-hl">
             {item.title}
           </Link>
-        </h2>
+        </h3>
         <div style={{ marginTop: 6 }}>
           {/* Covered by the headline's stretched link, so it goes to the same
               place — it is here to look like the thing to press. */}
@@ -201,6 +207,80 @@ function PracticeStory({ skill, item, t }: { skill: FreeSkill; item: PoolItem; t
   );
 }
 
+/** Each section's heading: the skill's list, or one CEFR paper's — with what
+ *  that paper is, since the two are different exams of an hour each. */
+function sectionHead(skill: FreeSkill, paper: PracticeSection["paper"], t: Translate): { title: string; sub: string | null } {
+  if (paper === "reading") {
+    return {
+      title: t("free.cefrReadingTitle"),
+      sub: t("free.cefrReadingSub", { questions: CEFR_READING_QUESTIONS, minutes: MINUTES.cefrReading }),
+    };
+  }
+  if (paper === "writing") {
+    return { title: t("free.cefrWritingTitle"), sub: t("free.cefrWritingSub", { minutes: MINUTES.cefrWriting }) };
+  }
+  return { title: t(LIST_TITLE[skill]), sub: null };
+}
+
+const LIST_TITLE: Record<FreeSkill, MessageKey> = {
+  writing: "free.listTitleWriting",
+  reading: "free.listTitleReading",
+  listening: "free.listTitleListening",
+  // CEFR is always in paper sections, so this one is never shown; it is
+  // here so a CEFR list that lost its papers still has a heading.
+  cefr: "free.pageTitleCefr",
+};
+
+/** One section: its heading, today's new practice if it leads here, then the
+ *  grid of the rest. */
+function SectionView({
+  skill,
+  section,
+  t,
+  spaced,
+}: {
+  skill: FreeSkill;
+  section: PracticeSection;
+  t: Translate;
+  spaced: boolean;
+}) {
+  const { title, sub } = sectionHead(skill, section.paper, t);
+  const id = `practices-${section.paper ?? skill}`;
+  return (
+    <section aria-labelledby={id} style={{ marginTop: spaced ? "clamp(44px,6vw,72px)" : 0 }}>
+      <h2
+        id={id}
+        style={{
+          fontFamily: DISPLAY,
+          fontWeight: 600,
+          fontSize: "clamp(21px,2.3vw,26px)",
+          lineHeight: 1.2,
+          letterSpacing: "-0.02em",
+          color: INK,
+          margin: 0,
+        }}
+      >
+        {title}
+      </h2>
+      {sub ? (
+        <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: BODY, margin: "8px 0 0", maxWidth: 760 }}>
+          {sub}
+        </p>
+      ) : null}
+      <div style={{ marginTop: "clamp(20px,3vw,28px)" }}>
+        {section.lead ? <LeadPractice skill={skill} item={section.lead} t={t} /> : null}
+        {section.items.length > 0 ? (
+          <div className="bl-grid" style={{ marginTop: section.lead ? "clamp(32px,5vw,48px)" : 0 }}>
+            {section.items.map((item) => (
+              <PracticeStory key={item.key} skill={skill} item={item} t={t} />
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export function FreePracticeGrid({
   skill,
   items,
@@ -210,18 +290,29 @@ export function FreePracticeGrid({
   items: PoolItem[];
   t: Translate;
 }) {
-  const [lead, ...rest] = items;
-  if (!lead) return null;
+  const sections = practiceSections(skill, items);
+  /* CEFR's two papers as tabs (owner, 2026-10-17), opening on the paper that
+     holds today's new practice — `practiceSections` puts that one first. A
+     list with only one paper in it needs no tabs. */
+  if (sections.length > 1 && sections.every((s) => s.paper)) {
+    return (
+      <PaperTabs
+        label={t("free.tabsLabel")}
+        initial={sections[0].paper as string}
+        tabs={sections.map((section) => ({
+          id: section.paper as string,
+          label: t(section.paper === "writing" ? "nav.writing" : "nav.reading"),
+          count: (section.lead ? 1 : 0) + section.items.length,
+          panel: <SectionView skill={skill} section={section} t={t} spaced={false} />,
+        }))}
+      />
+    );
+  }
   return (
     <>
-      <LeadPractice skill={skill} item={lead} t={t} />
-      {rest.length > 0 ? (
-        <div className="bl-grid" style={{ marginTop: "clamp(32px,5vw,48px)" }}>
-          {rest.map((item) => (
-            <PracticeStory key={item.key} skill={skill} item={item} t={t} />
-          ))}
-        </div>
-      ) : null}
+      {sections.map((section, i) => (
+        <SectionView key={section.paper ?? skill} skill={skill} section={section} t={t} spaced={i > 0} />
+      ))}
     </>
   );
 }

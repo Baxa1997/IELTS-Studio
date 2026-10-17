@@ -1,5 +1,6 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
 import { composeTestSubtitle } from "@/lib/reading/titles";
@@ -86,7 +87,7 @@ export const MINUTES = {
 } as const;
 
 /** A full Multilevel Reading paper: Parts 1–5 hold questions 1–35. */
-const CEFR_READING_QUESTIONS = 35;
+export const CEFR_READING_QUESTIONS = 35;
 
 /** The exam's own names for the writing tasks, and the time each is given —
  *  defined in lib/writing/exam-tasks so the /grade checker's browser code can
@@ -382,10 +383,53 @@ async function cefrPool(admin: Admin): Promise<PoolItem[]> {
   return alternate(reading, writing);
 }
 
-export const loadPool = cache(async function loadPool(skill: FreeSkill): Promise<PoolItem[]> {
+async function buildPool(skill: FreeSkill): Promise<PoolItem[]> {
   const admin = createAdminClient();
   if (skill === "writing") return writingPool(admin);
   if (skill === "reading") return readingPool(admin);
   if (skill === "cefr") return cefrPool(admin);
   return listeningPool(admin);
+}
+
+export const loadPool = cache(async function loadPool(skill: FreeSkill): Promise<PoolItem[]> {
+  return buildPool(skill);
 });
+
+/** Busts the cached pools below — for a seeder or an admin action that changes
+ *  the shared library and cannot wait ten minutes. */
+export const FREE_POOL_TAG = "free-practice-pools";
+
+/* The cached half THROWS on an empty pool rather than returning it: every
+   loader above reads `data ?? []`, so a failed query looks exactly like an
+   empty library, and caching that would blank the landing page's picks for
+   the whole window. `loadPoolCached` catches it for the one request. */
+const cachedPool = unstable_cache(
+  async (skill: FreeSkill): Promise<PoolItem[]> => {
+    const pool = await buildPool(skill);
+    if (!pool.length) throw new Error(`free practice pool "${skill}" came back empty`);
+    return pool;
+  },
+  ["free-practice-pool-v1"],
+  { tags: [FREE_POOL_TAG], revalidate: 600 },
+);
+
+/**
+ * A skill's pool, shared across requests for up to ten minutes.
+ *
+ * ⚠️ ONLY THE LANDING PAGE'S PICKS READ THIS (lib/free-practice/picks.ts).
+ * They run on every visit to the front door, and the Reading pool alone pages
+ * through ~4,500 question rows — four of these per visit was the reason not to
+ * do it uncached. The practice pages and the runners keep `loadPool`, fresh per
+ * request, so marking never checks a visitor's list against stale data. The
+ * cost of the split: for up to ten minutes after the library changes, a pick
+ * can name a practice the fresh list no longer holds, and its runner then
+ * sends the visitor to their list — which is where they were going anyway.
+ */
+export async function loadPoolCached(skill: FreeSkill): Promise<PoolItem[]> {
+  try {
+    return await cachedPool(skill);
+  } catch (err) {
+    console.error("[free-practice] cached pool unavailable:", err);
+    return [];
+  }
+}

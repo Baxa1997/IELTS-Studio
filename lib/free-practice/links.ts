@@ -29,13 +29,28 @@ export const freeRunner = (skill: FreeSkill, key: string) =>
 /** The listing page of dated cards for a skill. */
 export const freePracticePage = (skill: FreeSkill) => `/practice/${skill}`;
 
-/** Each listing page's name — its heading, its <title>, and what an article
+/** Each listing page's name — its heading, its share card, and what an article
  *  about the skill calls it when it links there. */
 export const FREE_PAGE_TITLE: Record<FreeSkill, MessageKey> = {
   writing: "free.pageTitleWriting",
   reading: "free.pageTitleReading",
   listening: "free.pageTitleListening",
   cefr: "free.pageTitleCefr",
+};
+
+/**
+ * Each listing page's <title> — the search result's headline.
+ *
+ * ⚠️ NOT THE HEADING, ON PURPOSE (2026-10-17). A search title has to carry the
+ * words people type ("tests", "online", "with answers") within ~60 characters;
+ * the heading is also drawn at 72px on the share card, where those extra words
+ * wrap to a third line. So the two say the same thing at two lengths.
+ */
+export const FREE_PAGE_SEO_TITLE: Record<FreeSkill, MessageKey> = {
+  writing: "free.seoTitleWriting",
+  reading: "free.seoTitleReading",
+  listening: "free.seoTitleListening",
+  cefr: "free.seoTitleCefr",
 };
 
 /** Each listing page's description — its meta description, its share card's

@@ -15,9 +15,15 @@ export interface FreeList {
 }
 
 /** The list a free-practice page shows this visitor for `skill`. */
-export async function practiceList(skill: FreeSkill): Promise<FreeList> {
+/** `load` is the pool's source: fresh per request by default — the practice
+ *  pages and the marking routes — or the cross-request cache for the landing
+ *  page's picks (lib/free-practice/picks.ts). */
+export async function practiceList(
+  skill: FreeSkill,
+  load: (skill: FreeSkill) => Promise<PoolItem[]> = loadPool,
+): Promise<FreeList> {
   const day = practiceDay();
-  const [pool, visitor, done] = await Promise.all([loadPool(skill), visitorId(), doneToday(day)]);
+  const [pool, visitor, done] = await Promise.all([load(skill), visitorId(), doneToday(day)]);
   return {
     day,
     items: listIndices(pool.length, visitor, skill, day).map((i) => pool[i]),

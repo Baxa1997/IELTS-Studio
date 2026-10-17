@@ -8,12 +8,18 @@
  *    make "no account needed" false on the only page that matters.
  *  - The "done today" record is a signed cookie; if it could be forged or
  *    replayed from yesterday, the one-a-day rule would mean nothing.
+ *  - A first visit must get ONE id. The landing page's picks and its cards'
+ *    prefetches used to mint one each, and the visitor kept the last.
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { NextRequest } from "next/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { LOCALES, localePath } from "@/lib/i18n/locales";
+import { updateSession } from "@/lib/supabase/middleware";
 
 import { FREE_RUNNER_BASE, freePracticePage, freeRunner, PRACTICE_CARD_SKILLS, signInFor } from "./links";
 import { FREE_LIST_SIZE, FREE_SKILLS, listIndices, recentDays } from "./rotation";
@@ -48,6 +54,37 @@ describe("the proxy and the app agree", () => {
       const runner = freeRunner(s, "some-id");
       expect(covers(pub, runner), `${runner} would redirect to /sign-in`).toBe(true);
       expect(covers(pub, freePracticePage(s)), `${freePracticePage(s)} would redirect to /sign-in`).toBe(true);
+    }
+  });
+});
+
+describe("a first visit's visitor id", () => {
+  /* The real proxy, run on a request. Supabase is switched off, so nothing
+     here can reach the network. */
+  beforeEach(() => vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", ""));
+  afterEach(() => vi.unstubAllEnvs());
+
+  async function mintedOn(path: string, cookie?: string): Promise<string | undefined> {
+    const request = new NextRequest(new URL(path, "https://www.engprogress.com"), cookie ? { headers: { cookie } } : {});
+    return (await updateSession(request)).cookies.get(VISITOR_COOKIE)?.value;
+  }
+
+  it("is minted on the landing page's own request, in every language, so the picks fetch and the prefetches share it", async () => {
+    for (const locale of LOCALES) {
+      const landing = localePath("/", locale);
+      expect(await mintedOn(landing), landing).toMatch(/^[0-9a-f-]{36}$/);
+    }
+  });
+
+  it("is not minted on the other pages under a language", async () => {
+    for (const path of ["/how-to-use", "/uz/how-to-use", "/ru/blog", "/blog/some-post"]) {
+      expect(await mintedOn(path), path).toBeUndefined();
+    }
+  });
+
+  it("never replaces the one a visitor already has", async () => {
+    for (const path of ["/", freePracticePage("reading")]) {
+      expect(await mintedOn(path, `${VISITOR_COOKIE}=an-earlier-id`), path).toBeUndefined();
     }
   });
 });
@@ -180,8 +217,13 @@ describe("every free practice recommends signing in for more", () => {
 
   it("lays the landing section's cards out for exactly as many skills as it has", () => {
     // `.bl-grid-N` is sized for N cards; a skill added without it strands one.
-    expect(read("app/_landing/_components/landing-page.tsx")).toContain(`bl-grid-${PRACTICE_CARD_SKILLS.length}`);
-    expect(read("app/_landing/_lib/blog-css.ts")).toContain(`.bl-grid-${PRACTICE_CARD_SKILLS.length}{`);
+    // The row holds every card but the one in the "Start here" frame (owner,
+    // 2026-10-17), so it is sized for one fewer than the section has.
+    const row = PRACTICE_CARD_SKILLS.length - 1;
+    expect(read("app/_landing/_components/practice-picks.tsx")).toContain(`bl-grid-${row}`);
+    // The rule itself, N columns for N cards — not merely the class name,
+    // which the tablet and phone overrides also mention.
+    expect(read("app/_landing/_lib/blog-css.ts")).toContain(`.bl-grid-${row}{grid-template-columns:repeat(${row},minmax(0,1fr))}`);
   });
 
   it("offers it on the practice pages and under the landing section's cards", () => {

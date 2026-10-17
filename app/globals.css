@@ -985,6 +985,16 @@
      job in dark: the ramp deliberately goes LIGHTER on hover there, and white
      on #e97338 is 3.0:1 — a hover that makes the label harder to read. */
   --mk-brand-fill-deep: #5c0125;
+  /* The front door's call to action (`CTA_*` in app/_landing/_lib/design.ts):
+     ORANGE IN BOTH THEMES, on purpose (owner, 2026-10-17) — light is otherwise
+     burgundy, and the one button the page exists for is the exception. The
+     fill is dark's own brand fill, so the button is the same in both themes.
+     White on the fill 5.0:1, on its hover 6.3:1; the outlined partner's label
+     5.0:1 on the panel, 4.8:1 on the well, 4.6:1 on its own hover tint. */
+  --mk-cta-fill: #c2471b;
+  --mk-cta-fill-deep: #a93c14;
+  --mk-cta-line: #c2471b;
+  --mk-cta-tint: #fff4ee;
 }
 
 .dark {
@@ -1029,6 +1039,12 @@
     0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 10px 30px -18px rgba(0, 0, 0, 0.8),
     0 2px 8px -4px rgba(0, 0, 0, 0.5);
   --mk-brand-fill-deep: #a93c14; /* white clears 6.3:1 */
+  /* The outlined label is a step LIGHTER here: #c2471b on the dark panel is
+     3.7:1. #d85d1f is 4.7:1 on the panel, 4.5:1 on the well, 4.7:1 on the tint. */
+  --mk-cta-fill: #c2471b;
+  --mk-cta-fill-deep: #a93c14;
+  --mk-cta-line: #d85d1f;
+  --mk-cta-tint: #231209;
 }
 
 /* ── blog covers (`--mk-cover-*`) ──────────────────────────────────────────

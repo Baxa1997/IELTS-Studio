@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { clientEnv, isSupabaseConfigured } from "@/lib/env";
+import { LOCALES, localePath } from "@/lib/i18n/locales";
 
 /** Kept in step with lib/referrals/attribution.ts — the middleware cannot import
  *  from it, because that module is `server-only` and this runs on the edge. */
@@ -15,6 +16,22 @@ const REFERRAL_COOKIE_DAYS = 90;
 const VISITOR_COOKIE = "ep_visitor";
 /** Where the free daily practice lives — the only paths that need a visitor id. */
 const FREE_PRACTICE_PATHS = ["/practice", "/read/free", "/listen/free", "/write/free", "/cefr/free", "/api/public/practice"];
+/**
+ * The landing page in each language, matched EXACTLY — not its subpages. It
+ * shows the visitor's own picks, so like /practice it mints the id on its own
+ * request.
+ *
+ * ⚠️ WITHOUT THIS, A FIRST VISIT GOT SEVERAL IDS. The page is static and the
+ * picks arrive by fetch (app/_landing/_components/practice-picks.tsx); that
+ * fetch and the background prefetches of the cards' /practice links each left
+ * with no cookie, each minted its own id, and the browser kept whichever
+ * answered last. When that was not the id the picks were drawn for, "Start now"
+ * pointed at a practice outside the visitor's list, and the runner sent them
+ * back to the list. Minting here means every one of those requests already
+ * carries the id. It adds no new cookie: the picks fetch already set one on
+ * every landing visit.
+ */
+const LANDING_PATHS: readonly string[] = LOCALES.map((locale) => localePath("/", locale));
 
 // Pages reachable without a session. Everything else requires authentication.
 // `/auth` covers the OAuth callback, which must run before a session exists.
@@ -147,13 +164,15 @@ function isPublicPath(pathname: string): boolean {
 /**
  * A random, anonymous id for the free daily practice's rotation — which
  * practice a visitor gets today is hashed from it (lib/free-practice/rotation).
- * Only minted on the free-practice paths, and never overwritten: the rotation
- * is only stable for as long as the id is. Returns the new id, or null when
- * none was needed.
+ * Only minted on the free-practice paths and the landing page, and never
+ * overwritten: the rotation is only stable for as long as the id is. Returns
+ * the new id, or null when none was needed.
  */
 function mintVisitor(request: NextRequest): string | null {
   const { pathname } = request.nextUrl;
-  if (!FREE_PRACTICE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return null;
+  const freePractice =
+    LANDING_PATHS.includes(pathname) || FREE_PRACTICE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (!freePractice) return null;
   if (request.cookies.get(VISITOR_COOKIE)?.value) return null;
   const id = crypto.randomUUID();
   request.cookies.set(VISITOR_COOKIE, id);

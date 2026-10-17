@@ -5,20 +5,18 @@ import type { MessageKey, Translate } from "@/lib/i18n";
 import { freePracticePage, signInFor, type PracticeCardSkill } from "@/lib/free-practice/links";
 
 import {
-  BODY,
   BRAND,
   BRAND_TINT,
   BRAND_TINT_LINE,
   COVER_RING,
-  DISPLAY,
   INK,
-  MUTED,
   RADIUS,
   SANS,
   SKILL_COVER,
   WHITE,
 } from "../_lib/design";
 import { GeneratedCover } from "./blog-stories";
+import { PickBody, PickChipLabel } from "./practice-picks";
 
 /**
  * The free practice on the landing page: one card per skill, deliberately the
@@ -58,7 +56,7 @@ const SKILL_META: Record<PracticeCardSkill, MessageKey> = {
 };
 
 /** A chip laid over a cover — white on the cover's dark ground, both themes. */
-function CoverChip({ locked, label }: { locked: boolean; label: string }) {
+function CoverChip({ locked, label }: { locked: boolean; label: React.ReactNode }) {
   return (
     <span
       style={{
@@ -88,39 +86,32 @@ function CoverChip({ locked, label }: { locked: boolean; label: string }) {
 /* ── the landing section's five cards ──────────────────────────────────── */
 
 /**
- * One skill on the landing page. Writing, Reading, Listening and CEFR go to
- * their page of dated practices; Speaking is locked and goes to sign-in.
+ * One skill on the landing page, picked for the visitor once the browser knows
+ * who they are (./practice-picks): rendered here with the skill's generic copy
+ * — the skill's name, what it holds, "See today's practice" — and filled in
+ * with the visitor's own practice for today when it arrives. Speaking has no
+ * free practice: locked, and it goes to sign-in.
  */
 export function SkillPracticeCard({ skill, t }: { skill: PracticeCardSkill; t: Translate }) {
   const locked = skill === "speaking";
-  const href = locked ? signInFor("speaking") : freePracticePage(skill);
+  const href = skill === "speaking" ? signInFor("speaking") : freePracticePage(skill);
   const { a, b } = SKILL_COVER[skill];
+  const chip = skill === "speaking" ? t("free.signIn") : <PickChipLabel skill={skill} fallback={t("free.freeToday")} />;
   return (
     <article className="bl-story bl-card" style={locked ? { opacity: 0.86 } : undefined}>
       <GeneratedCover a={a} b={b} icon={SKILL_ICON[skill]} kicker={t(SKILL_NAME[skill])} seedKey={skill} radius={14}>
-        <CoverChip locked={locked} label={locked ? t("free.signIn") : t("free.freeToday")} />
+        <CoverChip locked={locked} label={chip} />
       </GeneratedCover>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-        <h3
-          style={{
-            fontFamily: DISPLAY,
-            fontWeight: 600,
-            fontSize: "clamp(18px,1.7vw,21px)",
-            letterSpacing: "-0.02em",
-            margin: 0,
-          }}
-        >
-          <Link href={href} className="bl-hl">
-            {t(SKILL_NAME[skill])}
-          </Link>
-        </h3>
-        <p className="bl-dek" style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.55, color: BODY, margin: 0 }}>
-          {t(SKILL_META[skill])}
-        </p>
-        <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 700, color: locked ? MUTED : BRAND }}>
-          {locked ? t("free.signInToPractise") : t("free.seeToday")} →
-        </span>
-      </div>
+      <PickBody
+        skill={skill}
+        locked={locked}
+        fallback={{
+          href,
+          title: t(SKILL_NAME[skill]),
+          meta: t(SKILL_META[skill]),
+          cta: locked ? t("free.signInToPractise") : t("free.seeToday"),
+        }}
+      />
     </article>
   );
 }

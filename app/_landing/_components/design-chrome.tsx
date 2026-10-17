@@ -6,6 +6,8 @@ import {
   BRAND_FILL,
   BRAND_FILL_DEEP,
   BRAND_TINT,
+  CTA_FILL_DEEP,
+  CTA_TINT,
   DISPLAY,
   FIELD,
   INK,
@@ -198,6 +200,12 @@ export const DESIGN_CSS = `
      stay on the fill ramp too — see BRAND_FILL_DEEP. (No backticks in here: this
      is inside a template literal and one would end the string.) */
   .lp-solid:hover{background:${BRAND_FILL_DEEP}}
+  /* ctaButton() / outlineButton() set their ground INLINE, which beats any
+     class rule — hence the !important: without it the hover never shows. */
+  .lp-cta{transition:background .15s}
+  .lp-cta:hover{background:${CTA_FILL_DEEP}!important}
+  .lp-outline{transition:background .15s}
+  .lp-outline:hover{background:${CTA_TINT}!important}
   .lp-ghost{transition:border-color .15s,color .15s}
   .lp-ghost:hover{border-color:${BRAND};color:${BRAND}}
   .lp-card{transition:border-color .15s}
