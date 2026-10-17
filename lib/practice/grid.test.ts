@@ -25,7 +25,7 @@ const ROOT = join(__dirname, "..", "..");
 const GRIDS = [
   "app/(shell)/read/_components/read-hub.tsx",
   "app/(shell)/write/_components/library.tsx",
-  "shared/components/listening/listening-client.tsx",
+  "shared/components/listening/hub-pieces.tsx",
   "shared/components/cefr/hub.tsx",
   "shared/components/assignments/assigned-hub.tsx",
   "shared/components/app-shell/page-skeleton.tsx",

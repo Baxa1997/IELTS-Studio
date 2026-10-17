@@ -167,7 +167,7 @@ describe("every free practice recommends signing in for more", () => {
       ["app/(studio)/write/_components/writing-studio.tsx", "publicMode.copy"],
       ["app/(studio)/read/_components/reading-runner.tsx", "publicMode.copy"],
       ["app/(studio)/read/_components/test-runner.tsx", "publicMode.copy"],
-      ["shared/components/listening/listening-client.tsx", "publicRun.copy"],
+      ["shared/components/listening/runner.tsx", "publicRun.copy"],
       ["shared/components/cefr/reading-runner.tsx", "publicMode.copy"],
       ["shared/components/cefr/writing-runner.tsx", "publicMode.copy"],
     ];
@@ -208,7 +208,7 @@ describe("a full test is the whole test, on the full-test runner (owner, 2026-09
     /* The engine names a part `id:part` and the list `id_part`. Grading by
        `view.id` sent the former, so every free part came back "not today" —
        live from the first release until this was pinned. */
-    const client = read("shared/components/listening/listening-client.tsx");
+    const client = read("shared/components/listening/public-runner.tsx");
     expect(client).toContain("JSON.stringify({ key: practiceKey, answers })");
     expect(read("app/(studio)/listen/free/[key]/page.tsx")).toContain("practiceKey={entry.item.key}");
   });

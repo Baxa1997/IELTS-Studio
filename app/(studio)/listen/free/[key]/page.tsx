@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { listeningFont } from "@/shared/components/listening/font";
-import { PublicListeningRunner } from "@/shared/components/listening/listening-client";
+import { PublicListeningRunner } from "@/shared/components/listening/public-runner";
 import type { RenderView } from "@/shared/components/listening/types";
 import { FreeTrialGate } from "@/shared/components/practice/free-trial-nudge";
 import { onTodaysList } from "@/lib/free-practice/assignment";
