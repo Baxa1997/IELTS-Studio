@@ -50,7 +50,7 @@ Listening and Reading have 40 questions each, and every correct answer is worth 
 
 - **Listening:** about 23 correct answers for Band 6, 30 for Band 7 and 35 for Band 8.
 - **Academic Reading:** about 23 for Band 6, 30 for Band 7 and 35 for Band 8.
-- **General Training Reading:** about 30 for Band 6, 34 for Band 7 and 38 for Band 8.
+- **General Training Reading:** about 23 for Band 5, 30 for Band 6 and 35 for Band 7.
 
 General Training Reading asks for more correct answers for the same band, because its texts come from everyday sources rather than academic ones.
 
