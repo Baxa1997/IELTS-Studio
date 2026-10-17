@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -125,7 +125,7 @@ function objects(src: string): string[] {
  * token. Looking at the exports first reported `background: SOFT` as a text
  * colour used as a fill — a false alarm that cost a real investigation.
  */
-function expand(expr: string, src: string): string {
+function expand(expr: string, src: string, file: string, depth = 0): string {
   const e = expr.trim();
   // Only a bare identifier can BE a binding; anything else (a literal, a
   // template string, a ternary) is used as written. Checking first also keeps
@@ -135,7 +135,36 @@ function expand(expr: string, src: string): string {
   if (local) return local[1];
   const alias = new RegExp(`\\b([A-Z_0-9]+) as ${e}\\b`).exec(src);
   if (alias && TOKENS[alias[1]]) return TOKENS[alias[1]];
-  return TOKENS[e] ?? e;
+  return TOKENS[e] ?? fromImport(e, src, file, depth) ?? e;
+}
+
+/**
+ * The colour a name holds in the module it is imported from.
+ *
+ * ⚠️ THE LAST RESORT, NOT THE FIRST, so nothing resolved above changes. It only
+ * recovers names that otherwise fell through: splitting the CEFR client moved
+ * `const D_PAGE = "var(--ex-cf-page)"` into `./design`, and every pair drawn
+ * with it then stopped being checked — no failure, one fewer pair evaluated.
+ * Without this, a file's colours are only checked while they are declared in
+ * the file that paints with them, which punishes exactly the split you want.
+ */
+function fromImport(name: string, src: string, file: string, depth: number): string | null {
+  if (depth >= 3) return null;
+  for (const m of src.matchAll(/import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*["']([^"']+)["']/g)) {
+    for (const part of m[1].split(",")) {
+      const t = part.trim();
+      const as = /^(\S+)\s+as\s+(\S+)$/.exec(t);
+      if ((as ? as[2] : t) !== name) continue;
+      const spec = m[2];
+      const base = spec.startsWith("@/") ? join(ROOT, spec.slice(2)) : spec.startsWith(".") ? join(ROOT, file, "..", spec) : null;
+      const hit = base && ["", ".ts", ".tsx"].map((x) => base + x).find((p) => existsSync(p) && statSync(p).isFile());
+      if (!hit) return null;
+      const target = relative(ROOT, hit);
+      const value = expand(as ? as[1] : t, readFileSync(hit, "utf8"), target, depth + 1);
+      return value === (as ? as[1] : t) ? null : value;
+    }
+  }
+  return null;
 }
 
 const FILL = /(?:^|[,{\s])(?:background|backgroundColor)\s*:\s*([^,\n]+?)\s*[,\n]/;
@@ -159,10 +188,10 @@ function scan(): Finding[] {
       const f = FILL.exec(body);
       const i = f && INK.exec(body);
       if (!f || !i) continue;
-      const fl = resolve(expand(f[1], src), "light");
-      const fd = resolve(expand(f[1], src), "dark");
-      const il = resolve(expand(i[1], src), "light");
-      const id = resolve(expand(i[1], src), "dark");
+      const fl = resolve(expand(f[1], src, file), "light");
+      const fd = resolve(expand(f[1], src, file), "dark");
+      const il = resolve(expand(i[1], src, file), "light");
+      const id = resolve(expand(i[1], src, file), "dark");
       if (!fl || !fd || !il || !id) continue;
       out.push({
         file,

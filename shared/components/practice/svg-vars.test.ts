@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -95,17 +95,57 @@ function varKeys(src: string, names: Set<string>): Set<string> {
 }
 const PALETTES = /@\/lib\/theme\/tokens|@\/app\/_landing\/_(?:lib|components)\/design|\.\/(?:_lib\/|_components\/)?design/;
 
+/**
+ * The file an import specifier names, or null for a package.
+ *
+ * ⚠️ WHY THE GUARD OPENS THE MODULE INSTEAD OF TRUSTING `PALETTES`. Matching
+ * the specifier's TEXT is how this went blind: splitting the CEFR client moved
+ * `W_ACCENT = D_ACCENT` out of the file that draws with it and into
+ * `./writing-design`, a name the pattern above does not know, and a planted
+ * `stroke={W_ACCENT}` then passed. Following the import to its file and asking
+ * what THAT file binds to a var keeps a palette covered whatever it is called.
+ */
+function resolveImport(fromFile: string, spec: string): string | null {
+  const base = spec.startsWith("@/")
+    ? join(ROOT, spec.slice(2))
+    : spec.startsWith(".")
+      ? join(ROOT, fromFile, "..", spec)
+      : null;
+  if (!base) return null;
+  for (const ext of ["", ".ts", ".tsx"]) {
+    const p = base + ext;
+    if (existsSync(p) && statSync(p).isFile()) return relative(ROOT, p);
+  }
+  return null;
+}
+
+function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, "")).replace(/\/\/[^\n]*/g, "");
+}
+
+const moduleCache = new Map<string, Set<string>>();
+function moduleVarNames(file: string, depth: number): Set<string> {
+  const key = `${file}:${depth}`;
+  if (!moduleCache.has(key)) {
+    moduleCache.set(key, varNames(stripComments(readFileSync(join(ROOT, file), "utf8")), file, depth));
+  }
+  return moduleCache.get(key)!;
+}
+
 /** Names in this file that provably hold a `var(--…)` string. */
-function varNames(src: string): Set<string> {
+function varNames(src: string, file: string, depth = 0): Set<string> {
   const names = new Set<string>();
-  for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/g)) {
-    if (!PALETTES.test(m[2])) continue;
+  for (const m of src.matchAll(/import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*["']([^"']+)["']/g)) {
+    const palette = PALETTES.test(m[2]);
+    const target = palette || depth >= 3 ? null : resolveImport(file, m[2]);
+    const theirs = target ? moduleVarNames(target, depth + 1) : null;
+    if (!palette && !theirs) continue;
     for (const part of m[1].split(",")) {
-      const t = part.trim();
+      const t = part.trim().replace(/^type\s+/, "");
       if (!t) continue;
       // `WELL as SOFT` binds SOFT, not WELL.
       const as = /^(\S+)\s+as\s+(\S+)$/.exec(t);
-      names.add(as ? as[2] : t);
+      if (palette || theirs!.has(as ? as[1] : t)) names.add(as ? as[2] : t);
     }
   }
   // Locals, including `const EMERALD = SLATE_GREEN` — resolved to a fixed point
@@ -132,10 +172,8 @@ describe("SVG presentation attributes", () => {
       // Deleting it outright shifts every line after it, and the guard then
       // reports real offenders at line numbers that point at unrelated code —
       // which is exactly what happened the first time this reported anything.
-      const src = readFileSync(join(ROOT, file), "utf8")
-        .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""))
-        .replace(/\/\/[^\n]*/g, "");
-      const named = varNames(src);
+      const src = stripComments(readFileSync(join(ROOT, file), "utf8"));
+      const named = varNames(src, file);
       const keys = varKeys(src, named);
       src.split("\n").forEach((line, i) => {
         if (ATTR.test(line)) offenders.push(`${file}:${i + 1}  ${line.trim()}`);
