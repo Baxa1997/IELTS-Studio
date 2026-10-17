@@ -6,7 +6,10 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 
-import { addStudentAccount, type AddStudentState } from "@/app/(app)/console/groups/actions";
+import {
+  addStudentAccount,
+  type AddStudentState,
+} from "@/app/(app)/console/groups/account-actions";
 import { useActionFeedback } from "@/shared/components/console/toast";
 
 const initial: AddStudentState = {};

@@ -13,15 +13,11 @@ import {
   addStudentAccount,
   addStudentsBulk,
   addTeacherAccount,
-  assignTeacher,
-  createAssignment,
-  createGroup,
   inviteGroupToTelegram,
-  moveMember,
-  setGroupSchedule,
-  setGroupStatus,
-  setStudentStatus,
-} from "../groups/actions";
+} from "../groups/account-actions";
+import { assignTeacher, createGroup, setGroupSchedule, setGroupStatus } from "../groups/actions";
+import { createAssignment } from "../groups/assignment-actions";
+import { moveMember, setStudentStatus } from "../groups/member-actions";
 
 export interface RunState {
   ok?: string;

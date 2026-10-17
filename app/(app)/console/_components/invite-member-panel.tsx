@@ -6,7 +6,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 
-import { inviteMember, type InviteFormState } from "../groups/actions";
+import { inviteMember, type InviteFormState } from "../groups/member-actions";
 import { useActionFeedback } from "@/shared/components/console/toast";
 
 const FIELD =

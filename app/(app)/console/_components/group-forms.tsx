@@ -13,10 +13,10 @@ import {
   assignTeacher,
   createGroup,
   deleteGroup,
-  removeMember,
   setGroupStatus,
   type GroupFormState,
 } from "../groups/actions";
+import { removeMember } from "../groups/member-actions";
 import { useActionFeedback } from "@/shared/components/console/toast";
 
 const FIELD =

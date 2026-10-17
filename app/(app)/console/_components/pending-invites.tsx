@@ -4,12 +4,8 @@ import { useActionState, useState } from "react";
 
 import { FAINT, INDIGO, LINE, MUTED, SANS, TINT } from "@/shared/components/console/page-ui";
 
-import {
-  refreshInvite,
-  revokeInvite,
-  type GroupFormState,
-  type InviteFormState,
-} from "../groups/actions";
+import { refreshInvite, revokeInvite, type InviteFormState } from "../groups/member-actions";
+import { type GroupFormState } from "../groups/actions";
 import { PANEL, WARM_RED } from "@/lib/theme/tokens";
 
 export interface PendingInvite {

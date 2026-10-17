@@ -11,7 +11,7 @@ import {
   type MemberStatus,
 } from "@/lib/console/status";
 
-import { setStudentStatus } from "../../groups/actions";
+import { setStudentStatus } from "../../groups/member-actions";
 import { type GroupFormState } from "../../groups/actions";
 
 /**

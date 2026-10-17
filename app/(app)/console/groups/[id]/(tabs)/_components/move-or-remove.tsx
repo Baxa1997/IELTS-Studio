@@ -4,7 +4,12 @@ import { useActionState } from "react";
 
 import { useActionFeedback } from "@/shared/components/console/toast";
 
-import { moveMember, removeMember, setStudentStatus, type GroupFormState } from "@/app/(app)/console/groups/actions";
+import {
+  moveMember,
+  removeMember,
+  setStudentStatus,
+} from "@/app/(app)/console/groups/member-actions";
+import { type GroupFormState } from "@/app/(app)/console/groups/actions";
 import { FAINT, RULE, SLATE_BODY, SLATE_INK, WELL } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";

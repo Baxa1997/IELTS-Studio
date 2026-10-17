@@ -9,21 +9,37 @@
  * action tests here: jsdom cannot run a server action.
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-const src = readFileSync(fileURLToPath(new URL("./actions.ts", import.meta.url)), "utf8")
-  .replace(/\/\*[\s\S]*?\*\//g, "")
-  .replace(/(^|[^:])\/\/.*$/gm, "$1");
+/* Every server module of this route — the actions AND the `_lib/` helpers
+   they call — listed from disk, not by name. ⚠️ These checks used to read
+   `./actions.ts` alone; when the actions were split across files (2026-10-17)
+   a function that moved would have been looked up where it no longer is. */
+const here = dirname(fileURLToPath(import.meta.url));
+const sources = ["", "_lib"].flatMap((sub) =>
+  readdirSync(join(here, sub))
+    .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
+    .map((f) =>
+      readFileSync(join(here, sub, f), "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/(^|[^:])\/\/.*$/gm, "$1"),
+    ),
+);
 
+/** A function's body, cut at the next declaration IN ITS OWN FILE. */
 function fn(name: string): string {
-  const start = src.search(new RegExp(`(export )?(async )?function ${name}\\b`));
-  if (start < 0) return "";
-  const rest = src.slice(start + 1);
-  const next = rest.search(/\n(export |async function |function |type |interface |const )/);
-  return next < 0 ? src.slice(start) : src.slice(start, start + 1 + next);
+  for (const src of sources) {
+    const start = src.search(new RegExp(`(export )?(async )?function ${name}\\b`));
+    if (start < 0) continue;
+    const rest = src.slice(start + 1);
+    const next = rest.search(/\n(export |async function |function |type |interface |const )/);
+    return next < 0 ? src.slice(start) : src.slice(start, start + 1 + next);
+  }
+  return "";
 }
 
 describe("bulk-added students", () => {

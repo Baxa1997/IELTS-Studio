@@ -4,7 +4,10 @@ import { useActionState, useEffect, useLayoutEffect, useRef, useState } from "re
 import { FaFileCsv, FaFileExcel } from "react-icons/fa6";
 import { FiChevronDown, FiKey, FiUserPlus } from "react-icons/fi";
 
-import { resetStudentPassword, type ResetPasswordState } from "@/app/(app)/console/groups/actions";
+import {
+  resetStudentPassword,
+  type ResetPasswordState,
+} from "@/app/(app)/console/groups/account-actions";
 import { Modal } from "@/shared/components/ui";
 import { useActionFeedback } from "@/shared/components/console/toast";
 

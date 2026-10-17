@@ -14,7 +14,7 @@ import {
   toRosterLines,
 } from "@/lib/spreadsheet-read";
 
-import { addStudentsBulk, type BulkStudentState } from "@/app/(app)/console/groups/actions";
+import { addStudentsBulk, type BulkStudentState } from "@/app/(app)/console/groups/account-actions";
 import { useActionFeedback } from "@/shared/components/console/toast";
 
 const initial: BulkStudentState = {};

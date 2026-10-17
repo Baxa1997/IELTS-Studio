@@ -2,7 +2,10 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 
-import { addStudentAccount, type AddStudentState } from "@/app/(app)/console/groups/actions";
+import {
+  addStudentAccount,
+  type AddStudentState,
+} from "@/app/(app)/console/groups/account-actions";
 import { useConsolePanels } from "@/app/(app)/console/_components/console-chrome";
 import { useActionFeedback } from "@/shared/components/console/toast";
 import {

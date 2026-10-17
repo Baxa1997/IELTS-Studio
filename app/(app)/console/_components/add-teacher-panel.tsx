@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef } from "react";
 
 import { useConsolePanels } from "@/app/(app)/console/_components/console-chrome";
 
-import { addTeacherAccount, type AddStudentState } from "../groups/actions";
+import { addTeacherAccount, type AddStudentState } from "../groups/account-actions";
 import { useActionFeedback } from "@/shared/components/console/toast";
 import {
   CONSOLE_CANVAS,

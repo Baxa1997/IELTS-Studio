@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 
 import { useActionFeedback } from "@/shared/components/console/toast";
 
-import { inviteGroupToTelegram, type GroupInviteState } from "../../actions";
+import { inviteGroupToTelegram, type GroupInviteState } from "../../account-actions";
 import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**

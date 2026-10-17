@@ -4,14 +4,11 @@ import { useActionState, useState } from "react";
 
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
-import {
-  TASK2_CATEGORIES,
-  TASK2_CATEGORY_LABELS,
-  TOPIC_FAMILIES,
-} from "@/lib/prompts/constants";
+import { TASK2_CATEGORIES, TASK2_CATEGORY_LABELS, TOPIC_FAMILIES } from "@/lib/prompts/constants";
 
 import { useActionFeedback } from "@/shared/components/console/toast";
-import { createAssignment, type GroupFormState } from "@/app/(app)/console/groups/actions";
+import { createAssignment } from "@/app/(app)/console/groups/assignment-actions";
+import { type GroupFormState } from "@/app/(app)/console/groups/actions";
 import { V2 } from "../../_components/ui";
 import { PANEL } from "@/lib/theme/tokens";
 

@@ -20,8 +20,8 @@
  * listed below as deliberately withheld.
  */
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -34,9 +34,9 @@ const ROOT = join(__dirname, "..", "..");
 const BACKED_BY: Record<string, { file: string; fn: string }> = {
   create_group: { file: "app/(app)/console/groups/actions.ts", fn: "createGroup" },
   set_schedule: { file: "app/(app)/console/groups/actions.ts", fn: "setGroupSchedule" },
-  add_student: { file: "app/(app)/console/groups/actions.ts", fn: "addStudentAccount" },
-  add_teacher: { file: "app/(app)/console/groups/actions.ts", fn: "addTeacherAccount" },
-  assign_practice: { file: "app/(app)/console/groups/actions.ts", fn: "createAssignment" },
+  add_student: { file: "app/(app)/console/groups/account-actions.ts", fn: "addStudentAccount" },
+  add_teacher: { file: "app/(app)/console/groups/account-actions.ts", fn: "addTeacherAccount" },
+  assign_practice: { file: "app/(app)/console/groups/assignment-actions.ts", fn: "createAssignment" },
   send_announcement: { file: "app/(app)/console/center-actions.ts", fn: "sendAnnouncement" },
 };
 
@@ -96,6 +96,17 @@ function bodyOf(source: string, fn: string): string | null {
   return next === -1 ? source.slice(start) : source.slice(start, start + 1 + next);
 }
 
+/** The repo-relative file a RELATIVE import of `name` in `file` resolves to. */
+function importedFrom(file: string, source: string, name: string): string | null {
+  for (const m of source.matchAll(/import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*"(\.[^"]+)"/g)) {
+    const names = m[1].split(",").map((s) => s.trim().split(/\s+as\s+/).pop());
+    if (!names.includes(name)) continue;
+    const base = join(dirname(file), m[2]);
+    return [".ts", ".tsx"].map((ext) => base + ext).find((p) => existsSync(join(ROOT, p))) ?? null;
+  }
+  return null;
+}
+
 /**
  * Every `formData.get("x")` an action reaches — its own body AND every helper
  * it hands the form to, followed transitively.
@@ -105,23 +116,30 @@ function bodyOf(source: string, fn: string): string | null {
  * `readWeekdays`. A scan that stopped at the exported function would have
  * declared `create_group` complete while the days were being dropped, which is
  * the exact bug this file exists to catch.
+ *
+ * ⚠️ AND IT FOLLOWS THE HELPER INTO THE FILE IT IS IMPORTED FROM. `readSchedule`
+ * and `readFee` moved from `groups/actions.ts` into `groups/_lib/` (2026-10-17);
+ * a scan that only looked in the action's own file found no body for them,
+ * skipped them without a word, and stopped seeing every schedule and fee field.
+ * Only a RELATIVE import is followed — the route's own helpers, which is what
+ * this always covered; `@/lib` is a different contract with its own tests.
  */
 function fieldsRead(file: string, fn: string): string[] {
-  const source = readFileSync(join(ROOT, file), "utf8");
-
   const seen = new Set<string>();
   const bodies: string[] = [];
-  const queue = [fn];
+  const queue: [string, string][] = [[file, fn]];
   while (queue.length > 0) {
-    const name = queue.shift() as string;
+    const [at, name] = queue.shift() as [string, string];
     if (seen.has(name)) continue;
     seen.add(name);
-    const body = bodyOf(source, name);
-    if (!body) continue;
+    const source = readFileSync(join(ROOT, at), "utf8");
+    const home = bodyOf(source, name) ? at : importedFrom(at, source, name);
+    const body = home && bodyOf(home === at ? source : readFileSync(join(ROOT, home), "utf8"), name);
+    if (!home || !body) continue;
     bodies.push(body);
     // Anything handed the form itself is part of how this action reads it.
     for (const m of body.matchAll(/\b([a-zA-Z_]\w*)\((?:\s*\w+\s*,)?\s*formData\b/g)) {
-      if (m[1] !== fn) queue.push(m[1]);
+      if (m[1] !== fn) queue.push([home, m[1]]);
     }
   }
 
