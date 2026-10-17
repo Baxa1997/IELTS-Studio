@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 
-import { INK, PANEL, SANS, eyebrow } from "@/app/_landing/_lib/design";
-import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/_components/design-chrome";
-import { landingManrope, landingSora } from "@/app/_landing/_lib/fonts";
-import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
+import { eyebrow } from "@/app/_landing/_lib/design";
+import { LocalisedFrame } from "@/app/_landing/_components/localised-frame";
 import {
   DEFAULT_LOCALE,
   HTML_LANG,
@@ -167,67 +165,38 @@ export function LearnerGuide({ locale }: { locale: Locale }) {
   };
 
   return (
-    /* ⚠️ `pin`, NOT `initial`: the page's own locale, and the cookie does not
-       get a vote. On /uz/how-to-use the page is Uzbek whatever `ep-locale`
-       says, so the client chrome inside — header, picker, theme toggle — has to
-       STAY there, not merely start there. Same reasoning as the landing page,
-       where `initial` shipped an Uzbek page wearing an English header. */
-    <LocaleProvider pin={locale}>
-      {/* The root layout is static and sets `<html lang>` to the default, so a
-          generated /ru page would claim to be English — wrong for a screen reader
-          picking its voice and for the browser's offer to translate. Corrected
-          before first paint, the same trick as the theme's no-flash script. */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `document.documentElement.lang=${JSON.stringify(HTML_LANG[locale])}`,
+    <LocalisedFrame locale={locale} structuredData={structuredData}>
+      <main
+        style={{
+          maxWidth: 1240,
+          margin: "0 auto",
+          padding: "0 28px",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 56,
         }}
-      />
-      <div
-        className={`${landingSora.variable} ${landingManrope.variable}`}
-        style={{ background: PANEL, fontFamily: SANS, color: INK, minHeight: "100%" }}
       >
-        <style>{DESIGN_CSS}</style>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        <DocsTabs
+          tabs={tabs}
+          label={c.label}
+          /* ⚠️ THE CROSS-LINKS CARRY THE LOCALE. A bare "/how-to-use/…" here
+             would drop a Russian reader back onto the Uzbek page, which is
+             the failure nobody notices in review because it only shows up
+             after a click. */
+          elsewhere={{ label: c.elsewhere, href: localePath(CENTERS_PATH, locale) }}
+          head={<DocsHead kicker={c.head.kicker} title={c.head.title} lede={c.head.lede} />}
+          footer={
+            <CrossLink
+              kicker={c.cross.kicker}
+              title={c.cross.title}
+              body={c.cross.body}
+              cta={c.cross.cta}
+              href={localePath(CENTERS_PATH, locale)}
+            />
+          }
         />
-        <SiteHeader />
-
-        <main
-          style={{
-            maxWidth: 1240,
-            margin: "0 auto",
-            padding: "0 28px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 56,
-          }}
-        >
-          <DocsTabs
-            tabs={tabs}
-            label={c.label}
-            /* ⚠️ THE CROSS-LINKS CARRY THE LOCALE. A bare "/how-to-use/…" here
-               would drop a Russian reader back onto the Uzbek page, which is
-               the failure nobody notices in review because it only shows up
-               after a click. */
-            elsewhere={{ label: c.elsewhere, href: localePath(CENTERS_PATH, locale) }}
-            head={<DocsHead kicker={c.head.kicker} title={c.head.title} lede={c.head.lede} />}
-            footer={
-              <CrossLink
-                kicker={c.cross.kicker}
-                title={c.cross.title}
-                body={c.cross.body}
-                cta={c.cross.cta}
-                href={localePath(CENTERS_PATH, locale)}
-              />
-            }
-          />
-        </main>
-
-        <CentersBand />
-        <SiteFooter />
-      </div>
-    </LocaleProvider>
+      </main>
+    </LocalisedFrame>
   );
 }
 

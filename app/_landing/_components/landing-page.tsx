@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
 import { translator } from "@/lib/i18n";
 import { DEFAULT_LOCALE, HTML_LANG, LOCALES, SOURCE_LOCALE, type Locale } from "@/lib/i18n/locales";
 import type { MessageKey, Translate } from "@/lib/i18n";
@@ -15,13 +14,7 @@ import { DeferredReportShowcase } from "@/app/_landing/_components/deferred-repo
 import { DemoTabs } from "@/app/_landing/_components/demo-tabs";
 import { HeroProcessDemo } from "@/app/_landing/_components/hero-process-demo";
 import { LiveStat, LiveStatsStyles } from "@/app/_landing/_components/live-stat";
-import { landingManrope, landingSora } from "@/app/_landing/_lib/fonts";
-import {
-  CentersBand,
-  DESIGN_CSS,
-  SiteFooter,
-  SiteHeader,
-} from "@/app/_landing/_components/design-chrome";
+import { LocalisedFrame } from "@/app/_landing/_components/localised-frame";
 import {
   BODY,
   BRAND,
@@ -277,64 +270,29 @@ export function LandingPage({ locale }: { locale: Locale }) {
   };
 
   return (
-    /* ⚠️ `pin`, NOT `initial`: the page's OWN locale, and the cookie does not
-       get a vote here. On /en the page is English whatever `ep-locale` says, so
-       the client chrome inside — the picker, the theme toggle — has to stay
-       there too, not just start there. With `initial` the chrome read the
-       cookie straight after hydration and a visitor who had once chosen English
-       got an Uzbek page wearing an English header. Nested inside the root
-       layout's provider, which keeps serving every other public route. */
-    <LocaleProvider pin={locale}>
-      {/* ⚠️ `<html lang>` IS SET BY THE ROOT LAYOUT TO THE *DEFAULT* LOCALE —
-          it is a static layout and cannot read the cookie — so the statically
-          generated /en and /ru would ship claiming to be Uzbek: wrong for a
-          screen reader, which picks its voice from this attribute, and for the
-          browser's own offer to translate the page. The provider
-          corrects it after hydration; this corrects it before first paint, the
-          same trick and for the same reason as the theme's no-flash script.
-
-          The real fix is a `[locale]` segment at the ROOT so the layout owns the
-          attribute, which means moving every public route under it. That is a
-          bigger change than this page and is not sneaking in with it. */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `document.documentElement.lang=${JSON.stringify(HTML_LANG[locale])}`,
-        }}
-      />
-      <div
-        className={`${landingSora.variable} ${landingManrope.variable}`}
-        style={{ background: PANEL, fontFamily: SANS, color: INK, minHeight: "100%" }}
-      >
-        <style>{DESIGN_CSS}</style>
-        {/* The blog's card classes — used by the free-practice section as well
-            as the blog section, so it is injected once, here. */}
-        <style>{BLOG_CSS}</style>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
-        <SiteHeader />
-        <main>
-          <Hero t={t} />
-          {/* FIRST AFTER THE HERO — the owner's call (2026-10-14). The free
-              practice is the one thing on this page a visitor can USE without an
-              account, so it sits where the hero's second button can jump to it
-              in one short scroll, ahead of the stats and the product tour. */}
-          <PracticeTodaySection t={t} />
-          <Stats t={t} />
-          <HeroProcessDemo />
-          <DemoSection t={t} />
-          <BlogSection t={t} locale={locale} />
-          <ResultsSection t={t} />
-          <Platform t={t} />
-          <Pricing t={t} />
-          <Faq t={t} />
-          <FinalCta t={t} />
-        </main>
-        <CentersBand />
-        <SiteFooter />
-      </div>
-    </LocaleProvider>
+    /* The frame — the page's own language, header, centres band, footer — is
+       LocalisedFrame, shared with the guides and the calculators; why it pins
+       the locale and fixes <html lang> is written there. BLOG_CSS carries the
+       blog's card classes, which the free-practice section uses too. */
+    <LocalisedFrame locale={locale} structuredData={structuredData} css={[BLOG_CSS]}>
+      <main>
+        <Hero t={t} />
+        {/* FIRST AFTER THE HERO — the owner's call (2026-10-14). The free
+            practice is the one thing on this page a visitor can USE without an
+            account, so it sits where the hero's second button can jump to it
+            in one short scroll, ahead of the stats and the product tour. */}
+        <PracticeTodaySection t={t} />
+        <Stats t={t} />
+        <HeroProcessDemo />
+        <DemoSection t={t} />
+        <BlogSection t={t} locale={locale} />
+        <ResultsSection t={t} />
+        <Platform t={t} />
+        <Pricing t={t} />
+        <Faq t={t} />
+        <FinalCta t={t} />
+      </main>
+    </LocalisedFrame>
   );
 }
 

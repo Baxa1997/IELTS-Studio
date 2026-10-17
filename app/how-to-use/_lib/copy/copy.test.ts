@@ -25,6 +25,8 @@ import type { DocPoint, DocTabCopy } from "./types";
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const learnerGuide = read("../../_components/learner-guide.tsx");
 const centersGuide = read("../../education-centers/_components/centers-guide.tsx");
+// The frame both guides render through — where the provider actually is.
+const frame = read("../../../_landing/_components/localised-frame.tsx");
 
 /** Long enough that two languages agreeing on it word for word is a mistake
  *  rather than a coincidence. "Telegram" and "CEFR / Multilevel" are not. */
@@ -121,10 +123,14 @@ describe("the guides keep the reader in their own language", () => {
   it("pins the locale on the provider rather than seeding it", () => {
     /* `initial` reads the cookie after hydration: /ru/how-to-use would render
        Russian and then put an Uzbek header on it. Same trap the landing page
-       hit and documents. */
+       hit and documents. Since 2026-10-17 the provider lives in the shared
+       LocalisedFrame, so the guides must render through it — and must not
+       wrap a seeding provider of their own around it. */
     for (const src of [learnerGuide, centersGuide]) {
-      expect(src).toMatch(/<LocaleProvider pin=\{locale\}>/);
+      expect(src).toMatch(/<LocalisedFrame locale=\{locale\}/);
       expect(src).not.toMatch(/<LocaleProvider initial=/);
     }
+    expect(frame).toMatch(/<LocaleProvider pin=\{locale\}>/);
+    expect(frame).not.toMatch(/<LocaleProvider initial=/);
   });
 });

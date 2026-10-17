@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 
-import { BODY, DISPLAY, INK, PANEL, SANS, cardStyle, eyebrow } from "@/app/_landing/_lib/design";
-import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/_components/design-chrome";
-import { landingManrope, landingSora } from "@/app/_landing/_lib/fonts";
+import { BODY, DISPLAY, cardStyle, eyebrow } from "@/app/_landing/_lib/design";
+import { LocalisedFrame } from "@/app/_landing/_components/localised-frame";
 import { RegisterCenterBand } from "@/app/_landing/_components/register-center";
-import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
 import {
   HTML_LANG,
   LOCALES,
@@ -157,56 +155,36 @@ export function CentersGuide({ locale }: { locale: Locale }) {
   };
 
   return (
-    <LocaleProvider pin={locale}>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `document.documentElement.lang=${JSON.stringify(HTML_LANG[locale])}`,
+    <LocalisedFrame locale={locale} structuredData={structuredData}>
+      <main
+        style={{
+          maxWidth: 1240,
+          margin: "0 auto",
+          padding: "0 28px",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 56,
         }}
-      />
-      <div
-        className={`${landingSora.variable} ${landingManrope.variable}`}
-        style={{ background: PANEL, fontFamily: SANS, color: INK, minHeight: "100%" }}
       >
-        <style>{DESIGN_CSS}</style>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        <DocsTabs
+          tabs={tabs}
+          label={c.label}
+          elsewhere={{ label: c.elsewhere, href: localePath(LEARNER_PATH, locale) }}
+          head={<DocsHead kicker={c.head.kicker} title={c.head.title} lede={c.head.lede} />}
+          footer={
+            <>
+              <RegisterCenterBand />
+              <CrossLink
+                kicker={c.cross.kicker}
+                title={c.cross.title}
+                body={c.cross.body}
+                cta={c.cross.cta}
+                href={localePath(LEARNER_PATH, locale)}
+              />
+            </>
+          }
         />
-        <SiteHeader />
-
-        <main
-          style={{
-            maxWidth: 1240,
-            margin: "0 auto",
-            padding: "0 28px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 56,
-          }}
-        >
-          <DocsTabs
-            tabs={tabs}
-            label={c.label}
-            elsewhere={{ label: c.elsewhere, href: localePath(LEARNER_PATH, locale) }}
-            head={<DocsHead kicker={c.head.kicker} title={c.head.title} lede={c.head.lede} />}
-            footer={
-              <>
-                <RegisterCenterBand />
-                <CrossLink
-                  kicker={c.cross.kicker}
-                  title={c.cross.title}
-                  body={c.cross.body}
-                  cta={c.cross.cta}
-                  href={localePath(LEARNER_PATH, locale)}
-                />
-              </>
-            }
-          />
-        </main>
-
-        <CentersBand />
-        <SiteFooter />
-      </div>
-    </LocaleProvider>
+      </main>
+    </LocalisedFrame>
   );
 }

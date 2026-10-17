@@ -4,12 +4,12 @@ import { DISPLAY, INK, MUTED, SANS, WHITE } from "@/app/_landing/_lib/design";
 import { freePracticePage } from "@/lib/free-practice/links";
 import { localePath, type Locale } from "@/lib/i18n/locales";
 
-import { ToolFrame } from "../../_components/tool-frame";
+import { LocalisedFrame } from "@/app/_landing/_components/localised-frame";
 import { SectionHead, ToolCross, ToolCta, ToolDisclaimer, ToolFaq, ToolHero } from "../../_components/tool-sections";
 import { fill, toolsCopy, type IeltsCopy } from "../../_lib/copy";
 import { IELTS_CALCULATOR_PATH, MULTILEVEL_CALCULATOR_PATH, PHOTOS, toolGraph, toolMetadata } from "../../_lib/page-meta";
 import { IELTS_CEFR, rawRanges, type RawTable } from "../../_lib/scores";
-import { levelBackground } from "../../_lib/tool-css";
+import { levelBackground, TOOL_CSS } from "../../_lib/tool-css";
 
 import { IeltsCalculator } from "./ielts-calculator";
 
@@ -45,60 +45,62 @@ export function IeltsCalculatorPage({ locale }: { locale: Locale }) {
   });
 
   return (
-    <ToolFrame locale={locale} structuredData={graph}>
-      <ToolHero hero={c.hero} chrome={chrome} locale={locale} photo={PHOTOS.ielts} />
+    <LocalisedFrame locale={locale} structuredData={graph} css={[TOOL_CSS]}>
+      <main>
+        <ToolHero hero={c.hero} chrome={chrome} locale={locale} photo={PHOTOS.ielts} />
 
-      <section className="tl-shell tl-section" id="calculator" aria-labelledby="calc-title">
-        <SectionHead id="calc-title" kicker={c.hero.eyebrow} title={c.overall.title} hint={c.overall.hint} />
-        <div style={{ marginTop: 26 }}>
-          <IeltsCalculator copy={{ overall: c.overall, raw: c.raw }} />
-        </div>
-      </section>
+        <section className="tl-shell tl-section" id="calculator" aria-labelledby="calc-title">
+          <SectionHead id="calc-title" kicker={c.hero.eyebrow} title={c.overall.title} hint={c.overall.hint} />
+          <div style={{ marginTop: 26 }}>
+            <IeltsCalculator copy={{ overall: c.overall, raw: c.raw }} />
+          </div>
+        </section>
 
-      <section className="tl-shell tl-section" aria-labelledby="tables-title">
-        <SectionHead id="tables-title" kicker={c.tables.eyebrow} title={c.tables.title} hint={c.tables.hint} />
-        <div className="tl-tables" style={{ marginTop: 26 }}>
-          {TABLES.map((t) => (
-            <ScoreTable key={t} title={c.raw.tabs[t]} table={t} copy={c.tables} />
-          ))}
-        </div>
-      </section>
+        <section className="tl-shell tl-section" aria-labelledby="tables-title">
+          <SectionHead id="tables-title" kicker={c.tables.eyebrow} title={c.tables.title} hint={c.tables.hint} />
+          <div className="tl-tables" style={{ marginTop: 26 }}>
+            {TABLES.map((t) => (
+              <ScoreTable key={t} title={c.raw.tabs[t]} table={t} copy={c.tables} />
+            ))}
+          </div>
+        </section>
 
-      <section className="tl-shell tl-section" aria-labelledby="cefr-title">
-        <SectionHead id="cefr-title" kicker={c.cefr.eyebrow} title={c.cefr.title} hint={c.cefr.hint} />
-        <div className="tl-ladder" style={{ marginTop: 26, maxWidth: 760 }}>
-          {IELTS_CEFR.map((r, i) => (
-            <div
-              key={r.level}
-              className="tl-rung"
-              // Each rung a little wider than the one above: the ladder reads
-              // as a climb without a word of explanation.
-              style={{ backgroundImage: levelBackground(r.level), width: `${100 - (IELTS_CEFR.length - 1 - i) * 7}%` }}
-            >
-              <span style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 600, color: WHITE }}>{r.level}</span>
-              <span style={{ fontFamily: SANS, fontSize: 16, fontWeight: 700, color: WHITE }}>
-                {fill(c.cefr.band, { from: r.from.toFixed(1), to: r.to.toFixed(1) })}
-              </span>
-            </div>
-          ))}
-        </div>
-        <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.6, color: MUTED, margin: "16px 0 0", maxWidth: 760 }}>{c.cefr.note}</p>
-      </section>
+        <section className="tl-shell tl-section" aria-labelledby="cefr-title">
+          <SectionHead id="cefr-title" kicker={c.cefr.eyebrow} title={c.cefr.title} hint={c.cefr.hint} />
+          <div className="tl-ladder" style={{ marginTop: 26, maxWidth: 760 }}>
+            {IELTS_CEFR.map((r, i) => (
+              <div
+                key={r.level}
+                className="tl-rung"
+                // Each rung a little wider than the one above: the ladder reads
+                // as a climb without a word of explanation.
+                style={{ backgroundImage: levelBackground(r.level), width: `${100 - (IELTS_CEFR.length - 1 - i) * 7}%` }}
+              >
+                <span style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 600, color: WHITE }}>{r.level}</span>
+                <span style={{ fontFamily: SANS, fontSize: 16, fontWeight: 700, color: WHITE }}>
+                  {fill(c.cefr.band, { from: r.from.toFixed(1), to: r.to.toFixed(1) })}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.6, color: MUTED, margin: "16px 0 0", maxWidth: 760 }}>{c.cefr.note}</p>
+        </section>
 
-      <ToolCross
-        chrome={chrome}
-        cross={c.cross}
-        href={localePath(MULTILEVEL_CALCULATOR_PATH, locale)}
-        photo={PHOTOS.multilevel}
-        photoAlt={multilevel.hero.photoAlt}
-      />
-      <ToolCta
-        chrome={chrome}
-        practice={(["listening", "reading", "writing"] as const).map((s) => ({ label: c.overall.skills[s], href: freePracticePage(s) }))}
-      />
-      <ToolFaq chrome={chrome} faq={c.faq} />
-      <ToolDisclaimer chrome={chrome} />
-    </ToolFrame>
+        <ToolCross
+          chrome={chrome}
+          cross={c.cross}
+          href={localePath(MULTILEVEL_CALCULATOR_PATH, locale)}
+          photo={PHOTOS.multilevel}
+          photoAlt={multilevel.hero.photoAlt}
+        />
+        <ToolCta
+          chrome={chrome}
+          practice={(["listening", "reading", "writing"] as const).map((s) => ({ label: c.overall.skills[s], href: freePracticePage(s) }))}
+        />
+        <ToolFaq chrome={chrome} faq={c.faq} />
+        <ToolDisclaimer chrome={chrome} />
+      </main>
+    </LocalisedFrame>
   );
 }
 
