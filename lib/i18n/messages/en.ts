@@ -396,8 +396,10 @@ export const en = {
      one-line change. Exam vocabulary (Task 1, Academic, General Training,
      CEFR, band, the criterion names) stays English in every locale. */
   "grade.metaTitle": "Free IELTS & CEFR Writing Checker — Task 1, Task 2 and Multilevel",
+  /* Under ~160 characters: a search result shows about that much and cuts the
+     rest. At 245, "No sign-up" was never seen. */
   "grade.metaDesc":
-    "Check IELTS Writing Task 1, Task 2 or CEFR Multilevel writing online, free. Paste your answer or upload a photo or PDF, and get a strict band for every criterion — or an indicative CEFR level — with the fixes that matter most. No sign-up needed.",
+    "Free IELTS Writing Task 1 & 2 and CEFR Multilevel checker. Paste or upload a photo for a strict band per criterion, or a CEFR level, and the fixes. No sign-up.",
   "grade.appName": "EngProgress Writing Checker",
   "grade.eyebrow": "Free writing checker",
   "grade.titleA": "Grade your writing.",

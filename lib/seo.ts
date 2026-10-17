@@ -1,3 +1,4 @@
+import { OFFICIAL_PROFILES } from "@/lib/contact";
 import { freePracticePage } from "@/lib/free-practice/links";
 import { FREE_SKILLS, type FreeSkill } from "@/lib/free-practice/rotation";
 
@@ -7,6 +8,28 @@ export const SITE_NAME = "EngProgress";
 // heaviest possible file was silently costing us previews on the channels this
 // audience actually shares in. Re-encoded at q82: 170 kB, visually identical.
 export const PREVIEW_IMAGE = "/link-preview.jpg";
+
+/**
+ * The share card as an `openGraph.images` entry.
+ *
+ * ⚠️ A PAGE THAT SETS `openGraph` MUST NAME THE IMAGE AGAIN. Next merges
+ * metadata one key deep, so a page's `openGraph` REPLACES the root layout's
+ * whole object, image included, and the page is shared with no picture. /grade
+ * and both how-to-use guides went out like that until 2026-10-16;
+ * lib/seo-structured-data.test.ts now refuses a page that does it.
+ */
+export function previewImage(alt: string) {
+  return { url: PREVIEW_IMAGE, width: 1200, height: 630, alt };
+}
+
+/**
+ * The square brand mark as a PNG: the Organization `logo` below and the iOS
+ * home-screen icon (app/layout.tsx). A 512 px raster because Google wants a
+ * logo of at least 112 px, and iOS ignores an SVG apple-touch-icon, which is
+ * all `app/icon.svg` (32 px) could be. Same mark and colours as the icon, with
+ * square corners, because iOS rounds them itself.
+ */
+export const LOGO_IMAGE = "/logo.png";
 
 export const SEO_DESCRIPTION =
   "EngProgress is an AI platform for all four IELTS skills — Writing, Reading, Listening and Speaking — plus CEFR / Multilevel (Uzbekistan DTM) practice, from complete beginner to Band 9. Original Cambridge-style tests generated on demand at your level, a tutor that coaches you while you practise, and a deliberately strict, examiner-style AI marking the result. Education centres run their teachers, groups, homework and per-student reports on it.";
@@ -98,6 +121,28 @@ export function getSiteUrl(): string {
 
 export function absoluteUrl(path: string): string {
   return new URL(path, `${getSiteUrl()}/`).toString();
+}
+
+/**
+ * The company, as every JSON-LD graph on the site names it. The landing page's
+ * node is this plus a description; every other page links to it as publisher.
+ *
+ * ONE `@id`, so an engine that reads several pages knows they share a single
+ * publisher. The logo and `sameAs` go on every page, because an answer engine
+ * often reads only the page it was sent to. lib/seo-structured-data.test.ts
+ * refuses an Organization written out anywhere else, which is how /grade had
+ * come to carry one with no `@id` and the name typed in by hand.
+ */
+export function organization() {
+  const site = getSiteUrl();
+  return {
+    "@type": "Organization",
+    "@id": `${site}/#organization`,
+    name: SITE_NAME,
+    url: site,
+    logo: absoluteUrl(LOGO_IMAGE),
+    sameAs: [...OFFICIAL_PROFILES],
+  };
 }
 
 /**

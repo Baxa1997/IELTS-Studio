@@ -55,8 +55,10 @@ import { PRACTICE_CARD_SKILLS } from "@/lib/free-practice/links";
 import {
   getSiteUrl,
   LANDING_DESCRIPTION,
+  organization,
   PLATFORM_FEATURES,
   PREVIEW_IMAGE,
+  previewImage,
   SEO_KEYWORDS,
   SITE_NAME,
 } from "@/lib/seo";
@@ -177,14 +179,7 @@ export function landingMetadata(locale: Locale): Metadata {
       locale: HTML_LANG[locale],
       title: t("lp.metaTitleShort"),
       description: t("lp.metaDesc"),
-      images: [
-        {
-          url: PREVIEW_IMAGE,
-          width: 1200,
-          height: 630,
-          alt: t("lp.metaAlt"),
-        },
-      ],
+      images: [previewImage(t("lp.metaAlt"))],
     },
     twitter: {
       card: "summary_large_image",
@@ -217,10 +212,7 @@ export function LandingPage({ locale }: { locale: Locale }) {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "Organization",
-        "@id": `${site}/#organization`,
-        name: SITE_NAME,
-        url: site,
+        ...organization(),
         description: t("lp.metaDesc"),
         slogan: "The band you see in practice is the band you get on exam day.",
         areaServed: "Worldwide",

@@ -27,7 +27,7 @@ import {
 import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
 import { translator, type MessageKey } from "@/lib/i18n";
 import { SOURCE_LOCALE } from "@/lib/i18n/locales";
-import { absoluteUrl, getSiteUrl } from "@/lib/seo";
+import { absoluteUrl, getSiteUrl, organization, PREVIEW_IMAGE, previewImage, SITE_NAME } from "@/lib/seo";
 
 import { PublicGrader } from "./_components/grader";
 import { GRADE_CSS } from "./_lib/grade-css";
@@ -75,11 +75,13 @@ export const metadata: Metadata = {
     url: "/grade",
     title: t("grade.metaTitle"),
     description: t("grade.metaDesc"),
+    images: [previewImage(t("grade.appName"))],
   },
   twitter: {
     card: "summary_large_image",
     title: t("grade.metaTitle"),
     description: t("grade.metaDesc"),
+    images: [PREVIEW_IMAGE],
   },
 };
 
@@ -116,7 +118,7 @@ function jsonLd() {
       operatingSystem: "Web",
       description: t("grade.metaDesc"),
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-      publisher: { "@type": "Organization", name: "EngProgress", url: site },
+      publisher: organization(),
     },
     {
       "@context": "https://schema.org",
@@ -131,7 +133,7 @@ function jsonLd() {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: "EngProgress", item: site },
+        { "@type": "ListItem", position: 1, name: SITE_NAME, item: site },
         { "@type": "ListItem", position: 2, name: t("grade.appName"), item: absoluteUrl("/grade") },
       ],
     },
@@ -157,11 +159,18 @@ export default function PublicGradePage() {
           textAlign: "center",
         }}
       >
-        <div
+        {/* ⚠️ THE PAGE'S <h1>, dressed as the pill it always was. The display
+            title below was taken out, and a page with no <h1> gives search
+            engines and screen readers no main heading, on the page meant to
+            rank for "free writing checker". If that title comes back, it takes
+            the <h1> again and this goes back to being a <div>: two would be a
+            page with two subjects. */}
+        <h1
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 10,
+            margin: 0,
             border: `1px solid ${BRAND_TINT_LINE}`,
             background: BRAND_TINT,
             color: BRAND,
@@ -178,7 +187,7 @@ export default function PublicGradePage() {
             style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND_FILL }}
           />
           {t("grade.eyebrow")}
-        </div>
+        </h1>
         {/* <h1 style={{ ...DISPLAY_XL, margin: "20px auto 0", maxWidth: 780 }}>
           {t("grade.titleA")} <span style={{ color: BRAND }}>{t("grade.titleB")}</span>
         </h1> */}

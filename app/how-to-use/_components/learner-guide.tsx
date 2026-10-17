@@ -12,7 +12,7 @@ import {
   SOURCE_LOCALE,
   type Locale,
 } from "@/lib/i18n/locales";
-import { getSiteUrl, SITE_NAME } from "@/lib/seo";
+import { getSiteUrl, organization, PREVIEW_IMAGE, previewImage } from "@/lib/seo";
 
 import { docsCopy } from "../_lib/copy";
 import { DocsTabs } from "./docs-tabs";
@@ -88,6 +88,13 @@ export function learnerMetadata(locale: Locale): Metadata {
       locale: HTML_LANG[locale],
       title: meta.ogTitle,
       description: meta.description,
+      images: [previewImage(meta.ogTitle)],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: meta.ogTitle,
+      description: meta.description,
+      images: [PREVIEW_IMAGE],
     },
   };
 }
@@ -150,7 +157,7 @@ export function LearnerGuide({ locale }: { locale: Locale }) {
     description: c.meta.description,
     url: `${site}${localePath(LEARNER_PATH, locale)}`,
     inLanguage: HTML_LANG[locale],
-    publisher: { "@type": "Organization", name: SITE_NAME, url: site },
+    publisher: organization(),
     step: steps.map((s, i) => ({
       "@type": "HowToStep",
       position: i + 1,

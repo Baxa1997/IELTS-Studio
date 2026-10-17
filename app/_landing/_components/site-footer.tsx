@@ -4,7 +4,7 @@ import Link from "next/link";
 import { SiInstagram, SiTelegram, SiWhatsapp } from "react-icons/si";
 
 import { useT } from "@/shared/components/i18n/locale-provider";
-import { CONTACT_EMAIL, CONTACT_PHONE } from "@/lib/contact";
+import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_WHATSAPP_HREF, INSTAGRAM_URL, TELEGRAM_URL } from "@/lib/contact";
 import type { MessageKey } from "@/lib/i18n";
 
 import { BRAND_FILL, DISPLAY, FOOTER_GROUND as GROUND, SANS, WHITE } from "../_lib/design";
@@ -46,21 +46,19 @@ const PHONE = CONTACT_PHONE;
 /**
  * Social accounts. `href: null` renders nothing at all.
  *
- * Nothing in this repo records an Instagram, Facebook or X account, so making
- * one up would put three dead links in the footer of every page. Telegram is the
- * exception: `@engprogress_bot` genuinely exists (it carries parent notifications
- * and the staff assistant), so it is the one that is wired.
- *
- * Fill the other three in and they appear — nothing else needs changing.
+ * The addresses live in `lib/contact.ts`, because the same accounts are the
+ * Organization `sameAs` in the site's structured data — a second copy here
+ * would let the footer and what we tell search engines drift apart. Never make
+ * one up: a dead disc in the footer of every page is the visible half of it.
  */
 const SOCIALS: {
   name: string;
   href: string | null;
   Icon: React.ComponentType<{ size?: number }>;
 }[] = [
-  { name: "Instagram", href: "https://instagram.com/engprogress", Icon: SiInstagram },
-  { name: "WhatsApp", href: `https://wa.me/${PHONE.replace(/[^0-9]/g, "")}`, Icon: SiWhatsapp },
-  { name: "Telegram", href: "https://t.me/engprogress_bot", Icon: SiTelegram },
+  { name: "Instagram", href: INSTAGRAM_URL, Icon: SiInstagram },
+  { name: "WhatsApp", href: CONTACT_WHATSAPP_HREF, Icon: SiWhatsapp },
+  { name: "Telegram", href: TELEGRAM_URL, Icon: SiTelegram },
 ];
 
 /**

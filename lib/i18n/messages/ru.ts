@@ -371,7 +371,7 @@ export const ru: Messages = {
      после числа словарь передать не может, а «2 слов» читается как ошибка. */
   "grade.metaTitle": "Бесплатная проверка IELTS и CEFR Writing — Task 1, Task 2 и Multilevel",
   "grade.metaDesc":
-    "Проверьте IELTS Writing Task 1, Task 2 или письменную часть CEFR Multilevel онлайн и бесплатно. Вставьте ответ или загрузите фото или PDF — и получите строгий band по каждому критерию или ориентировочный уровень CEFR, а также самые важные правки. Без регистрации.",
+    "Бесплатная проверка IELTS Writing Task 1, Task 2 и CEFR Multilevel. Вставьте текст или загрузите фото: строгий band по каждому критерию или уровень CEFR и правки. Без регистрации.",
   "grade.appName": "Проверка Writing от EngProgress",
   "grade.eyebrow": "Бесплатная проверка Writing",
   "grade.titleA": "Проверьте свой текст.",

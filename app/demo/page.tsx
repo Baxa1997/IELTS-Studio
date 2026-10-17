@@ -18,7 +18,7 @@ import {
   ghostButton,
   solidButton,
 } from "@/app/_landing/_lib/design";
-import { PREVIEW_IMAGE } from "@/lib/seo";
+import { PREVIEW_IMAGE, previewImage } from "@/lib/seo";
 
 const BTN_PRIMARY: React.CSSProperties = { ...solidButton(), textDecoration: "none", display: "inline-flex" };
 const BTN_GHOST: React.CSSProperties = { ...ghostButton(), textDecoration: "none", display: "inline-flex" };
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     url: "/demo",
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: PREVIEW_IMAGE, width: 1200, height: 630, alt: "EngProgress product demo" }],
+    images: [previewImage("EngProgress product demo")],
   },
   twitter: {
     card: "summary_large_image",

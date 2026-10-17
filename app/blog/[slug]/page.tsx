@@ -14,7 +14,7 @@ import { freePracticePage } from "@/lib/free-practice/links";
 import { isFreeSkill } from "@/lib/free-practice/rotation";
 import { translator } from "@/lib/i18n";
 import { SOURCE_LOCALE } from "@/lib/i18n/locales";
-import { absoluteUrl, SITE_NAME } from "@/lib/seo";
+import { absoluteUrl, organization } from "@/lib/seo";
 
 import { ArticleView } from "../_components/article-view";
 import { blogAlternates } from "../_lib/metadata";
@@ -118,7 +118,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
  */
 function articleGraph(post: BlogPost, url: string) {
   const site = absoluteUrl("/").replace(/\/$/, "");
-  const org = { "@type": "Organization", "@id": `${site}/#organization`, name: SITE_NAME, url: site };
+  const org = organization();
   // The free practice the article links to (see FreePracticeNote) — named in
   // the data too, so an answer engine quoting the article can send the reader
   // to the practice rather than only to the text.

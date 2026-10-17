@@ -11,7 +11,8 @@
 import { describe, expect, it } from "vitest";
 
 import { LOCALES, localePath } from "@/lib/i18n/locales";
-import { PUBLIC_ROUTES } from "@/lib/seo";
+import { INDEXNOW_KEY_PATH } from "@/lib/indexnow";
+import { LOGO_IMAGE, PUBLIC_ROUTES } from "@/lib/seo";
 
 import robots from "./robots";
 
@@ -49,6 +50,12 @@ describe("robots.txt", () => {
   it("lets ChatGPT read the CEFR page in particular", () => {
     for (const name of ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "*"]) {
       expect(allowed("/cefr-multilevel-practice", agent(name)!), name).toBe(true);
+    }
+  });
+
+  it("lets the engines fetch the IndexNow key and the logo", () => {
+    for (const r of rules) {
+      for (const p of [INDEXNOW_KEY_PATH, LOGO_IMAGE]) expect(allowed(p, r), `${list(r.userAgent).join(",")} ${p}`).toBe(true);
     }
   });
 

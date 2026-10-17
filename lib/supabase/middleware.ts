@@ -55,6 +55,10 @@ const PUBLIC_PATHS = [
   "/llms.txt",
   // Its companion: every blog article in full, for the same readers.
   "/llms-full.txt",
+  // The IndexNow key — INDEXNOW_KEY_PATH in lib/indexnow.ts, kept in step by a
+  // test. Bing fetches it with no session before it believes a submission, so
+  // a redirect to /sign-in here is every submission rejected.
+  "/indexnow-key.txt",
   // A shared lesson. The token in the path is the whole credential, and a
   // student opening a teacher's link has no account to be redirected to.
   "/p",

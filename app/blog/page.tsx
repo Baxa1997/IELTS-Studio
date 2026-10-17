@@ -6,7 +6,7 @@ import { leadPost, otherPosts } from "@/lib/blog";
 import { loadPosts } from "@/lib/blog/store";
 import { translator } from "@/lib/i18n";
 import { HTML_LANG, SOURCE_LOCALE } from "@/lib/i18n/locales";
-import { absoluteUrl, PREVIEW_IMAGE, SITE_NAME } from "@/lib/seo";
+import { absoluteUrl, organization, PREVIEW_IMAGE, previewImage } from "@/lib/seo";
 
 import { blogAlternates } from "./_lib/metadata";
 
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     url: "/blog",
     title: t("blog.metaTitle"),
     description: t("blog.metaDesc"),
-    images: [{ url: PREVIEW_IMAGE, width: 1200, height: 630, alt: t("blog.indexTitle") }],
+    images: [previewImage(t("blog.indexTitle"))],
   },
   twitter: {
     card: "summary_large_image",
@@ -62,7 +62,7 @@ export default async function BlogIndexPage() {
         description: t("blog.metaDesc"),
         url: `${site}/blog`,
         inLanguage: "en",
-        publisher: { "@type": "Organization", "@id": `${site}/#organization`, name: SITE_NAME, url: site },
+        publisher: organization(),
         blogPost: posts.map((p) => ({
           "@type": "BlogPosting",
           "@id": `${absoluteUrl(`/blog/${p.slug}`)}#article`,

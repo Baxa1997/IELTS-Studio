@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, updateTag } from "next/cache";
+import { after } from "next/server";
 
 import { recordAdminAction } from "@/lib/admin/audit";
 import { requireSuperAdmin } from "@/lib/auth";
@@ -8,6 +9,7 @@ import type { PostStatus } from "@/lib/blog";
 import { formToPost, type PostForm } from "@/lib/blog/form";
 import { BLOG_TAG, isMissingColumn, postToRow } from "@/lib/blog/store";
 import { draftProblems, publishProblems } from "@/lib/blog/validate";
+import { submitToIndexNow } from "@/lib/indexnow";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -103,6 +105,17 @@ export async function savePost(id: string | null, form: Partial<PostForm>, inten
 
   refreshSite();
   revalidatePath("/admin/blog");
+
+  /* A live article changed, appeared or went away, so tell the search engines
+     now rather than whenever they next come round. After refreshSite(), so the
+     page they fetch is the new one; in after(), so a slow or failed notice
+     never holds up the save. A draft that stays a draft is nobody's business. */
+  if (status === "published" || current?.status === "published") {
+    const urls = [`/blog/${post.slug}`, "/blog"];
+    // A live slug that changed is now a 404, which they should hear about too.
+    if (current?.status === "published" && current.slug !== post.slug) urls.push(`/blog/${current.slug as string}`);
+    after(() => submitToIndexNow(urls));
+  }
   return { ok: true, id: savedId, status };
 }
 
@@ -128,5 +141,6 @@ export async function deletePost(id: string): Promise<SaveResult> {
 
   refreshSite();
   revalidatePath("/admin/blog");
+  if (data[0].status === "published") after(() => submitToIndexNow([`/blog/${data[0].slug as string}`, "/blog"]));
   return { ok: true };
 }

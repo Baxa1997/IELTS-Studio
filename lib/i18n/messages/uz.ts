@@ -374,7 +374,7 @@ export const uz: Messages = {
   /* ── /grade — bepul writing tekshiruvi ────────────────────────────── */
   "grade.metaTitle": "Bepul IELTS va CEFR Writing tekshiruvi — Task 1, Task 2 va Multilevel",
   "grade.metaDesc":
-    "IELTS Writing Task 1, Task 2 yoki CEFR Multilevel yozma ishingizni onlayn va bepul tekshiring. Javobingizni joylang yoki rasm yoxud PDF yuklang — har bir mezon boʻyicha qatʼiy band yoki taxminiy CEFR darajasi va eng muhim tuzatishlarni oling. Roʻyxatdan oʻtish shart emas.",
+    "Bepul IELTS Writing Task 1, Task 2 va CEFR Multilevel tekshiruvi. Matnni joylang yoki rasm yuklang: har mezon boʻyicha qatʼiy band yoki CEFR darajasi va tuzatishlar. Roʻyxatdan oʻtmasdan.",
   "grade.appName": "EngProgress Writing tekshiruvi",
   "grade.eyebrow": "Bepul writing tekshiruvi",
   "grade.titleA": "Yozganingizni baholang.",

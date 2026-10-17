@@ -2,7 +2,15 @@ import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
-import { getSiteUrl, PREVIEW_IMAGE, SEO_DESCRIPTION, SEO_KEYWORDS, SITE_NAME } from "@/lib/seo";
+import {
+  getSiteUrl,
+  LOGO_IMAGE,
+  PREVIEW_IMAGE,
+  previewImage,
+  SEO_DESCRIPTION,
+  SEO_KEYWORDS,
+  SITE_NAME,
+} from "@/lib/seo";
 import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
 import { DEFAULT_LOCALE, HTML_LANG } from "@/lib/i18n/locales";
 import { ThemeFab } from "@/shared/components/theme/theme-fab";
@@ -43,7 +51,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    // A PNG: iOS ignores an SVG touch icon and screenshots the page instead.
+    apple: LOGO_IMAGE,
   },
   alternates: {
     canonical: "/",
@@ -55,14 +64,7 @@ export const metadata: Metadata = {
     siteName: "EngProgress",
     title: "EngProgress — IELTS Practice with AI Band Feedback",
     description: SEO_DESCRIPTION,
-    images: [
-      {
-        url: PREVIEW_IMAGE,
-        width: 1200,
-        height: 630,
-        alt: "EngProgress IELTS practice with AI band feedback",
-      },
-    ],
+    images: [previewImage("EngProgress IELTS practice with AI band feedback")],
   },
   twitter: {
     card: "summary_large_image",

@@ -29,3 +29,20 @@ export const CONTACT_MAILTO = `mailto:${CONTACT_EMAIL}`;
 /** `tel:` keeps the leading `+`; WhatsApp's wa.me takes digits only. */
 export const CONTACT_TEL_HREF = `tel:${CONTACT_PHONE.replace(/[^+0-9]/g, "")}`;
 export const CONTACT_WHATSAPP_HREF = `https://wa.me/${CONTACT_PHONE.replace(/[^0-9]/g, "")}`;
+
+/** Supplied by the owner with the contact details above (aaad474). */
+export const INSTAGRAM_URL = "https://instagram.com/engprogress";
+/** `@engprogress_bot` — it carries parent notifications and the staff assistant. */
+export const TELEGRAM_URL = "https://t.me/engprogress_bot";
+
+/**
+ * The company's own accounts elsewhere: the footer's social discs, and the
+ * Organization `sameAs` in every JSON-LD graph (`organization()` in lib/seo.ts),
+ * which is how a search or answer engine learns that the account and the site
+ * are one company.
+ *
+ * ⚠️ ONLY ACCOUNTS THE COMPANY OWNS. A `sameAs` tells every engine "we are that
+ * page", so a guessed handle would merge us with a stranger. WhatsApp is left
+ * out on purpose: wa.me is a chat with a phone number, not a profile.
+ */
+export const OFFICIAL_PROFILES = [INSTAGRAM_URL, TELEGRAM_URL] as const;

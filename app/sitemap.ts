@@ -21,24 +21,40 @@ const LOCALISED = new Set(["/", "/how-to-use", "/how-to-use/education-centers"])
 /** Rebuilt from the cached post list; a save in /admin refreshes it. */
 export const revalidate = 3600;
 
+/** The day a post last changed, as the sitemap states it. */
+const postDate = (p: { published: string; updated?: string | null }) => new Date(`${p.updated ?? p.published}T00:00:00Z`);
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const lastModified = new Date();
+  const all = await loadPosts();
 
   /* Every article, from the same list /blog renders — publishing a post puts it
      here with no second edit. English-only and unprefixed, like the other
      single-language pages, and dated by the post rather than by the build so a
      crawler can tell an old article from a changed one. */
-  const posts: MetadataRoute.Sitemap = (await loadPosts()).map((p) => ({
+  const posts: MetadataRoute.Sitemap = all.map((p) => ({
     url: absoluteUrl(`/blog/${p.slug}`),
-    lastModified: new Date(`${p.updated ?? p.published}T00:00:00Z`),
+    lastModified: postDate(p),
     changeFrequency: "monthly",
     priority: 0.6,
   }));
 
-  return [...pages(lastModified), ...posts];
+  /* The blog's front page changes exactly when an article does, so it is the
+     one other page with a date anyone can vouch for. */
+  const blogChanged = all.length ? new Date(Math.max(...all.map((p) => postDate(p).getTime()))) : undefined;
+
+  return [...pages(blogChanged), ...posts];
 }
 
-function pages(lastModified: Date): MetadataRoute.Sitemap {
+/**
+ * ⚠️ NO `lastModified` ON THE OTHER PAGES — deliberately absent, not forgotten.
+ * It used to be `new Date()`: the moment this file was regenerated, which is
+ * every hour, on every page whether it had changed or not. Bing and Google
+ * both learn to ignore a `lastmod` that is always "now", and once they do they
+ * ignore it for the whole sitemap, the articles' dates included, which are
+ * true. Nothing records when a marketing page last changed, and no date is
+ * better than a made-up one. app/sitemap.test.ts holds this.
+ */
+function pages(blogChanged: Date | undefined): MetadataRoute.Sitemap {
   return PUBLIC_ROUTES.flatMap((route) => {
     const many = LOCALISED.has(route.path);
     /* A single-language route is served unprefixed, i.e. at the DEFAULT
@@ -47,7 +63,7 @@ function pages(lastModified: Date): MetadataRoute.Sitemap {
     const locales = many ? LOCALES : [DEFAULT_LOCALE];
     return locales.map((locale) => ({
       url: absoluteUrl(localePath(route.path, locale)),
-      lastModified,
+      ...(route.path === "/blog" && blogChanged ? { lastModified: blogChanged } : {}),
       changeFrequency: route.changeFrequency,
       priority: route.priority,
       /* Each entry names all three, which is the sitemap half of the same

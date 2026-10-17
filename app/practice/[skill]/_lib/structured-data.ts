@@ -3,7 +3,7 @@ import { SKILL_TOPIC } from "@/lib/blog";
 import type { PoolItem } from "@/lib/free-practice/assignment";
 import { freePracticePage, freeRunner } from "@/lib/free-practice/links";
 import type { FreeSkill } from "@/lib/free-practice/rotation";
-import { absoluteUrl, SITE_NAME } from "@/lib/seo";
+import { absoluteUrl, organization } from "@/lib/seo";
 
 /**
  * A free-practice page's structured data, as one graph — the page, the
@@ -49,7 +49,7 @@ export function practiceGraph({
 }) {
   const site = absoluteUrl("/").replace(/\/$/, "");
   const url = absoluteUrl(freePracticePage(skill));
-  const org = { "@type": "Organization", "@id": `${site}/#organization`, name: SITE_NAME, url: site };
+  const org = organization();
   const about = { "@type": "Thing", name: SKILL_TOPIC[skill] };
 
   return {
