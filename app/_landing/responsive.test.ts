@@ -44,6 +44,11 @@ const footerCss = read("./_lib/footer-css.ts");
 /* The blog's grids live in a stylesheet string, not in the page — the landing
    section and every /blog page read it. */
 const blogCss = read("./_lib/blog-css.ts");
+const signUp = read("./_components/sign-up-dialog.tsx");
+const accountOffer = read("../blog/_components/account-offer.tsx");
+
+/** A source file with its comments taken out — see `tracks` for why. */
+const code = (file: string) => file.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
 
 /**
  * Every auto-fit track declared in a file, with its minimum.
@@ -132,6 +137,27 @@ describe("no grid track can be wider than its container", () => {
     for (const t of [...tracks(hero), ...tracks(signIn)]) {
       if (!t.capped) expect(t.min).toBeLessThanOrEqual(NARROWEST);
     }
+  });
+});
+
+describe("the sign-up dialog stays reachable on a phone", () => {
+  it("centres the panel with an auto margin, not by centring the overlay", () => {
+    /* The dialog — form, Google button, referral field and the free-plan box —
+       is taller than a phone screen. A flex child centred with
+       `alignItems: "center"` that overflows spills out of both ends, and the
+       top half sits above the scroll origin where no scrolling reaches it:
+       the title and the close button were simply not there. */
+    const src = code(signUp);
+    const overlay = /position: "fixed",[\s\S]*?\}\}/.exec(src)?.[0] ?? "";
+    expect(overlay, "the overlay's style was not found").toMatch(/overflowY: "auto"/);
+    expect(overlay).not.toMatch(/alignItems: "center"/);
+    expect(src).toMatch(/onClick=\{\(e\) => e\.stopPropagation\(\)\}\s*style=\{\{\s*margin: "auto 0",/);
+  });
+
+  it("caps the grid on the blog's account card as well", () => {
+    const all = tracks(accountOffer);
+    expect(all.length).toBeGreaterThan(0);
+    for (const t of all) expect(t.capped, `minmax(${t.min}px, …) can overflow`).toBe(true);
   });
 });
 

@@ -21,12 +21,14 @@ import {
   WHITE,
   eyebrow,
 } from "@/app/_landing/_lib/design";
+import { FREE_PLAN_LINES, PAID_FROM } from "@/app/_landing/_lib/free-plan";
 import { CATEGORY_LABEL, formatPostDate, readingMinutes, type BlogPost } from "@/lib/blog";
 import { FREE_PAGE_TITLE, freePracticePage } from "@/lib/free-practice/links";
 import { isFreeSkill } from "@/lib/free-practice/rotation";
 import { translator } from "@/lib/i18n";
 import { HTML_LANG, SOURCE_LOCALE } from "@/lib/i18n/locales";
 
+import { AccountOffer, type AccountOfferCopy } from "./account-offer";
 import { ArticleBody, KeyPoints, Questions } from "./article-body";
 
 /**
@@ -41,6 +43,18 @@ import { ArticleBody, KeyPoints, Questions } from "./article-body";
 
 const t = translator(SOURCE_LOCALE);
 const LANG = HTML_LANG[SOURCE_LOCALE];
+
+/** The free account under every article — the same lines the sign-up dialog
+ *  shows, so the offer and the form that takes it up say one thing. */
+const ACCOUNT_OFFER: AccountOfferCopy = {
+  eyebrow: t("blog.accountEyebrow"),
+  title: t("blog.accountTitle"),
+  lines: FREE_PLAN_LINES.map((l) => t(l.key, { n: l.n })),
+  note: `${t("su.sub")} ${t("su.freeMore", { price: PAID_FROM })}`,
+  cta: t("blog.accountCta"),
+  have: t("blog.accountHave"),
+  signIn: t("blog.accountSignIn"),
+};
 
 export function ArticleView({ post, url, related }: { post: BlogPost; url: string; related: BlogPost[] }) {
   return (
@@ -115,6 +129,7 @@ export function ArticleView({ post, url, related }: { post: BlogPost; url: strin
           <ArticleBody blocks={post.body} />
           {post.faq?.length ? <Questions faq={post.faq} title={t("blog.faqTitle")} /> : null}
           <FreePracticeNote post={post} />
+          <AccountOffer copy={ACCOUNT_OFFER} />
           {post.cta ? <PracticeCta cta={post.cta} /> : null}
           <p
             style={{

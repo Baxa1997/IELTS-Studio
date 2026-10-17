@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 
 import { useT } from "@/shared/components/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n";
-import { createClient } from "@/lib/supabase/client";
 
-import { BODY, BRAND, BRAND_FILL, INK, LINE, RADIUS, SANS, WHITE } from "../_lib/design";
+import { useSignedIn } from "../_hooks/use-signed-in";
+import { BODY, BRAND_FILL, INK, LINE, RADIUS, SANS, WHITE } from "../_lib/design";
 import { LangPicker } from "./lang-picker";
 
 /**
@@ -48,27 +48,7 @@ const NAV: { key: MessageKey; href: string }[] = [
 export function SiteNav() {
   const t = useT();
   const [open, setOpen] = useState(false);
-  const [signedIn, setSignedIn] = useState(false);
-
-  useEffect(() => {
-    const supabase = createClient();
-    let live = true;
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (live) setSignedIn(Boolean(data.session));
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (live) setSignedIn(Boolean(session));
-    });
-
-    return () => {
-      live = false;
-      subscription.unsubscribe();
-    };
-  }, []);
+  const signedIn = useSignedIn();
 
   // A drawer that can be opened and not dismissed is worse than no drawer, and
   // the body must not scroll behind it.

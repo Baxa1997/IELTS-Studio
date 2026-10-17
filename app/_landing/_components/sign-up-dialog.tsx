@@ -12,6 +12,7 @@ import {
   BRAND,
   BRAND_DEEP,
   BRAND_TINT,
+  BRAND_TINT_LINE,
   DISPLAY,
   FIELD,
   INK,
@@ -22,6 +23,7 @@ import {
   SANS,
   WHITE,
 } from "../_lib/design";
+import { FREE_PLAN_LINES, PAID_FROM } from "../_lib/free-plan";
 import { BRAND_LINE, RED_DEEP, SLATE_RED_BG } from "@/lib/theme/tokens";
 
 /**
@@ -105,8 +107,13 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
         inset: 0,
         zIndex: 60,
         background: "var(--tk-scrim)",
+        /* ⚠️ CENTRED BY THE PANEL'S AUTO MARGIN, NOT `alignItems: "center"`.
+           The dialog is taller than a phone screen, and a centred flex child
+           that overflows spills out of BOTH ends — the top half lands above the
+           scroll origin, where no scrolling reaches it, and takes the title and
+           the close button with it. An auto margin centres the panel while it
+           fits and gives way to zero when it does not. */
         display: "flex",
-        alignItems: "center",
         justifyContent: "center",
         padding: 20,
         overflowY: "auto",
@@ -115,6 +122,7 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
+          margin: "auto 0",
           background: PANEL,
           borderRadius: RADIUS.panel,
           border: `1px solid ${LINE}`,
@@ -167,6 +175,53 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
           >
             ×
           </button>
+        </div>
+
+        {/* What the free account holds, and that paying opens more — the two
+            things a visitor weighs at exactly this moment. Numbers from the plan
+            itself; see `free-plan.ts`. */}
+        <div
+          style={{
+            marginTop: 18,
+            padding: "14px 16px",
+            borderRadius: RADIUS.field,
+            background: BRAND_TINT,
+            border: `1px solid ${BRAND_TINT_LINE}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: BRAND,
+            }}
+          >
+            {t("su.freeHead")}
+          </div>
+          <ul
+            style={{
+              listStyle: "none",
+              padding: 0,
+              margin: "8px 0 0",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
+            {FREE_PLAN_LINES.map((l) => (
+              <li key={l.key} style={{ display: "flex", gap: 8, fontSize: 14, lineHeight: 1.45, color: INK }}>
+                <span aria-hidden style={{ color: BRAND, fontWeight: 700 }}>
+                  →
+                </span>
+                {t(l.key, { n: l.n })}
+              </li>
+            ))}
+          </ul>
+          <p style={{ fontSize: 13, lineHeight: 1.5, color: BODY, margin: "10px 0 0" }}>
+            {t("su.freeMore", { price: PAID_FROM })}
+          </p>
         </div>
 
         {/* THE OTHER DOOR INTO THE REFERRAL PROGRAMME.
