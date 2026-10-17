@@ -7,7 +7,9 @@ import { useT } from "@/shared/components/i18n/locale-provider";
 
 import { PANEL, WARM_RULE, WELL } from "@/lib/theme/tokens";
 
-const ReportShowcase = dynamic(() => import("./demo-screens").then((mod) => mod.ReportShowcase), {
+// ⚠️ `./report-showcase`, not `./demo-screens`: that module carries all seven
+// product replicas, and the proof strip draws none of them.
+const ReportShowcase = dynamic(() => import("./report-showcase").then((mod) => mod.ReportShowcase), {
   ssr: false,
   loading: () => <ReportPlaceholder />,
 });

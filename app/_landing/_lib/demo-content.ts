@@ -1,7 +1,7 @@
 // Copy for the product demo shown on the landing page and /demo. The screens
 // themselves are LIVE coded replicas of the real product UI (see
 // `demo-screens.tsx`), keyed by `slug` — there are no screenshots to upload.
-// The report proof-strip lives in `demo-screens.tsx` too (REPORT_CARDS).
+// The report proof-strip lives in `report-showcase.tsx` (REPORT_CARDS).
 //
 // ⚠️ THE TAB COPY IS KEYS; THE SCREENS ARE NOT. What a tab SAYS about the
 // product — its name, its heading, its blurb — is marketing copy and switches
