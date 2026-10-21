@@ -18,6 +18,8 @@ import { ThemeFab } from "@/shared/components/theme/theme-fab";
 import { ThemeProvider } from "@/shared/components/theme/theme-provider";
 import { ThemeScript } from "@/shared/components/theme/theme-script";
 
+import { YandexMetrika } from "./_components/yandex-metrika";
+
 // Geist Sans used to be loaded here too. Nothing referenced --font-geist-sans —
 // not a component, not globals.css, not the Tailwind theme (which maps
 // --font-sans to itself and --font-heading to --font-sans). Every page in the
@@ -164,6 +166,7 @@ export default function RootLayout({
           </LocaleProvider>
         </ThemeProvider>
         <Analytics />
+        <YandexMetrika />
       </body>
     </html>
   );

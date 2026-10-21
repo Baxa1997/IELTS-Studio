@@ -2,6 +2,7 @@ import { cache } from "react";
 import { Suspense } from "react";
 import { Work_Sans } from "next/font/google";
 
+import { HIDE_IN_REPLAY } from "@/app/_lib/metrika";
 import { ConsoleChrome } from "@/app/(app)/console/_components/console-chrome";
 import { EnrolStudentPanel } from "@/app/(app)/console/_components/enrol-student-panel";
 import { ToastHost } from "@/shared/components/console/toast";
@@ -38,7 +39,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   const { user, profile } = await requireStaff();
 
   return (
-    <div className={`${work.variable} cn-root`}>
+    <div className={`${work.variable} cn-root ${HIDE_IN_REPLAY}`}>
       <ToastHost>
         <ConsoleChrome
           userName={profile.full_name ?? user.email ?? "Account"}
