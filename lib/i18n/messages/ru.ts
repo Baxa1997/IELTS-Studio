@@ -426,7 +426,7 @@ export const ru: Messages = {
   "grade.metaDesc":
     "Бесплатная проверка IELTS Writing Task 1, Task 2 и CEFR Multilevel. Вставьте текст или загрузите фото: строгий band по каждому критерию или уровень CEFR и правки. Без регистрации.",
   "grade.appName": "Проверка Writing от EngProgress",
-  "grade.eyebrow": "Бесплатная проверка Writing",
+  "grade.eyebrow": "Бесплатная проверка IELTS Writing",
   "grade.titleA": "Проверьте свой текст.",
   "grade.titleB": "Получите честную оценку.",
   "grade.lead":
@@ -520,6 +520,24 @@ export const ru: Messages = {
   "grade.suggested": "Предлагаемые правки",
   "grade.notGradable": "Этот ответ не удалось оценить — напишите чуть больше и попробуйте снова.",
   "grade.cefrNote": "Ориентировочный уровень CEFR от ИИ-экзаменатора для практики — не официальный результат Multilevel.",
+  "grade.factsEyebrow": "Коротко",
+  "grade.factsTitle": "Что делает эта проверка",
+  "grade.factGradesK": "Что проверяет",
+  "grade.factGradesV":
+    "IELTS Writing Task 1 (отчёт Academic или письмо General Training), эссе Task 2, а также задания CEFR Multilevel Writing 1.1, 1.2 и 2.",
+  "grade.factScoreK": "Что вы получаете",
+  "grade.factScoreV":
+    "Для IELTS — общий балл и балл по каждому из четырёх официальных критериев: Task Achievement или Response, Coherence and Cohesion, Lexical Resource и Grammatical Range and Accuracy — к каждому цитата из вашего текста, что ограничивает балл, и как это исправить. Для CEFR — ориентировочный уровень и оценка из 5 за задание, связность, лексику, грамматику и стиль.",
+  "grade.factBasisK": "На чём основана",
+  "grade.factBasisV":
+    "На официальных публичных дескрипторах IELTS Writing — по каждому критерию отдельно, с опорой на размеченный образец ответа для каждого балла. Если текст между двумя баллами, ставится нижний и объясняется, чего не хватает до верхнего.",
+  "grade.factBasisLink": "Официальные дескрипторы (ielts.org, PDF)",
+  "grade.factCostK": "Стоимость",
+  "grade.factCostV":
+    "Бесплатно — {n} проверки без аккаунта. Бесплатный аккаунт добавляет правки по предложениям, образец ответа на Band 9 и повторную проверку переписанного текста.",
+  "grade.factTimeK": "Как отправить",
+  "grade.factTimeV": "Вставьте ответ или загрузите фото либо PDF рукописной работы. Проверка занимает до минуты.",
+  "grade.factsChecked": "Факты проверены {date}",
   "grade.howEyebrow": "Как это работает",
   "grade.howTitle": "Три шага — около минуты",
   "grade.step1T": "Выберите задание",

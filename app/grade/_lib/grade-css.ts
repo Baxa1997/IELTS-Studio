@@ -40,6 +40,12 @@ export const GRADE_CSS = `
     .gr-tab-label{font-size:14px!important}
   }
 
+  /* The "at a glance" facts: label beside its answer on a desktop, above it
+     on a phone, where a 200px label column would leave the answer no room. */
+  .gr-fact{display:grid;grid-template-columns:200px minmax(0,1fr);gap:6px 24px}
+  .gr-fact+.gr-fact{border-top:1px solid ${LINE}}
+  @media(max-width:620px){.gr-fact{grid-template-columns:minmax(0,1fr)}}
+
   .gr-faq>summary{list-style:none;cursor:pointer}
   .gr-faq>summary::-webkit-details-marker{display:none}
   .gr-faq-plus{transition:transform .2s}

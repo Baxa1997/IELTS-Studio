@@ -76,6 +76,10 @@ const PUBLIC_PATHS = [
   // test. Bing fetches it with no session before it believes a submission, so
   // a redirect to /sign-in here is every submission rejected.
   "/indexnow-key.txt",
+  // Bing Webmaster Tools' ownership file (public/BingSiteAuth.xml). Bing reads
+  // it with no session; a redirect to /sign-in here and the site never verifies.
+  // Delete both only if verification moves to the meta tag or DNS.
+  "/BingSiteAuth.xml",
   // A shared lesson. The token in the path is the whole credential, and a
   // student opening a teacher's link has no account to be redirected to.
   "/p",
@@ -122,13 +126,16 @@ const PUBLIC_PATHS = [
  *
  * Any unknown path redirects a logged-out visitor to sign-in (see below), which
  * is fine for a typo but wrong for a URL Google has indexed: a redirect to a
- * login page reads as a soft-404 and the old URL lingers in the index. These
- * three were live, indexed marketing pages until the owner removed them, so
- * they are let through to render a real 404 and drop out cleanly.
+ * login page reads as a soft-404 and the old URL lingers in the index. The two
+ * competitor comparisons under /vs were live, indexed marketing pages until the
+ * owner removed them, and nothing replaced them, so they are let through to
+ * render a real 404 and drop out cleanly. (/cambridge-ielts-practice was here
+ * too until its content was recognised as MOVED, not gone — it now 301s; see
+ * RETIRED_PAGE_REDIRECTS in next.config.ts.)
  *
  * Safe to delete once they have disappeared from search results.
  */
-const GONE_PATHS = ["/cambridge-ielts-practice", "/vs"];
+const GONE_PATHS = ["/vs"];
 
 function isPublicPath(pathname: string): boolean {
   // APIs authenticate themselves; redirecting them to /sign-in would be wrong.
