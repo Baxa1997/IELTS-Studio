@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { Hanken_Grotesk, Newsreader, Source_Serif_4, Work_Sans } from "next/font/google";
 
+import { HIDE_IN_REPLAY } from "@/app/_lib/metrika";
 import { AdminHeader } from "@/app/admin/_components/header";
 import { AppShell } from "@/shared/components/app-shell/shell";
 import { requireSuperAdmin } from "@/lib/auth";
@@ -67,7 +68,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div
-      className={`${hanken.variable} ${newsreader.variable} ${workSans.variable} ${sourceSerif.variable} lp-root`}
+      className={`${hanken.variable} ${newsreader.variable} ${workSans.variable} ${sourceSerif.variable} lp-root ${HIDE_IN_REPLAY}`}
     >
       <AppShell
         role="super_admin"

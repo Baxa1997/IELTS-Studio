@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <article>
-      <LegalTitle title="Privacy Policy" updated="July 9, 2026" />
+      <LegalTitle title="Privacy Policy" updated="October 21, 2026" />
 
       <Section n={1} title="General Provisions">
         <P>
@@ -127,7 +127,8 @@ export default function PrivacyPage() {
           <LI>Access to production data is restricted to what is strictly necessary to operate the service.</LI>
           <LI>
             Your data is stored on cloud infrastructure located in the European Union and the United
-            States (see Section 7 for providers).
+            States; website analytics collected by Yandex Metrica are stored by Yandex (see Section 7
+            for providers).
           </LI>
           <LI>
             Data is kept while your account is active. If you delete your account, personal data is
@@ -141,6 +142,10 @@ export default function PrivacyPage() {
         <UL>
           <LI><B>Supabase</B> — database, authentication and file storage.</LI>
           <LI><B>Vercel</B> — application hosting and privacy-friendly, aggregated analytics.</LI>
+          <LI>
+            <B>Yandex Metrica</B> (Yandex) — website analytics: visit statistics, click maps and
+            session recordings (Section 8).
+          </LI>
           <LI><B>Google Cloud</B> and <B>Anthropic</B> — AI processing (Section 4).</LI>
           <LI><B>Stripe</B> and local payment services — payment processing (Section 5).</LI>
         </UL>
@@ -153,9 +158,15 @@ export default function PrivacyPage() {
 
       <Section n={8} title="Cookies and Analytics">
         <P>
-          We use <B>essential cookies</B> to keep you signed in and to protect your session. Our
-          analytics are aggregated and privacy-friendly; we do not use cross-site advertising
-          trackers.
+          We use <B>essential cookies</B> to keep you signed in and to protect your session. We
+          measure how the site is used with <B>Vercel Web Analytics</B>, which is aggregated and sets
+          no cookies, and <B>Yandex Metrica</B>, which sets its own cookies to recognise a returning
+          browser and records sessions — page views, clicks, scrolling and mouse movement — so we can
+          see where the site is hard to use. In those recordings, text typed into form fields is
+          masked, and screens that show other people&rsquo;s data (the centre console and platform
+          administration) are blurred. Private links — shared lessons, invitations, password resets
+          and unsubscribe links — are not reported to Yandex, and those pages are blurred too. We do not
+          use cross-site advertising trackers.
         </P>
       </Section>
 
