@@ -429,7 +429,7 @@ export const uz: Messages = {
   "grade.metaDesc":
     "Bepul IELTS Writing Task 1, Task 2 va CEFR Multilevel tekshiruvi. Matnni joylang yoki rasm yuklang: har mezon boʻyicha qatʼiy band yoki CEFR darajasi va tuzatishlar. Roʻyxatdan oʻtmasdan.",
   "grade.appName": "EngProgress Writing tekshiruvi",
-  "grade.eyebrow": "Bepul writing tekshiruvi",
+  "grade.eyebrow": "Bepul IELTS writing tekshiruvi",
   "grade.titleA": "Yozganingizni baholang.",
   "grade.titleB": "Halol ball oling.",
   "grade.lead":
@@ -523,6 +523,24 @@ export const uz: Messages = {
   "grade.suggested": "Tavsiya etilgan tuzatishlar",
   "grade.notGradable": "Bu javobni baholab boʻlmadi — biroz koʻproq yozib, qayta urinib koʻring.",
   "grade.cefrNote": "AI imtihon oluvchidan mashq uchun taxminiy CEFR darajasi — rasmiy Multilevel natijasi emas.",
+  "grade.factsEyebrow": "Qisqacha",
+  "grade.factsTitle": "Bu tekshiruv nima qiladi",
+  "grade.factGradesK": "Nimani baholaydi",
+  "grade.factGradesV":
+    "IELTS Writing Task 1 (Academic hisobot yoki General Training xati), Task 2 inshosi hamda CEFR Multilevel Writing 1.1, 1.2 va 2-topshiriqlari.",
+  "grade.factScoreK": "Siz nima olasiz",
+  "grade.factScoreV":
+    "IELTS uchun umumiy band va toʻrtta rasmiy mezonning har biri boʻyicha band — Task Achievement yoki Response, Coherence and Cohesion, Lexical Resource hamda Grammatical Range and Accuracy — har birida matningizdan dalil, bandni nima cheklayotgani va tuzatish. CEFR uchun taxminiy daraja hamda topshiriq, izchillik, lugʻat, grammatika va uslub boʻyicha 5 ballik baho.",
+  "grade.factBasisK": "Nimaga asoslanadi",
+  "grade.factBasisV":
+    "Rasmiy ochiq IELTS Writing band deskriptorlari — har bir mezon alohida qoʻllaniladi va har bir band uchun izohli namuna javobga tayanadi. Matningiz ikki band orasida boʻlsa, pastrogʻini beradi va yuqorisi uchun nima yetishmasligini aytadi.",
+  "grade.factBasisLink": "Rasmiy band deskriptorlari (ielts.org, PDF)",
+  "grade.factCostK": "Narxi",
+  "grade.factCostV":
+    "Bepul — hisobsiz {n} ta baholash. Bepul hisob jumla darajasidagi tuzatishlar, Band 9 namuna javob va qayta yozilgan matnni qayta baholashni qoʻshadi.",
+  "grade.factTimeK": "Qanday yuborish",
+  "grade.factTimeV": "Javobingizni joylashtiring yoki qoʻlda yozilgan ishning rasmi yoki PDF faylini yuklang. Baholash bir daqiqagacha davom etadi.",
+  "grade.factsChecked": "Maʼlumotlar tekshirilgan sana: {date}",
   "grade.howEyebrow": "Qanday ishlaydi",
   "grade.howTitle": "Uch qadam, taxminan bir daqiqa",
   "grade.step1T": "Topshiriqni tanlang",

@@ -468,7 +468,7 @@ export const en = {
   "grade.metaDesc":
     "Free IELTS Writing Task 1 & 2 and CEFR Multilevel checker. Paste or upload a photo for a strict band per criterion, or a CEFR level, and the fixes. No sign-up.",
   "grade.appName": "EngProgress Writing Checker",
-  "grade.eyebrow": "Free writing checker",
+  "grade.eyebrow": "Free IELTS writing checker",
   "grade.titleA": "Grade your writing.",
   "grade.titleB": "Get an honest score.",
   "grade.lead":
@@ -565,6 +565,28 @@ export const en = {
   "grade.notGradable": "That answer couldn't be graded — write a little more and try again.",
   "grade.cefrNote":
     "An indicative CEFR level from an AI examiner, for practice — not an official Multilevel result.",
+  /* The "at a glance" facts under the checker. ⚠️ EVERY LINE IS A CLAIM an
+     answer engine will repeat word for word, so each one restates something the
+     code or the FAQ above already establishes — nothing about accuracy that has
+     not been measured (see lib/seo-claims.test.ts). */
+  "grade.factsEyebrow": "At a glance",
+  "grade.factsTitle": "What this checker does",
+  "grade.factGradesK": "What it grades",
+  "grade.factGradesV":
+    "IELTS Writing Task 1 (an Academic report or a General Training letter), Task 2 essays, and CEFR Multilevel Writing Tasks 1.1, 1.2 and 2.",
+  "grade.factScoreK": "What you get",
+  "grade.factScoreV":
+    "For IELTS, an overall band and a band for each of the four official criteria — Task Achievement or Response, Coherence and Cohesion, Lexical Resource, and Grammatical Range and Accuracy — each with a quote from your writing as evidence, what is capping it, and a fix. For CEFR, an indicative level and a score out of 5 for task, coherence, vocabulary, grammar and register.",
+  "grade.factBasisK": "What it is based on",
+  "grade.factBasisV":
+    "The official public IELTS Writing band descriptors, applied criterion by criterion and anchored to an annotated sample answer at every band. When your writing sits between two bands, it rounds down and names what is missing for the higher one.",
+  "grade.factBasisLink": "The official band descriptors (ielts.org, PDF)",
+  "grade.factCostK": "What it costs",
+  "grade.factCostV":
+    "Free — {n} gradings with no account. A free account adds sentence-level fixes, a Band 9 model answer, and re-grading of your rewrites.",
+  "grade.factTimeK": "How to submit",
+  "grade.factTimeV": "Paste your answer, or upload a photo or PDF of handwritten work. A grading takes up to a minute.",
+  "grade.factsChecked": "Facts checked {date}",
   "grade.howEyebrow": "How it works",
   "grade.howTitle": "Three steps, about a minute",
   "grade.step1T": "Pick the task",

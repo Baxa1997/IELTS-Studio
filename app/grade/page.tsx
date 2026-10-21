@@ -30,6 +30,7 @@ import { SOURCE_LOCALE } from "@/lib/i18n/locales";
 import { absoluteUrl, getSiteUrl, organization, PREVIEW_IMAGE, previewImage, SITE_NAME } from "@/lib/seo";
 
 import { PublicGrader } from "./_components/grader";
+import { FREE_LIMIT, GRADE_FACTS_CHECKED, IELTS_WRITING_DESCRIPTORS_URL } from "./_lib/facts";
 import { GRADE_CSS } from "./_lib/grade-css";
 
 /**
@@ -100,6 +101,41 @@ const FAQ: { q: MessageKey; a: MessageKey }[] = [
 
 const POINTS: MessageKey[] = ["grade.pointFree", "grade.pointUpload", "grade.pointStrict"];
 
+/**
+ * The page's answer to "what is this?", as plain facts right under the checker.
+ *
+ * ⚠️ THIS IS WHAT AN ANSWER ENGINE QUOTES. ChatGPT sent visitors here (19 of
+ * its 22 referrals, 2026-09-21 → 10-11) and stopped; after the 2026-10-14
+ * redesign the only prose above the checker was a pill and three bullets,
+ * and every explanation sat in collapsed FAQ items at the bottom.
+ * The GEO study (Aggarwal et al., KDD 2024) reports that statistics and cited
+ * sources lift a page's share of a generated answer — so these are facts, one
+ * of them linked to its source, and none of them claims an accuracy nobody has
+ * measured.
+ *
+ * Below the checker, not above it: the owner took the hero copy out so the
+ * checker sits above the fold, and that stays the owner's call.
+ */
+const FACTS: { k: MessageKey; v: MessageKey; link?: { href: string; label: MessageKey } }[] = [
+  { k: "grade.factGradesK", v: "grade.factGradesV" },
+  { k: "grade.factScoreK", v: "grade.factScoreV" },
+  {
+    k: "grade.factBasisK",
+    v: "grade.factBasisV",
+    link: { href: IELTS_WRITING_DESCRIPTORS_URL, label: "grade.factBasisLink" },
+  },
+  { k: "grade.factCostK", v: "grade.factCostV" },
+  { k: "grade.factTimeK", v: "grade.factTimeV" },
+];
+
+/** "21 October 2026" — the page is English on every locale, so is the date. */
+const CHECKED_ON = new Date(`${GRADE_FACTS_CHECKED}T00:00:00Z`).toLocaleDateString("en-GB", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
 const STEPS: { title: MessageKey; body: MessageKey; icon: React.ReactNode }[] = [
   { title: "grade.step1T", body: "grade.step1B", icon: <ListChecks size={18} strokeWidth={2} /> },
   { title: "grade.step2T", body: "grade.step2B", icon: <FileUp size={18} strokeWidth={2} /> },
@@ -118,6 +154,9 @@ function jsonLd() {
       operatingSystem: "Web",
       description: t("grade.metaDesc"),
       offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      // The same date and source the "at a glance" section shows.
+      dateModified: GRADE_FACTS_CHECKED,
+      isBasedOn: IELTS_WRITING_DESCRIPTORS_URL,
       publisher: organization(),
     },
     {
@@ -248,6 +287,38 @@ export default function PublicGradePage() {
             <PublicGrader />
           </LocaleProvider>
         </div>
+      </section>
+
+      {/* ---- At a glance (see FACTS) ---- */}
+      <section style={{ ...SHELL, maxWidth: 1180, padding: "clamp(40px,5vw,64px) 28px 0" }}>
+        <div style={eyebrow(true)}>{t("grade.factsEyebrow")}</div>
+        <h2 style={{ ...DISPLAY_LG, margin: "14px 0 0" }}>{t("grade.factsTitle")}</h2>
+        <dl style={{ ...cardStyle(0), margin: "26px 0 0", overflow: "hidden" }}>
+          {FACTS.map((f) => (
+            <div key={f.k} className="gr-fact" style={{ padding: "18px 24px" }}>
+              <dt style={{ fontFamily: SANS, fontSize: 15, fontWeight: 700, color: INK }}>{t(f.k)}</dt>
+              <dd style={{ margin: 0, fontSize: 15.5, lineHeight: 1.6, color: BODY }}>
+                {t(f.v, { n: FREE_LIMIT })}
+                {f.link && (
+                  <>
+                    {" "}
+                    <a
+                      href={f.link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: BRAND, fontWeight: 600, textDecoration: "underline" }}
+                    >
+                      {t(f.link.label)}
+                    </a>
+                  </>
+                )}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <p style={{ margin: "12px 0 0", fontSize: 12.5, color: FAINT }}>
+          <time dateTime={GRADE_FACTS_CHECKED}>{t("grade.factsChecked", { date: CHECKED_ON })}</time>
+        </p>
       </section>
 
       {/* ---- How it works ---- */}

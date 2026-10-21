@@ -45,6 +45,7 @@ import type { PublicTeaser } from "@/lib/public-grader/teaser";
 import { BAR_BG, RED, TINT } from "@/lib/theme/tokens";
 import { WRITING_TASK } from "@/lib/writing/exam-tasks";
 
+import { FREE_LIMIT } from "../_lib/facts";
 import { gradeErrorMessage, transcribeErrorMessage } from "../_lib/messages";
 import { CefrResult } from "./cefr-result";
 import { IeltsResult } from "./ielts-result";
@@ -56,10 +57,6 @@ const SERIF = "var(--font-newsreader), Georgia, serif";
 const ACCEPT = "image/png,image/jpeg,image/webp,application/pdf";
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
 
-// Free anonymous gradings before the sign-up wall. Mirrors the server's per-IP cap
-// (PUBLIC_GRADER_PER_IP, default 3) so the UI blocks at the same point the API does.
-// ONE count across the three tabs, because the server's is one count too.
-const FREE_LIMIT = 3;
 const USED_KEY = "eng_public_grade_used";
 
 type Tab = "task1" | "task2" | "cefr";
