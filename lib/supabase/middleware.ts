@@ -76,6 +76,10 @@ const PUBLIC_PATHS = [
   // test. Bing fetches it with no session before it believes a submission, so
   // a redirect to /sign-in here is every submission rejected.
   "/indexnow-key.txt",
+  // Bing Webmaster Tools' ownership file (public/BingSiteAuth.xml). Bing reads
+  // it with no session; a redirect to /sign-in here and the site never verifies.
+  // Delete both only if verification moves to the meta tag or DNS.
+  "/BingSiteAuth.xml",
   // A shared lesson. The token in the path is the whole credential, and a
   // student opening a teacher's link has no account to be redirected to.
   "/p",
