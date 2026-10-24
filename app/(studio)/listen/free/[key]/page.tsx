@@ -12,7 +12,7 @@ import { listeningPublic, logEngineFailure, publicTarget } from "@/lib/free-prac
 import { freePracticePage } from "@/lib/free-practice/links";
 import { translator } from "@/lib/i18n";
 import { SOURCE_LOCALE } from "@/lib/i18n/locales";
-import { BRAND_FILL, PANEL, SLATE_BODY, SLATE_INK, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
+import { BRAND_FILL, PANEL, SCREEN, SLATE_BODY, SLATE_INK, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
 
 /**
  * /listen/free/[key] — one free Listening practice, for a visitor with no
@@ -67,7 +67,7 @@ export default async function FreeListeningPage({ params }: { params: Promise<{ 
     <div
       lang="en"
       className={listeningFont.variable}
-      style={{ height: "100dvh", display: "flex", flexDirection: "column" }}
+      style={{ height: SCREEN, display: "flex", flexDirection: "column" }}
     >
       {view ? (
         <PublicListeningRunner

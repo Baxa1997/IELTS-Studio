@@ -19,6 +19,7 @@ import {
   ON_INK,
   PANEL,
   RED,
+  SCREEN,
   SLATE_BODY,
   SLATE_BODY as MUTED,
   SLATE_GREEN,
@@ -201,7 +202,7 @@ export function EssayFeedback({
   return (
     <div
       className="lp-fb-root"
-      style={{ height: "100dvh", background: "var(--ex-fb-canvas)", fontFamily: SANS, display: "flex", flexDirection: "column", overflow: "hidden" }}
+      style={{ height: SCREEN, background: "var(--ex-fb-canvas)", fontFamily: SANS, display: "flex", flexDirection: "column", overflow: "hidden" }}
     >
       {/* header */}
       <header

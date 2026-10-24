@@ -23,6 +23,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { SCREEN } from "@/lib/theme/tokens";
 import { sourceFiles } from "@/test/source-files";
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
@@ -164,8 +165,11 @@ describe("the sign-up dialog stays reachable on a phone", () => {
 describe("the sign-in page stays reachable once the panels stack", () => {
   it("keeps the no-scroll rule for the two-panel layout", () => {
     // Not a regression to undo: it fixed a real laptop problem, where the card
-    // and the disclaimer fell off the bottom of the viewport.
-    expect(signIn).toMatch(/height: "100dvh"/);
+    // and the disclaimer fell off the bottom of the viewport. "Exactly one
+    // screen" is SCREEN: the viewport less the service notice when one is up
+    // (lib/theme/tokens), since under a notice a bare 100dvh runs off the bottom.
+    expect(signIn).toMatch(/height: SCREEN,/);
+    expect(SCREEN).toMatch(/^calc\(100dvh - /);
     expect(signIn).toMatch(/overflow: "hidden"/);
   });
 

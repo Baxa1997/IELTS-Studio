@@ -13,6 +13,7 @@ import {
 } from "@/lib/seo";
 import { LangScript } from "@/shared/components/i18n/lang-script";
 import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
+import { ServiceNotice } from "@/shared/components/notice/service-notice";
 import { DEFAULT_LOCALE, HTML_LANG } from "@/lib/i18n/locales";
 import { ThemeFab } from "@/shared/components/theme/theme-fab";
 import { ThemeProvider } from "@/shared/components/theme/theme-provider";
@@ -154,6 +155,11 @@ export default function RootLayout({
             and only the cacheable pages settle a tick later. */}
         <ThemeProvider>
           <LocaleProvider>
+            {/* The service notice, above every page while technical work is on
+                (owner, 2026-10-24). Inside the provider so it can follow the
+                visitor's language. To take it down, delete this one line — see
+                shared/components/notice/notice.ts. */}
+            <ServiceNotice />
             {children}
             {/* MOUNTED AT THE ROOT so it is on every surface — the app, the
                 console, /admin, the marketing pages and sign-in. A reader who

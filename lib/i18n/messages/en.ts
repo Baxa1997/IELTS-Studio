@@ -880,6 +880,10 @@ export const en = {
     "The band a Cambridge-trained examiner would award — and the exact path there from wherever you are starting.",
   "hd.withFixes": "7.0 with fixes",
   "language.switching": "Switching language…",
+
+  /* ── the service notice (shared/components/notice) ───────────────────── */
+  "notice.title": "Technical work in progress.",
+  "notice.body": "We're upgrading our AI models, so some features may not work. Everything will be back by {date}.",
 } as const;
 
 /** The key set every locale must satisfy. */

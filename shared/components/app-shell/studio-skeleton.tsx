@@ -6,7 +6,7 @@
  * splash with an instant, page-shaped skeleton.
  */
 import { Block } from "./page-skeleton";
-import { PANEL, SANS, SLATE_LINE as BORDER, WELL } from "@/lib/theme/tokens";
+import { PANEL, SANS, SCREEN, SLATE_LINE as BORDER, WELL } from "@/lib/theme/tokens";
 
 const FADE: React.CSSProperties = { animation: "lp-fadeup .25s ease both" };
 const SRONLY: React.CSSProperties = {
@@ -39,7 +39,7 @@ export function StudioShellSkeleton() {
     <div
       style={{
         ...FADE,
-        height: "100dvh",
+        height: SCREEN,
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -170,7 +170,7 @@ export function StudioEditorSkeleton() {
     <div
       style={{
         ...FADE,
-        height: "100dvh",
+        height: SCREEN,
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",

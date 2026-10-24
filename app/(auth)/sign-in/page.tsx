@@ -16,6 +16,7 @@ import {
 } from "@/app/_landing/_lib/design";
 import { LangPicker } from "@/app/_landing/_components/lang-picker";
 import { getSession, roleHome, safeNextPath } from "@/lib/auth";
+import { SCREEN } from "@/lib/theme/tokens";
 
 import { DesignSignInForm } from "./_components/design-form";
 
@@ -87,7 +88,7 @@ export default async function SignInPage({
         // not exist on a phone. `.lp-auth` releases it below 900px
         // (design-chrome.tsx), which is the width the two-panel layout stops
         // fitting at anyway.
-        height: "100dvh",
+        height: SCREEN,
         overflow: "hidden",
         background: CANVAS,
         padding: 18,

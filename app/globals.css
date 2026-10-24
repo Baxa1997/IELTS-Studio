@@ -5857,3 +5857,50 @@ section[id] {
     transform: none;
   }
 }
+
+/* ── the service notice (shared/components/notice/service-notice.tsx) ────────
+   The band the root layout shows above every page while technical work is on.
+   The server sends it EMPTY (the words are written in the browser, in the
+   visitor's language), so the height here is the expected one: the first paint
+   reserves the space and nothing below moves when the text lands. The numbers
+   are the copy's line count in the longest of the three languages: one line
+   above 1280px, two down to a phone, three on a phone.
+
+   `--ep-notice-h` is what full-screen frames subtract (SCREEN in
+   lib/theme/tokens). The component overwrites this estimate with the measured
+   height once it runs. `:has()` scopes both to pages where the band exists, so
+   taking the component out returns every frame to a full 100dvh. */
+:root:has(.ep-notice) {
+  --ep-notice-est: 40px;
+  --ep-notice-h: var(--ep-notice-est);
+}
+.ep-notice {
+  min-height: var(--ep-notice-est);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 16px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.ep-notice p {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 72rem;
+}
+@media (max-width: 1280px) {
+  :root:has(.ep-notice) {
+    --ep-notice-est: 58px;
+  }
+}
+@media (max-width: 640px) {
+  :root:has(.ep-notice) {
+    --ep-notice-est: 78px;
+  }
+  .ep-notice {
+    padding: 8px 14px;
+    font-size: 12.5px;
+  }
+}

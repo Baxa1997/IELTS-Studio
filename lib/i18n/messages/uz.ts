@@ -831,4 +831,8 @@ export const uz: Messages = {
     "Cambridge tayyorlagan imtihon oluvchi qoʻyadigan band — va qayerdan boshlagan boʻlsangiz ham, unga olib boradigan aniq yoʻl.",
   "hd.withFixes": "Tuzatishlar bilan 7.0",
   "language.switching": "Til almashtirilmoqda…",
+
+  "notice.title": "Texnik ishlar olib borilmoqda.",
+  "notice.body":
+    "AI modellarini yangilayapmiz, shu sababli ayrim imkoniyatlar ishlamasligi mumkin. Hammasi {date}gacha tiklanadi.",
 };

@@ -32,6 +32,7 @@ import {
   BRAND_PALE as TINT_BORDER,
   BRAND_SOFT as TINT,
   PANEL,
+  SCREEN,
   SLATE_BODY as MUTED,
   SLATE_INK as INK,
   SLATE_LINE,
@@ -150,11 +151,11 @@ export function StartWizard({ mode = "signup" }: { mode?: "signup" | "authed" })
   }
 
   return (
-    <div className="onb-shell" style={{ height: "100dvh", overflow: "hidden", display: "grid", gridTemplateColumns: "minmax(0,1fr) clamp(380px,32vw,460px)", fontFamily: SANS, color: INK, background: PANEL }}>
+    <div className="onb-shell" style={{ height: SCREEN, overflow: "hidden", display: "grid", gridTemplateColumns: "minmax(0,1fr) clamp(380px,32vw,460px)", fontFamily: SANS, color: INK, background: PANEL }}>
       <style>{STYLES}</style>
 
       {/* ── Main (≈70%): brand, horizontal stepper, step content ── */}
-      <main className="onb-main" style={{ height: "100dvh", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      <main className="onb-main" style={{ height: SCREEN, overflowY: "auto", display: "flex", flexDirection: "column" }}>
         <div className="onb-content" style={{ width: "100%", maxWidth: 780, margin: "auto", padding: "32px clamp(24px,5vw,64px)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             {mode === "authed" ? <Logo /> : <Link href="/" style={{ textDecoration: "none" }}><Logo /></Link>}
@@ -425,7 +426,7 @@ function CoachPanel({ step, target, self, examDate, thinking }: { step: number; 
   const pct = Math.round(((step + 1) / STEPS.length) * 100);
 
   return (
-    <aside className="onb-coach" style={{ height: "100dvh", overflow: "hidden", borderLeft: `1px solid ${LINE}`, background: "linear-gradient(170deg,#FDF4F7 0%,#FBFBFC 55%,#FFFFFF 100%)", display: "flex", flexDirection: "column", padding: "30px clamp(22px,2vw,30px)" }}>
+    <aside className="onb-coach" style={{ height: SCREEN, overflow: "hidden", borderLeft: `1px solid ${LINE}`, background: "linear-gradient(170deg,#FDF4F7 0%,#FBFBFC 55%,#FFFFFF 100%)", display: "flex", flexDirection: "column", padding: "30px clamp(22px,2vw,30px)" }}>
       <style>{COACH_STYLES}</style>
 
       {/* identity */}

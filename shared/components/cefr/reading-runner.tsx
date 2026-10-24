@@ -20,6 +20,7 @@ import {
   BRAND_WASH as D_ATINT,
   LINE as D_LINE,
   PANEL,
+  SCREEN_VH,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -147,7 +148,7 @@ export function ReadingRunner({
         position: "fixed",
         inset: 0,
         zIndex: 50,
-        height: "100vh",
+        height: SCREEN_VH,
         display: "flex",
         flexDirection: "column",
         background: D_PAGE,

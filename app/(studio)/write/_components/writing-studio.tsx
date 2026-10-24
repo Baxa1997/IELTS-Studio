@@ -12,6 +12,7 @@ import {
   ON_INK,
   PANEL,
   SANS,
+  SCREEN,
   SERIF,
   SLATE_BODY,
   SLATE_GREEN,
@@ -526,7 +527,7 @@ export function WritingStudio({
   const submitDisabled = submitting || !content.trim() || unchangedSinceGrade;
 
   return (
-    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", background: theme.canvas }}>
+    <div style={{ height: SCREEN, display: "flex", flexDirection: "column", overflow: "hidden", background: theme.canvas }}>
       {/* grading modal — a calm, on-brand cover every time we mark a submission */}
       {submitting ? <GradingOverlay theme={theme} /> : null}
 

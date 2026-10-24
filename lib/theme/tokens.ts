@@ -45,6 +45,26 @@ export const SERIF_CONSOLE = "var(--font-serif4), Georgia, serif";
 /** Figures, timers, band scores — anything that has to line up in a column. */
 export const MONO = "var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace";
 
+/* ── layout ────────────────────────────────────────────────────────────────── */
+
+/**
+ * The height a full-screen frame may take: the viewport, less the service
+ * notice the root layout can show above every page (shared/components/notice),
+ * which publishes its own height as `--ep-notice-h`. With no notice up that is
+ * 0px, and this is exactly 100dvh.
+ *
+ * ⚠️ USE THIS, NOT A BARE 100dvh, FOR A FRAME THAT IS EXACTLY ONE SCREEN TALL.
+ * Under a notice a bare 100dvh frame runs off the bottom by the notice's
+ * height, the document scrolls, and whatever the frame pins to its bottom edge
+ * (the shell's account menu, a studio's submit bar) is cut off. A guard in the
+ * notice's test fails on one. Overlays that cover everything — slide-overs —
+ * keep 100dvh on purpose.
+ */
+export const SCREEN = "calc(100dvh - var(--ep-notice-h, 0px))";
+/** The same for the frames that were built on 100vh (the CEFR runners), kept
+ *  on that unit so their behaviour under a phone's address bar does not move. */
+export const SCREEN_VH = "calc(100vh - var(--ep-notice-h, 0px))";
+
 /* ── neutrals ──────────────────────────────────────────────────────────────── */
 /*
  * MEASURED, NOT EYEBALLED. Each value was solved for a contrast target rather
