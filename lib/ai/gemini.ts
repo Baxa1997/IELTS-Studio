@@ -1,12 +1,13 @@
 import "server-only";
 
-import { GoogleGenAI, type GoogleGenAIOptions } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel, type GoogleGenAIOptions } from "@google/genai";
 import { getVercelOidcToken } from "@vercel/functions/oidc";
 import { ExternalAccountClient } from "google-auth-library";
 
 import { serverEnv } from "@/lib/env";
 
 import type { AIProvider, CompletionRequest, CompletionResult } from "./provider";
+import { billedOutputTokens, thinkingConfig } from "./thinking";
 
 /* No default model lives here. Per-task routing is decided ONCE, in
  * `serverEnv.geminiModels` (lib/env.ts), and the chosen id is passed to this
@@ -125,6 +126,10 @@ export class GeminiProvider implements AIProvider {
         ]
       : request.prompt;
 
+    // Budget for the 3.x models, level for Gemini 4 — which 400s on a budget
+    // (./thinking). The SDK wants its own enum for the level.
+    const thinking = thinkingConfig(this.model, request.thinkingBudget);
+
     const response = await this.client.models.generateContent({
       model: this.model,
       contents,
@@ -136,8 +141,13 @@ export class GeminiProvider implements AIProvider {
           : {}),
         // Let the model reason before answering (grading), but keep the thoughts
         // OUT of the response — we force JSON output, so includeThoughts stays false.
-        ...(request.thinkingBudget !== undefined
-          ? { thinkingConfig: { thinkingBudget: request.thinkingBudget, includeThoughts: false } }
+        ...(thinking
+          ? {
+              thinkingConfig:
+                "thinkingLevel" in thinking
+                  ? { ...thinking, thinkingLevel: ThinkingLevel[thinking.thinkingLevel] }
+                  : thinking,
+            }
           : {}),
         ...(request.signal ? { abortSignal: request.signal } : {}),
       },
@@ -158,7 +168,8 @@ export class GeminiProvider implements AIProvider {
       model: this.model,
       usage: {
         inputTokens: response.usageMetadata?.promptTokenCount,
-        outputTokens: response.usageMetadata?.candidatesTokenCount,
+        // Answer + thinking, as billed — not the answer alone (./thinking).
+        outputTokens: billedOutputTokens(response.usageMetadata),
       },
     };
   }

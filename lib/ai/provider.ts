@@ -40,7 +40,9 @@ export interface CompletionRequest {
   /** Token budget for the model's PRIVATE reasoning before it answers (Gemini
    *  "thinking"). The reasoning is never returned — only the final text — so this
    *  buys deliberation (criterion-by-criterion grading) without polluting the JSON.
-   *  Set by the service for the grade task; omitted ⇒ provider/model default. */
+   *  Set by the service for the grade task; omitted ⇒ provider/model default.
+   *  It states INTENT: a model that takes a thinking level instead (Gemini 4,
+   *  which 400s on a budget) gets the level of the same intent — ./thinking. */
   thinkingBudget?: number;
   /** Shape of the reply. Defaults to "text". */
   responseFormat?: ResponseFormat;
@@ -56,6 +58,7 @@ export interface CompletionResult {
   /** Token usage when the provider reports it — used for usage logging / cost. */
   usage?: {
     inputTokens?: number;
+    /** As BILLED: the answer plus the model's private thinking (./thinking). */
     outputTokens?: number;
   };
 }

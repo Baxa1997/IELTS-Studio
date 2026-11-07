@@ -42,7 +42,9 @@ export class RemoteAIProvider implements AIProvider {
       ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
       ...(request.responseFormat === "json" ? { json: true } : {}),
       // Private reasoning budget (grading). The engine maps this onto Vertex's
-      // generationConfig.thinkingConfig; the thoughts never come back in `text`.
+      // generationConfig.thinkingConfig — a budget, or for Gemini 4 the level of
+      // the same intent (engine ai/thinking.py mirrors ./thinking). The thoughts
+      // never come back in `text`; the engine's output_tokens count them.
       ...(request.thinkingBudget !== undefined ? { thinking_budget: request.thinkingBudget } : {}),
       ...(request.files?.length
         ? { files: request.files.map((f) => ({ mime_type: f.mimeType, data: f.data })) }
