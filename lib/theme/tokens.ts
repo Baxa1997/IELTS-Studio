@@ -48,16 +48,20 @@ export const MONO = "var(--font-geist-mono), ui-monospace, SFMono-Regular, monos
 /* ── layout ────────────────────────────────────────────────────────────────── */
 
 /**
- * The height a full-screen frame may take: the viewport, less the service
- * notice the root layout can show above every page (shared/components/notice),
- * which publishes its own height as `--ep-notice-h`. With no notice up that is
- * 0px, and this is exactly 100dvh.
+ * The height a full-screen frame may take: the viewport, less any site-wide
+ * notice band above every page, which publishes its own height as
+ * `--ep-notice-h`. With no notice up that is 0px, and this is exactly 100dvh.
+ *
+ * No notice is mounted today. The last one ("technical work in progress",
+ * 2026-10-24 → taken down 2026-11-07) is commit b060761: its band component,
+ * stylesheet block and copy are the template for the next one, and this token
+ * is why putting one up again touches no frame.
  *
  * ⚠️ USE THIS, NOT A BARE 100dvh, FOR A FRAME THAT IS EXACTLY ONE SCREEN TALL.
  * Under a notice a bare 100dvh frame runs off the bottom by the notice's
  * height, the document scrolls, and whatever the frame pins to its bottom edge
- * (the shell's account menu, a studio's submit bar) is cut off. A guard in the
- * notice's test fails on one. Overlays that cover everything — slide-overs —
+ * (the shell's account menu, a studio's submit bar) is cut off. A guard in
+ * ./screen.test.ts fails on one. Overlays that cover everything — slide-overs —
  * keep 100dvh on purpose.
  */
 export const SCREEN = "calc(100dvh - var(--ep-notice-h, 0px))";
