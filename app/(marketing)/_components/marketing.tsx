@@ -7,11 +7,14 @@
 
 import Link from "next/link";
 
+import { PageUpdated } from "@/app/_landing/_components/page-updated";
+import { webPage, type DatedPath } from "@/lib/seo";
 import { postsForSkill, type BlogSkill } from "@/lib/blog";
 import { loadPosts } from "@/lib/blog/store";
 import { CONTACT_EMAIL } from "@/lib/contact";
-import { translator } from "@/lib/i18n";
-import { SOURCE_LOCALE } from "@/lib/i18n/locales";
+import { translator, type MessageKey } from "@/lib/i18n";
+import { localePath, SOURCE_LOCALE, type Locale } from "@/lib/i18n/locales";
+import { QUESTION_BANK_PATH } from "@/lib/prompts/question-bank";
 
 import {
   BODY,
@@ -28,12 +31,52 @@ import {
 const SERIF = DISPLAY;
 const ACCENT = BRAND;
 
-export function PageTitle({ title, lead }: { title: string; lead: string }) {
+/**
+ * The column every marketing page sits in. Exported because a page that also
+ * exists in /uz and /ru renders its localised twin inside `LocalisedFrame`
+ * instead of this route group's layout, and the two must be the same column.
+ *
+ * ⚠️ `locale` ON THE BLOCKS BELOW defaults to the source language, so the
+ * English-only pages render exactly as they did; a localised page passes its own.
+ */
+export const MARKETING_MAIN: React.CSSProperties = {
+  maxWidth: 860,
+  margin: "0 auto",
+  padding: "clamp(48px,7vw,88px) 28px 96px",
+};
+
+/**
+ * The page's <h1> and lead. Given the page's own `path`, it also states when
+ * the page last changed — the "Updated …" line under the title and a WebPage
+ * node with the same `dateModified` — both from `pageUpdated(path)`, the day
+ * the sitemap gives that URL. Every page in this group passes it
+ * (app/page-dates.test.tsx); `locale` is for a page served in several languages.
+ */
+export function PageTitle({
+  title,
+  lead,
+  path,
+  locale,
+  webPageNode = true,
+}: {
+  title: string;
+  lead: string;
+  path?: DatedPath;
+  locale?: Locale;
+  /** `false` for a page whose own JSON-LD already describes it (the Task 2
+   *  question bank's CollectionPage, which carries the same `dateModified`):
+   *  a second node with the same `#page` @id would contradict the first. */
+  webPageNode?: boolean;
+}) {
   return (
     <header style={{ marginBottom: 34 }}>
+      {path && webPageNode && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPage({ path, name: title, locale })) }} />
+      )}
       <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: "clamp(30px,4.5vw,40px)", fontWeight: 600, letterSpacing: "-.015em", lineHeight: 1.15, color: INK }}>
         {title}
       </h1>
+      {path && <PageUpdated path={path} locale={locale} style={{ marginTop: 10 }} />}
       <p style={{ margin: "14px 0 0", fontSize: 17, lineHeight: 1.65, color: MUTED }}>{lead}</p>
     </header>
   );
@@ -108,7 +151,7 @@ export function CompareTable({
 }
 
 /** FAQ block that also emits FAQPage JSON-LD (answers must be plain text). */
-export function Faq({ items }: { items: { q: string; a: string }[] }) {
+export function Faq({ items, locale = SOURCE_LOCALE }: { items: { q: string; a: string }[]; locale?: Locale }) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -121,7 +164,9 @@ export function Faq({ items }: { items: { q: string; a: string }[] }) {
   return (
     <section style={{ marginBottom: 32 }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <h2 style={{ margin: 0, fontFamily: SERIF, fontSize: 23, fontWeight: 600, letterSpacing: "-.01em", color: INK }}>Frequently asked questions</h2>
+      <h2 style={{ margin: 0, fontFamily: SERIF, fontSize: 23, fontWeight: 600, letterSpacing: "-.01em", color: INK }}>
+        {translator(locale)("mkt.faqTitle")}
+      </h2>
       <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14 }}>
         {items.map((it) => (
           <div key={it.q} style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 12, padding: "14px 16px" }}>
@@ -145,10 +190,11 @@ export function Faq({ items }: { items: { q: string; a: string }[] }) {
  * so publishing a reading article adds it here with no edit. Renders nothing
  * for a skill with no posts yet.
  */
-export async function FromTheBlog({ skill }: { skill: BlogSkill }) {
+export async function FromTheBlog({ skill, locale = SOURCE_LOCALE }: { skill: BlogSkill; locale?: Locale }) {
   const posts = postsForSkill(await loadPosts(), skill);
   if (!posts.length) return null;
-  const t = translator(SOURCE_LOCALE);
+  // The heading follows the page; the articles are English (the blog is).
+  const t = translator(locale);
   return (
     <section style={{ marginBottom: 32 }}>
       <h2 style={{ margin: 0, fontFamily: SERIF, fontSize: 23, fontWeight: 600, letterSpacing: "-.01em", color: INK }}>{t("blog.eyebrow")}</h2>
@@ -166,7 +212,8 @@ export async function FromTheBlog({ skill }: { skill: BlogSkill }) {
   );
 }
 
-export function Cta({ title, sub }: { title: string; sub: string }) {
+export function Cta({ title, sub, locale = SOURCE_LOCALE }: { title: string; sub: string; locale?: Locale }) {
+  const t = translator(locale);
   return (
     <section
       style={{
@@ -187,36 +234,44 @@ export function Cta({ title, sub }: { title: string; sub: string }) {
       </div>
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
         <Link href="/sign-in" style={{ background: ACCENT, color: WHITE, fontWeight: 700, fontSize: 15, borderRadius: 999, padding: "12px 20px", textDecoration: "none", whiteSpace: "nowrap" }}>
-          Start free
+          {t("mkt.ctaStart")}
         </Link>
-        <Link href="/#pricing" style={{ color: BRAND_TINT_LINE, fontWeight: 600, fontSize: 14.5, textDecoration: "none", whiteSpace: "nowrap" }}>
-          See pricing →
+        {/* The pricing on the front page in the page's own language. */}
+        <Link
+          href={`${localePath("/", locale)}#pricing`}
+          style={{ color: BRAND_TINT_LINE, fontWeight: 600, fontSize: 14.5, textDecoration: "none", whiteSpace: "nowrap" }}
+        >
+          {t("mkt.ctaPricing")}
         </Link>
       </div>
     </section>
   );
 }
 
-const RELATED = [
-  { href: "/ielts-practice", label: "IELTS practice online" },
-  { href: "/ielts-writing-practice", label: "IELTS Writing practice" },
-  { href: "/ielts-reading-practice", label: "IELTS Reading practice" },
-  { href: "/ielts-listening-practice", label: "IELTS Listening practice" },
-  { href: "/ielts-speaking-practice", label: "IELTS Speaking practice" },
-  { href: "/cefr-multilevel-practice", label: "CEFR / Multilevel (DTM)" },
-  { href: "/for-education-centers", label: "For education centres" },
-  { href: "/grade", label: "Free IELTS writing checker" },
+const RELATED: { href: string; label: MessageKey }[] = [
+  { href: "/ielts-practice", label: "mkt.relIeltsPractice" },
+  { href: "/ielts-writing-practice", label: "mkt.relWriting" },
+  { href: QUESTION_BANK_PATH, label: "mkt.relTask2Questions" },
+  { href: "/ielts-reading-practice", label: "mkt.relReading" },
+  { href: "/ielts-listening-practice", label: "mkt.relListening" },
+  { href: "/ielts-speaking-practice", label: "mkt.relSpeaking" },
+  { href: "/cefr-multilevel-practice", label: "mkt.relCefr" },
+  { href: "/for-education-centers", label: "mkt.relCenters" },
+  { href: "/grade", label: "mkt.relGrade" },
 ];
 
-/** Cross-links between the marketing pages (skips the page it renders on). */
-export function Related({ current }: { current: string }) {
+/** Cross-links between the marketing pages (skips the page it renders on).
+ *  The labels follow the page's language; most targets are English-only pages,
+ *  so the links themselves stay on the bare URLs. */
+export function Related({ current, locale = SOURCE_LOCALE }: { current: string; locale?: Locale }) {
+  const t = translator(locale);
   const links = RELATED.filter((l) => l.href !== current);
   return (
     <nav style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${LINE}`, display: "flex", flexWrap: "wrap", gap: "10px 22px" }}>
-      <span style={{ fontSize: 13.5, fontWeight: 700, color: MUTED }}>More:</span>
+      <span style={{ fontSize: 13.5, fontWeight: 700, color: MUTED }}>{t("mkt.more")}</span>
       {links.map((l) => (
         <Link key={l.href} href={l.href} style={{ fontSize: 13.5, fontWeight: 600, color: ACCENT, textDecoration: "none" }}>
-          {l.label}
+          {t(l.label)}
         </Link>
       ))}
     </nav>

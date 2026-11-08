@@ -35,6 +35,7 @@ const SAME_ON_PURPOSE: Record<string, string> = {
   "nav.ielts": "IELTS is a proper noun",
   "blog.catIelts": "IELTS is a proper noun",
   "blog.catMultilevel": "the exam's own name, used as-is in Uzbek and Russian",
+  "mkt.relCefr": "the framework's and the exam's own names, as blog.catMultilevel and nav.cefr",
   "blog.name": "Uzbek uses the loanword blog",
   "nav.blog": "Uzbek uses the loanword blog — the same word as blog.name",
   "card.pro": "the plan is called Pro on the invoice in every language",

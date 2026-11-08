@@ -43,8 +43,10 @@ export function LocalisedFrame({
   children,
 }: {
   locale: Locale;
-  /** The page's JSON-LD. */
-  structuredData: object;
+  /** The page's JSON-LD. Optional for a page whose body renders its own,
+   *  because the data is built from what that body fetches (the free practice
+   *  page's graph lists the practices it drew for this visitor). */
+  structuredData?: object;
   /** Stylesheets the page needs beyond the shared one. */
   css?: string[];
   children: React.ReactNode;
@@ -59,11 +61,13 @@ export function LocalisedFrame({
         {css.map((sheet, i) => (
           <style key={i}>{sheet}</style>
         ))}
-        <script
-          type="application/ld+json"
-          // `<` escaped, so no string in the graph can close the script tag.
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
-        />
+        {structuredData ? (
+          <script
+            type="application/ld+json"
+            // `<` escaped, so no string in the graph can close the script tag.
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
+          />
+        ) : null}
         <SiteHeader />
         {children}
         <CentersBand />

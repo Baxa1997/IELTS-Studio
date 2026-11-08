@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { BANK_QUESTION_COUNT, QUESTION_BANK_PATH } from "@/lib/prompts/question-bank";
+
 import { A, B, Cta, Faq, LI, P, PageTitle, Related, Sec, UL } from "../_components/marketing";
 
 export const metadata: Metadata = {
@@ -14,6 +16,7 @@ export default function IeltsPracticePage() {
   return (
     <article>
       <PageTitle
+        path="/ielts-practice"
         title="IELTS practice that tells you your real band"
         lead="Most IELTS apps hand out generous scores to keep you happy. EngProgress — an AI platform covering all four IELTS skills, plus CEFR / Multilevel — does the opposite: calibrated, examiner-strict feedback, so the band you see in practice is the band you can expect on exam day."
       />
@@ -25,7 +28,9 @@ export default function IeltsPracticePage() {
           scores — Task Response, Coherence &amp; Cohesion, Lexical Resource, and Grammatical Range &amp;
           Accuracy. For each criterion you get the evidence from your own essay, the exact thing capping
           your band, and the fix. Then the part most tools skip: resubmit the <B>same essay</B> after
-          revising and watch the band move — coaching across drafts, not score-and-forget.
+          revising and watch the band move — coaching across drafts, not score-and-forget. Want a question
+          to start on? Browse <A href={QUESTION_BANK_PATH}>{BANK_QUESTION_COUNT} IELTS Writing Task 2
+          questions by topic</A>.
         </P>
         <P>
           <B>Reading.</B> Original academic passages in the authentic exam layout with every real question

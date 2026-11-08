@@ -14,6 +14,7 @@ export default function ForEducationCentersPage() {
   return (
     <article>
       <PageTitle
+        path="/for-education-centers"
         title="Run your IELTS centre on EngProgress"
         lead="Your teachers already know what their students get wrong. What they do not have is the twenty hours a week it would take to mark every essay, every reading paper and every speaking mock — and prove it to a parent. That is the part we do."
       />

@@ -16,12 +16,16 @@ import { describe, expect, it } from "vitest";
 import { en } from "@/lib/i18n/messages/en";
 import { ru } from "@/lib/i18n/messages/ru";
 import { uz } from "@/lib/i18n/messages/uz";
+import { pageUpdated } from "@/lib/seo";
 
-import { FREE_LIMIT, GRADE_FACTS_CHECKED, IELTS_WRITING_DESCRIPTORS_URL } from "./facts";
+import { FREE_LIMIT, IELTS_WRITING_DESCRIPTORS_URL } from "./facts";
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const env = read("../../../lib/env.ts");
-const page = read("../page.tsx");
+// The page body, metadata and JSON-LD — moved out of page.tsx when /grade got
+// its /uz and /ru twins, so every locale is held to the same facts.
+const page = read("../_components/grade-page.tsx");
+const facts = read("./facts.ts");
 const grader = read("../_components/grader.tsx");
 
 describe("/grade facts", () => {
@@ -47,10 +51,18 @@ describe("/grade facts", () => {
   });
 
   it("carry a real check date, shown and sent as dateModified", () => {
-    expect(GRADE_FACTS_CHECKED).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(Number.isNaN(Date.parse(GRADE_FACTS_CHECKED))).toBe(false);
+    const checked = pageUpdated("/grade");
+    expect(checked).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(Number.isNaN(Date.parse(checked))).toBe(false);
+    expect(page).toContain('const GRADE_FACTS_CHECKED = pageUpdated("/grade");');
     expect(page).toContain("dateModified: GRADE_FACTS_CHECKED");
     expect(page).toContain("<time dateTime={GRADE_FACTS_CHECKED}>");
+  });
+
+  it("keep that date in one place, the one the sitemap reads", () => {
+    /* It was typed in ./facts.ts while the sitemap gave /grade no date at all;
+       a second copy here is how the page and the sitemap would part again. */
+    expect(facts.replace(/\/\*[\s\S]*?\*\//g, "")).not.toMatch(/\d{4}-\d{2}-\d{2}/);
   });
 
   it("name the exam in the page's one <h1>, in every language", () => {

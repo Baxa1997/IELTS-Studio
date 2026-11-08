@@ -22,6 +22,11 @@ const LOCALISED = new Set([
   "/how-to-use/education-centers",
   "/ielts-band-score-calculator",
   "/multilevel-score-calculator",
+  // The one marketing page written for Uzbekistan's own exam (2026-11-08).
+  "/cefr-multilevel-practice",
+  // /grade and /practice/cefr: owner, 2026-11-08 (practice: LOCALISED_PRACTICE).
+  "/grade",
+  "/practice/cefr",
 ]);
 
 /** Rebuilt from the cached post list; a save in /admin refreshes it. */
@@ -52,13 +57,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 }
 
 /**
- * ⚠️ NO `lastModified` ON THE OTHER PAGES — deliberately absent, not forgotten.
+ * ⚠️ A PAGE GETS A `lastModified` ONLY IF SOMETHING RECORDS WHEN IT CHANGED.
  * It used to be `new Date()`: the moment this file was regenerated, which is
  * every hour, on every page whether it had changed or not. Bing and Google
  * both learn to ignore a `lastmod` that is always "now", and once they do they
  * ignore it for the whole sitemap, the articles' dates included, which are
- * true. Nothing records when a marketing page last changed, and no date is
- * better than a made-up one. app/sitemap.test.ts holds this.
+ * true. So a route carries the `updated` day PUBLIC_ROUTES records for it —
+ * the same day the page itself shows and sends as `dateModified` — and a
+ * route with none carries nothing: no date is better than a made-up one.
+ * app/sitemap.test.ts and app/page-dates.test.tsx hold this.
  */
 function pages(blogChanged: Date | undefined): MetadataRoute.Sitemap {
   return PUBLIC_ROUTES.flatMap((route) => {
@@ -70,6 +77,7 @@ function pages(blogChanged: Date | undefined): MetadataRoute.Sitemap {
     return locales.map((locale) => ({
       url: absoluteUrl(localePath(route.path, locale)),
       ...(route.path === "/blog" && blogChanged ? { lastModified: blogChanged } : {}),
+      ...("updated" in route ? { lastModified: new Date(`${route.updated}T00:00:00Z`) } : {}),
       changeFrequency: route.changeFrequency,
       priority: route.priority,
       /* Each entry names all three, which is the sitemap half of the same

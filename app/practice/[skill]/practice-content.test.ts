@@ -129,7 +129,7 @@ describe("the page says what a practice is, in the pools' own numbers", () => {
   });
 
   it("leads with the summary, straight under the heading", () => {
-    const page = read("app/practice/[skill]/page.tsx");
+    const page = read("app/practice/[skill]/_components/practice-page.tsx"); // the page body, shared by the three locales
     const heading = page.indexOf("{t(TITLE[skill])}");
     const summary = page.indexOf("{practiceSummary(skill, t)}");
     expect(heading).toBeGreaterThan(-1);
@@ -156,7 +156,7 @@ describe("the page's search title and its heading", () => {
   });
 
   it("puts the search title in <title>, the heading stays on the page", () => {
-    const page = read("app/practice/[skill]/page.tsx");
+    const page = read("app/practice/[skill]/_components/practice-page.tsx"); // the page body, shared by the three locales
     expect(page).toContain("const title = t(FREE_PAGE_SEO_TITLE[skill]);");
     expect(page).toContain("{t(TITLE[skill])}");
   });

@@ -3,7 +3,8 @@ import { SKILL_TOPIC } from "@/lib/blog";
 import type { PoolItem } from "@/lib/free-practice/assignment";
 import { freePracticePage, freeRunner } from "@/lib/free-practice/links";
 import type { FreeSkill } from "@/lib/free-practice/rotation";
-import { absoluteUrl, organization } from "@/lib/seo";
+import { HTML_LANG, localePath, SOURCE_LOCALE, type Locale } from "@/lib/i18n/locales";
+import { absoluteUrl, organization, pageUpdated } from "@/lib/seo";
 
 /**
  * A free-practice page's structured data, as one graph — the page, the
@@ -35,6 +36,7 @@ export function practiceGraph({
   posts,
   name,
   home,
+  locale = SOURCE_LOCALE,
 }: {
   skill: FreeSkill;
   title: string;
@@ -46,9 +48,12 @@ export function practiceGraph({
   name: (item: PoolItem) => string;
   /** The breadcrumb's first step, as the blog names it. */
   home: string;
+  /** The PAGE's language (/uz/practice/cefr is Uzbek). The practices it lists
+   *  stay English — they are the exam — and say so on their own nodes. */
+  locale?: Locale;
 }) {
-  const site = absoluteUrl("/").replace(/\/$/, "");
-  const url = absoluteUrl(freePracticePage(skill));
+  const homeUrl = absoluteUrl(localePath("/", locale));
+  const url = absoluteUrl(localePath(freePracticePage(skill), locale));
   const org = organization();
   const about = { "@type": "Thing", name: SKILL_TOPIC[skill] };
 
@@ -61,10 +66,13 @@ export function practiceGraph({
         name: title,
         description,
         url,
-        inLanguage: "en",
+        inLanguage: HTML_LANG[locale],
         isAccessibleForFree: true,
         about,
         publisher: org,
+        // The page's own words, not today's practices — the same day its
+        // "Updated" line and the sitemap state (PUBLIC_ROUTES in lib/seo.ts).
+        dateModified: pageUpdated(freePracticePage(skill)),
         mainEntity: { "@id": `${url}#practices` },
         ...(posts.length ? { relatedLink: posts.map((p) => absoluteUrl(`/blog/${p.slug}`)) } : {}),
       },
@@ -93,7 +101,7 @@ export function practiceGraph({
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: home, item: `${site}/` },
+          { "@type": "ListItem", position: 1, name: home, item: homeUrl },
           { "@type": "ListItem", position: 2, name: title, item: url },
         ],
       },

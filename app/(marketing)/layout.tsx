@@ -7,6 +7,8 @@ import {
   WHITE,
 } from "@/app/_landing/_lib/design";
 
+import { MARKETING_MAIN } from "./_components/marketing";
+
 /** Shared burgundy marketing shell for SEO landing pages. */
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,9 +17,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       style={{ minHeight: "100dvh", background: PANEL, fontFamily: SANS, color: INK }}
     >
       <SiteHeader />
-      <main style={{ maxWidth: 860, margin: "0 auto", padding: "clamp(48px,7vw,88px) 28px 96px" }}>
-        {children}
-      </main>
+      <main style={MARKETING_MAIN}>{children}</main>
       <style>{DESIGN_CSS}</style>
       <CentersBand />
       <SiteFooter />

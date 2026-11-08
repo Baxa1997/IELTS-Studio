@@ -227,7 +227,7 @@ describe("every free practice recommends signing in for more", () => {
   });
 
   it("offers it on the practice pages and under the landing section's cards", () => {
-    expect(read("app/practice/[skill]/page.tsx")).toContain("<MorePracticeBanner skill={skill} t={t} />");
+    expect(read("app/practice/[skill]/_components/practice-page.tsx")).toContain("<MorePracticeBanner skill={skill} t={t} />");
     expect(read("app/_landing/_components/landing-page.tsx")).toContain('{t("free.moreCta")} →');
   });
 });

@@ -4,6 +4,7 @@ import { FREE_PAGE_DESCRIPTION, freePracticePage } from "@/lib/free-practice/lin
 import { FREE_SKILLS } from "@/lib/free-practice/rotation";
 import { en } from "@/lib/i18n/messages/en";
 import { DEFAULT_LOCALE, LOCALE_NAMES, LOCALES, localePath } from "@/lib/i18n/locales";
+import { BANK_DESCRIPTION } from "@/lib/prompts/question-bank";
 import { absoluteUrl, FREE_PRACTICE_LABEL, PLATFORM_FEATURES, PUBLIC_ROUTES, SEO_DESCRIPTION, SITE_NAME } from "@/lib/seo";
 
 /**
@@ -31,6 +32,7 @@ export async function GET(): Promise<Response> {
   const posts = await loadPosts();
   const product = PUBLIC_ROUTES.filter((r) => r.section === "product");
   const about = PUBLIC_ROUTES.filter((r) => r.section === "about");
+  const questions = PUBLIC_ROUTES.filter((r) => r.section === "questions");
 
   const plans = PLAN_ORDER.map((id) => {
     const t = planTier(id);
@@ -86,6 +88,12 @@ export async function GET(): Promise<Response> {
     ...FREE_SKILLS.map(
       (s) => `- [${FREE_PRACTICE_LABEL[s]}](${absoluteUrl(freePracticePage(s))}): ${en[FREE_PAGE_DESCRIPTION[s]]}`,
     ),
+    "",
+    "## IELTS Writing Task 2 questions",
+    "",
+    `${BANK_DESCRIPTION} Every question is listed in full, by topic and type, in ${absoluteUrl("/llms-full.txt")}.`,
+    "",
+    ...questions.map((r) => `- [${r.label}](${absoluteUrl(r.path)})`),
     "",
     "## Blog",
     "",

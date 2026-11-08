@@ -620,6 +620,7 @@ export const uz: Messages = {
   "lp.metaDesc":
     "Toʻrtala IELTS koʻnikmasi va CEFR ni darajangizga mos original AI topshiriqlari bilan mashq qiling, soʻng kalibrlangan band va uni koʻtaradigan aniq tuzatishlarni oling.",
   "lp.metaAlt": "EngProgress IELTS mashq paneli va AI fikr-mulohazasi",
+  "mk.pageUpdated": "Yangilangan: {date}",
 
   /* ── marketing header ─────────────────────────────────────────────────── */
   "mk.navPlatform": "Platforma",
@@ -831,4 +832,18 @@ export const uz: Messages = {
     "Cambridge tayyorlagan imtihon oluvchi qoʻyadigan band — va qayerdan boshlagan boʻlsangiz ham, unga olib boradigan aniq yoʻl.",
   "hd.withFixes": "Tuzatishlar bilan 7.0",
   "language.switching": "Til almashtirilmoqda…",
+
+  "mkt.faqTitle": "Koʻp beriladigan savollar",
+  "mkt.ctaStart": "Bepul boshlash",
+  "mkt.ctaPricing": "Narxlarni koʻrish →",
+  "mkt.more": "Yana:",
+  "mkt.relIeltsPractice": "IELTS onlayn mashqlari",
+  "mkt.relWriting": "IELTS Writing mashqlari",
+  "mkt.relTask2Questions": "IELTS Writing Task 2 savollari",
+  "mkt.relReading": "IELTS Reading mashqlari",
+  "mkt.relListening": "IELTS Listening mashqlari",
+  "mkt.relSpeaking": "IELTS Speaking mashqlari",
+  "mkt.relCefr": "CEFR / Multilevel (DTM)",
+  "mkt.relCenters": "Oʻquv markazlari uchun",
+  "mkt.relGrade": "Bepul IELTS Writing tekshiruvi",
 };

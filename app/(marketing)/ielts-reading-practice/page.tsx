@@ -14,6 +14,7 @@ export default function IeltsReadingPracticePage() {
   return (
     <article>
       <PageTitle
+        path="/ielts-reading-practice"
         title="IELTS Reading practice that explains the traps"
         lead="Knowing you got question 14 wrong teaches you nothing. Knowing that you picked False where the answer was Not Given — because the passage never actually made the comparison you assumed it did — teaches you the whole question type."
       />

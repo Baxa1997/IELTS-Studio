@@ -69,10 +69,12 @@ describe("the skill pages link to the blog", () => {
     reading: "app/(marketing)/ielts-reading-practice/page.tsx",
     listening: "app/(marketing)/ielts-listening-practice/page.tsx",
     speaking: "app/(marketing)/ielts-speaking-practice/page.tsx",
-    cefr: "app/(marketing)/cefr-multilevel-practice/page.tsx",
+    // The CEFR page's body lives in its component since it got /uz and /ru twins.
+    cefr: "app/(marketing)/cefr-multilevel-practice/_components/cefr-page.tsx",
   };
 
   it.each(Object.keys(SKILL_TOPIC) as BlogSkill[])("%s", (skill) => {
-    expect(read(PAGE[skill])).toContain(`<FromTheBlog skill="${skill}" />`);
+    // A localised page passes its `locale` too; the skill is what this pins.
+    expect(read(PAGE[skill])).toMatch(new RegExp(`<FromTheBlog skill="${skill}"(?: locale=\\{locale\\})? />`));
   });
 });

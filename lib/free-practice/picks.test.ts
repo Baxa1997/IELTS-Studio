@@ -104,7 +104,7 @@ describe("the pools behind the picks", () => {
   it("are cached across requests for the picks, and fresh for everything that marks", () => {
     expect(read("lib/free-practice/picks.ts")).toContain("practiceList(skill, loadPoolCached)");
     // The practice page and the runners' list check take the default — fresh.
-    expect(read("app/practice/[skill]/page.tsx")).toContain("practiceList(skill)");
+    expect(read("app/practice/[skill]/_components/practice-page.tsx")).toContain("practiceList(skill)");
     expect(read("lib/free-practice/assignment.ts")).toMatch(
       /const list = await practiceList\(skill\);/,
     );

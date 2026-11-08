@@ -14,6 +14,7 @@ export default function IeltsWritingPracticePage() {
   return (
     <article>
       <PageTitle
+        path="/ielts-writing-practice"
         title="IELTS Writing practice that coaches one essay, not fifty"
         lead="Every AI tool will give you a band and a paragraph of advice. Almost none will let you fix the essay and be re-marked on it — which is the only part that actually teaches you anything. That loop is what we built the platform around."
       />

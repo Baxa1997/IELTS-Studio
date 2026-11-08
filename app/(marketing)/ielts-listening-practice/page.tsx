@@ -14,6 +14,7 @@ export default function IeltsListeningPracticePage() {
   return (
     <article>
       <PageTitle
+        path="/ielts-listening-practice"
         title="IELTS Listening practice with audio made for the test"
         lead="Most free listening practice is a podcast with questions bolted on. The real exam is four parts with a specific shape — a transactional conversation, a monologue, a group discussion, an academic lecture — and voices that overlap, correct themselves and change their minds. That is what we generate."
       />

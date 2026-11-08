@@ -113,6 +113,10 @@ const PUBLIC_PATHS = [
   "/ielts-speaking-practice",
   "/cefr-multilevel-practice",
   "/for-education-centers",
+  // The Task 2 question bank and every topic page under it — QUESTION_BANK_PATH
+  // in lib/prompts/question-bank.ts, spelled out because this file imports
+  // nothing it does not need; that module's test fails if the two drift.
+  "/ielts-writing-task-2-questions",
   // The free score calculators (and their /uz, /ru versions, under the prefixes above).
   "/ielts-band-score-calculator",
   "/multilevel-score-calculator",

@@ -9,7 +9,8 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { absoluteUrl } from "@/lib/seo";
+import { LOCALES, localePath } from "@/lib/i18n/locales";
+import { absoluteUrl, pageUpdated, PUBLIC_ROUTES } from "@/lib/seo";
 
 import sitemap from "./sitemap";
 
@@ -36,7 +37,19 @@ describe("sitemap dates", () => {
 
   it("gives no date to a page whose last change nobody records", () => {
     const blog = absoluteUrl("/blog");
-    const dated = entries.filter((e) => e.url !== blog && !e.url.startsWith(`${blog}/`) && e.lastModified !== undefined);
+    // The routes PUBLIC_ROUTES records an `updated` day for, in every language.
+    const recorded = new Set(
+      PUBLIC_ROUTES.flatMap((r) => ("updated" in r ? LOCALES.map((l) => absoluteUrl(localePath(r.path, l))) : [])),
+    );
+    const dated = entries.filter(
+      (e) => e.url !== blog && !e.url.startsWith(`${blog}/`) && e.lastModified !== undefined && !recorded.has(e.url),
+    );
     expect(dated.map((e) => e.url)).toEqual([]);
+  });
+
+  it("dates a page by the day PUBLIC_ROUTES records, never by the build", () => {
+    // app/page-dates.test.tsx holds the page's own line and dateModified to it.
+    expect(at("/ielts-practice")?.lastModified).toEqual(new Date(`${pageUpdated("/ielts-practice")}T00:00:00Z`));
+    expect(at("/demo")?.lastModified).toBeUndefined();
   });
 });

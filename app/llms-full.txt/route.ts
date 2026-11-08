@@ -5,6 +5,15 @@ import { FREE_PAGE_DESCRIPTION, FREE_PAGE_TITLE, freePracticePage } from "@/lib/
 import { FREE_SKILLS } from "@/lib/free-practice/rotation";
 import { translator } from "@/lib/i18n";
 import { SOURCE_LOCALE } from "@/lib/i18n/locales";
+import {
+  BANK_DESCRIPTION,
+  BANK_TOPICS,
+  CATEGORY_GUIDE,
+  categoryLabel,
+  PRACTISE_HREF,
+  QUESTION_BANK_PATH,
+  topicPath,
+} from "@/lib/prompts/question-bank";
 import { absoluteUrl, SITE_NAME } from "@/lib/seo";
 
 /**
@@ -22,6 +31,11 @@ import { absoluteUrl, SITE_NAME } from "@/lib/seo";
  * After the articles, the free practice: each skill's page with its
  * description and the questions it answers — the same text the page shows and
  * its FAQPage data carries (lib/free-practice/faq).
+ *
+ * Then the Task 2 question bank, every question in full under its topic and
+ * type, from the same module the pages render (lib/prompts/question-bank) — so
+ * an assistant asked for "Task 2 questions about crime" can quote them here
+ * and cite the topic page. Verbatim: the library's text, never a paraphrase.
  */
 export const dynamic = "force-static";
 
@@ -48,6 +62,29 @@ export async function GET(): Promise<Response> {
       `${t(FREE_PAGE_DESCRIPTION[s])} ${absoluteUrl(freePracticePage(s))}`,
       "",
       ...practiceFaq(s, t).flatMap((f) => [`### ${f.q}`, "", f.a, ""]),
+    ]),
+    "---",
+    "",
+    "# IELTS Writing Task 2 questions",
+    "",
+    `> ${BANK_DESCRIPTION} ${absoluteUrl(QUESTION_BANK_PATH)}`,
+    "",
+    `Original practice questions written by ${SITE_NAME} in the IELTS Writing Task 2 format, not taken from any ` +
+      `past paper or test book. Any of them can be written and marked free at ${absoluteUrl(PRACTISE_HREF)}.`,
+    "",
+    ...BANK_TOPICS.flatMap((topic) => [
+      `## ${topic.label} — ${topic.count} questions`,
+      "",
+      absoluteUrl(topicPath(topic.slug)),
+      "",
+      ...topic.groups.flatMap((g) => [
+        `### ${categoryLabel(g.category)}`,
+        "",
+        `${CATEGORY_GUIDE[g.category].recognise} ${CATEGORY_GUIDE[g.category].approach}`,
+        "",
+        ...g.questions.map((q) => `${q.n}. ${q.text}`),
+        "",
+      ]),
     ]),
   ].join("\n");
 

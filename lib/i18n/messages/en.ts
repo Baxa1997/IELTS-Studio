@@ -671,6 +671,9 @@ export const en = {
   "lp.metaDesc":
     "Practise all four IELTS skills and CEFR with original, AI-generated tasks at your level, then get a calibrated band and the exact fixes that raise it.",
   "lp.metaAlt": "EngProgress IELTS practice dashboard and AI feedback",
+  /** The quiet line under a public page's title: the day its content last
+   *  changed — the same day the sitemap and its `dateModified` state. */
+  "mk.pageUpdated": "Updated {date}",
 
   /* ── marketing header ─────────────────────────────────────────────────── */
   "mk.navPlatform": "Platform",
@@ -880,6 +883,21 @@ export const en = {
     "The band a Cambridge-trained examiner would award — and the exact path there from wherever you are starting.",
   "hd.withFixes": "7.0 with fixes",
   "language.switching": "Switching language…",
+
+  /* ── marketing pages' shared blocks (app/(marketing)/_components/marketing) ── */
+  "mkt.faqTitle": "Frequently asked questions",
+  "mkt.ctaStart": "Start free",
+  "mkt.ctaPricing": "See pricing →",
+  "mkt.more": "More:",
+  "mkt.relIeltsPractice": "IELTS practice online",
+  "mkt.relWriting": "IELTS Writing practice",
+  "mkt.relTask2Questions": "IELTS Writing Task 2 questions",
+  "mkt.relReading": "IELTS Reading practice",
+  "mkt.relListening": "IELTS Listening practice",
+  "mkt.relSpeaking": "IELTS Speaking practice",
+  "mkt.relCefr": "CEFR / Multilevel (DTM)",
+  "mkt.relCenters": "For education centres",
+  "mkt.relGrade": "Free IELTS writing checker",
 } as const;
 
 /** The key set every locale must satisfy. */

@@ -87,7 +87,8 @@ describe("a practice page's structured data", () => {
   });
 
   it("is rendered from the same FAQ list the page shows", () => {
-    const page = read("app/practice/[skill]/page.tsx");
+    // The page body moved into its view when the page got /uz and /ru twins.
+    const page = read("app/practice/[skill]/_components/practice-page.tsx");
     expect(page).toContain("const faq = practiceFaq(skill, t);");
     expect(page).toMatch(/practiceGraph\(\{[\s\S]*?\bfaq,[\s\S]*?\}\)/);
     expect(page).toContain('<PracticeFaq faq={faq} title={t("free.faqTitle")} />');
@@ -148,6 +149,6 @@ describe("an article and its skill's practice link both ways", () => {
 
   it("the article page shows it, and the practice page lists the articles", () => {
     expect(read("app/blog/_components/article-view.tsx")).toContain("<FreePracticeNote post={post} />");
-    expect(read("app/practice/[skill]/page.tsx")).toContain("postsForSkill(posts, skill)");
+    expect(read("app/practice/[skill]/_components/practice-page.tsx")).toContain("postsForSkill(posts, skill)");
   });
 });

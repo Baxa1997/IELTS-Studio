@@ -34,10 +34,16 @@ const unverified = readdirSync(join(root, anchorsDir)).some((f) =>
 
 const PUBLIC = [
   "app/(auth)/sign-in/page.tsx",
-  "app/grade/page.tsx",
+  // The checker's page moved into a component when it got /uz and /ru twins.
+  "app/grade/_components/grade-page.tsx",
   "app/(marketing)/ielts-practice/page.tsx",
   "app/(marketing)/ielts-writing-practice/page.tsx",
   "app/(marketing)/ielts-speaking-practice/page.tsx",
+  // The Task 2 question bank: its pages, and the per-type notes llms-full.txt
+  // repeats word for word.
+  "app/(marketing)/ielts-writing-task-2-questions/page.tsx",
+  "app/(marketing)/ielts-writing-task-2-questions/[topic]/page.tsx",
+  "lib/prompts/question-bank.ts",
   "lib/seo.ts",
   "lib/i18n/messages/en.ts",
   // The articles that moved from code into the database came in through this

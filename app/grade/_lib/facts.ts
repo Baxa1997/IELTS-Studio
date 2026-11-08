@@ -10,13 +10,12 @@
  */
 export const FREE_LIMIT = 3;
 
-/**
- * The day the page's facts were last checked against the code. Shown on the
- * page and sent as `dateModified`, because answer engines weigh a page's
- * freshness — so it is a promise: move it only when the facts were re-read,
- * never to look recent.
- */
-export const GRADE_FACTS_CHECKED = "2026-10-21";
+/* The day the page's facts were last checked is NOT here any more: it is
+   `/grade`'s `updated` in PUBLIC_ROUTES (lib/seo.ts), which the sitemap states
+   as this page's `lastmod`, and page.tsx reads it with `pageUpdated()`.
+   ⚠️ Do not bring it back as a value in this file — the client grader imports
+   this module, and a call into lib/seo here would ship every public route to
+   the browser with it. */
 
 /** The official public IELTS Writing band descriptors (May 2023), on ielts.org —
  *  the document the rubric in .claude/skills/ielts-examiner restates. */

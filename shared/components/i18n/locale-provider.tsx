@@ -59,6 +59,9 @@ const LOCALISED_ROUTES = new Set([
   "/how-to-use/education-centers",
   "/ielts-band-score-calculator",
   "/multilevel-score-calculator",
+  "/cefr-multilevel-practice",
+  "/grade",
+  "/practice/cefr",
 ]);
 
 /**

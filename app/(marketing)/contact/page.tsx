@@ -16,6 +16,7 @@ export default function ContactPage() {
   return (
     <article>
       <PageTitle
+        path="/contact"
         title="Contact us"
         lead="Questions, feedback, billing, or a band score you want to query — we read every message and usually reply within one business day."
       />

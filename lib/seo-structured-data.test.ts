@@ -88,6 +88,7 @@ describe("share cards", () => {
 
   it("finds the openGraph objects it is checking", () => {
     // Without this, a regex that stopped matching would pass every page.
-    expect(openGraphBlocks(readFileSync("app/grade/page.tsx", "utf8"))).toHaveLength(1);
+    // /grade's metadata lives with its page component, shared by the three locales.
+    expect(openGraphBlocks(readFileSync("app/grade/_components/grade-page.tsx", "utf8"))).toHaveLength(1);
   });
 });

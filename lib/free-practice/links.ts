@@ -26,8 +26,9 @@ export const FREE_RUNNER_BASE: Record<FreeSkill, string> = {
 export const freeRunner = (skill: FreeSkill, key: string) =>
   `${FREE_RUNNER_BASE[skill]}/${encodeURIComponent(key)}`;
 
-/** The listing page of dated cards for a skill. */
-export const freePracticePage = (skill: FreeSkill) => `/practice/${skill}`;
+/** The listing page of dated cards for a skill. A literal type rather than
+ *  `string`, so lib/seo can tell, at compile time, which pages carry a date. */
+export const freePracticePage = <S extends FreeSkill>(skill: S) => `/practice/${skill}` as const;
 
 /** Each listing page's name — its heading, its share card, and what an article
  *  about the skill calls it when it links there. */

@@ -1,6 +1,8 @@
 import { OFFICIAL_PROFILES } from "@/lib/contact";
 import { freePracticePage } from "@/lib/free-practice/links";
 import { FREE_SKILLS, type FreeSkill } from "@/lib/free-practice/rotation";
+import { HTML_LANG, localePath, SOURCE_LOCALE, type Locale } from "@/lib/i18n/locales";
+import { BANK_QUESTION_COUNT, BANK_TOPICS, QUESTION_BANK_PATH, topicPath } from "@/lib/prompts/question-bank";
 
 export const SITE_NAME = "EngProgress";
 // JPEG, not PNG: the same card as a PNG was 744 kB, and several chat apps skip a
@@ -157,13 +159,57 @@ export const FREE_PRACTICE_LABEL: Record<FreeSkill, string> = {
   cefr: "Free daily CEFR Multilevel (Uzbekistan) practice — Reading and Writing papers, no account needed",
 };
 
+/**
+ * The day each free-practice page's own words last changed — the heading, the
+ * summary, the facts and the FAQ, not the practices on it, which rotate per
+ * visitor every day (that is what `changeFrequency: "daily"` says). See
+ * `updated` on PUBLIC_ROUTES. A `Record`, so a new skill cannot ship undated.
+ */
+export const FREE_PRACTICE_UPDATED: Record<FreeSkill, string> = {
+  writing: "2026-10-18",
+  reading: "2026-10-18",
+  listening: "2026-10-18",
+  cefr: "2026-10-18",
+};
+
 const PRACTICE_ROUTES = FREE_SKILLS.map((skill) => ({
   path: freePracticePage(skill),
   label: FREE_PRACTICE_LABEL[skill],
   section: "practice" as const,
   priority: 0.8,
   changeFrequency: "daily" as const,
+  updated: FREE_PRACTICE_UPDATED[skill],
 }));
+
+/**
+ * The Task 2 question bank: the hub and one page per topic that has enough
+ * questions for one — derived, so a topic that reaches the bar is in the
+ * sitemap and llms.txt the day the library does.
+ */
+/** The day the question bank's pages were written (2026-11-08). They are
+ *  the library's questions, so this moves when the bank's own words change —
+ *  a new topic page, a new type note — not when a question is added to the
+ *  library (the sitemap's `changeFrequency` covers that). */
+const QUESTION_BANK_UPDATED = "2026-11-08";
+
+const QUESTION_BANK_ROUTES = [
+  {
+    path: QUESTION_BANK_PATH,
+    label: `IELTS Writing Task 2 questions by topic — ${BANK_QUESTION_COUNT} original practice questions in ${BANK_TOPICS.length} topics`,
+    section: "questions" as const,
+    priority: 0.8,
+    changeFrequency: "monthly" as const,
+    updated: QUESTION_BANK_UPDATED,
+  },
+  ...BANK_TOPICS.map((t) => ({
+    path: topicPath(t.slug),
+    label: `IELTS Writing Task 2 ${t.slug} questions — ${t.count} original practice questions`,
+    section: "questions" as const,
+    priority: 0.7,
+    changeFrequency: "monthly" as const,
+    updated: QUESTION_BANK_UPDATED,
+  })),
+] as const;
 
 /**
  * Every page a signed-out visitor — or a crawler — can actually read.
@@ -177,18 +223,28 @@ const PRACTICE_ROUTES = FREE_SKILLS.map((skill) => ({
  * advertised a URL no crawler could index. The public prices are the landing
  * page's #pricing section. A new public page ALSO needs PUBLIC_PATHS in
  * lib/supabase/middleware.ts, or every crawler is redirected away from it.
+ *
+ * `updated` IS THE ONE DATE A PAGE HAS. The sitemap's `lastmod`, the page's
+ * visible "Updated …" line and its JSON-LD `dateModified` all read it here
+ * (`pageUpdated()` below; app/page-dates.test.tsx renders each page to hold
+ * the three equal). Each value is the day that page's own words last changed,
+ * read off git history on 2026-11-08 — path-only refactors do not count.
+ * ⚠️ MOVE ONE ONLY WHEN THAT PAGE'S CONTENT CHANGED OR WAS RE-CHECKED, never
+ * to look recent: answer engines weigh freshness, and Bing and Google learn to
+ * ignore a site whose dates move without the page moving (app/sitemap.ts).
+ * A route with no `updated` states no date anywhere, which is honest too.
  */
 export const PUBLIC_ROUTES = [
   { path: "/", label: "EngProgress — IELTS and CEFR practice with AI band feedback", section: "product", priority: 1, changeFrequency: "weekly" },
-  { path: "/grade", label: "Free IELTS and CEFR writing checker — Task 1, Task 2 and Multilevel writing, a band or level per criterion, no account needed", section: "product", priority: 0.85, changeFrequency: "monthly" },
+  { path: "/grade", label: "Free IELTS and CEFR writing checker — Task 1, Task 2 and Multilevel writing, a band or level per criterion, no account needed", section: "product", priority: 0.85, changeFrequency: "monthly", updated: "2026-10-21" },
   { path: "/demo", label: "Interactive product demo", section: "product", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/ielts-practice", label: "IELTS practice — all four skills", section: "product", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/ielts-writing-practice", label: "IELTS Writing practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/ielts-reading-practice", label: "IELTS Reading practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/ielts-listening-practice", label: "IELTS Listening practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/ielts-speaking-practice", label: "IELTS Speaking practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/cefr-multilevel-practice", label: "CEFR / Multilevel (Uzbekistan DTM) practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/for-education-centers", label: "For education centres — teachers, groups, homework and reports", section: "product", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/ielts-practice", label: "IELTS practice — all four skills", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-09-26" },
+  { path: "/ielts-writing-practice", label: "IELTS Writing practice", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-09-27" },
+  { path: "/ielts-reading-practice", label: "IELTS Reading practice", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-09-27" },
+  { path: "/ielts-listening-practice", label: "IELTS Listening practice", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-09-27" },
+  { path: "/ielts-speaking-practice", label: "IELTS Speaking practice", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-09-27" },
+  { path: "/cefr-multilevel-practice", label: "CEFR / Multilevel (Uzbekistan DTM) practice", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-11-08" },
+  { path: "/for-education-centers", label: "For education centres — teachers, groups, homework and reports", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-09-05" },
   // The two free score calculators. Spelled out because lib/ may not import
   // app/(tools)/_lib/page-meta.ts; app/(tools)/tools-routes.test.ts holds the two in step.
   { path: "/ielts-band-score-calculator", label: "IELTS band score calculator — overall band with the official rounding rule, Listening and Reading score tables, CEFR level", section: "product", priority: 0.85, changeFrequency: "monthly" },
@@ -202,16 +258,58 @@ export const PUBLIC_ROUTES = [
   // FREE_SKILLS is in the sitemap and llms.txt without a second edit. The
   // runners behind them (/read/free, /cefr/free …) are tools, not pages to rank.
   ...PRACTICE_ROUTES,
+  ...QUESTION_BANK_ROUTES,
   { path: "/sign-in", label: "Sign in", section: "about", priority: 0.3, changeFrequency: "yearly" },
-  { path: "/contact", label: "Contact and support", section: "about", priority: 0.4, changeFrequency: "yearly" },
+  { path: "/contact", label: "Contact and support", section: "about", priority: 0.4, changeFrequency: "yearly", updated: "2026-09-20" },
   { path: "/privacy", label: "Privacy policy", section: "about", priority: 0.2, changeFrequency: "yearly" },
   { path: "/terms", label: "Terms of service", section: "about", priority: 0.2, changeFrequency: "yearly" },
 ] as const satisfies ReadonlyArray<{
   path: string;
   label: string;
   /** Where llms.txt lists it: "practice" is its own section there, so an
-   *  answer engine asked "where can I practise for free?" finds the list. */
-  section: "product" | "practice" | "about";
+   *  answer engine asked "where can I practise for free?" finds the list —
+   *  and "questions" too, for "give me Task 2 questions about …". */
+  section: "product" | "practice" | "questions" | "about";
   priority: number;
   changeFrequency: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
+  /** `YYYY-MM-DD`: the day the page's content last changed — see above. */
+  updated?: string;
 }>;
+
+/** A public page that states the day it last changed. */
+export type DatedPath = Extract<(typeof PUBLIC_ROUTES)[number], { updated: string }>["path"];
+
+/**
+ * The day `path` last changed, `YYYY-MM-DD` — what its "Updated …" line shows
+ * and what its JSON-LD sends as `dateModified`. Typed to the dated routes, so
+ * asking for a page with no recorded date is a compile error, not a blank.
+ */
+export function pageUpdated(path: DatedPath): string {
+  const route = PUBLIC_ROUTES.find((r) => r.path === path);
+  if (!route || !("updated" in route)) throw new Error(`No date recorded for ${path} in PUBLIC_ROUTES`);
+  return route.updated;
+}
+
+/**
+ * A page's own node for its JSON-LD: what it is called, which language it is
+ * in, who publishes it, and when it last changed — for the pages that have no
+ * richer node of their own (/grade is a WebApplication, a practice page a
+ * CollectionPage; both read `pageUpdated()` directly).
+ *
+ * `locale` only for a page served in several languages: it moves the URL to
+ * that language's address. Without it the URL is the bare path, which is where
+ * every single-language page lives.
+ */
+export function webPage({ path, name, locale }: { path: DatedPath; name: string; locale?: Locale }) {
+  const url = absoluteUrl(locale ? localePath(path, locale) : path);
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${url}#page`,
+    url,
+    name,
+    inLanguage: HTML_LANG[locale ?? SOURCE_LOCALE],
+    dateModified: pageUpdated(path),
+    publisher: organization(),
+  };
+}

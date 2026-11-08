@@ -617,6 +617,7 @@ export const ru: Messages = {
   "lp.metaDesc":
     "Тренируйте все четыре навыка IELTS и CEFR на оригинальных заданиях под ваш уровень, получайте откалиброванный band и конкретные правки для его повышения.",
   "lp.metaAlt": "Панель практики IELTS EngProgress и разбор от ИИ",
+  "mk.pageUpdated": "Обновлено {date}",
 
   /* ── marketing header ─────────────────────────────────────────────────── */
   "mk.navPlatform": "Платформа",
@@ -826,4 +827,18 @@ export const ru: Messages = {
     "Балл, который поставил бы экзаменатор с подготовкой Cambridge, — и точный путь к нему, откуда бы вы ни начинали.",
   "hd.withFixes": "7.0 с правками",
   "language.switching": "Меняем язык…",
+
+  "mkt.faqTitle": "Частые вопросы",
+  "mkt.ctaStart": "Начать бесплатно",
+  "mkt.ctaPricing": "Смотреть цены →",
+  "mkt.more": "Ещё:",
+  "mkt.relIeltsPractice": "Практика IELTS онлайн",
+  "mkt.relWriting": "Практика IELTS Writing",
+  "mkt.relTask2Questions": "Вопросы IELTS Writing Task 2",
+  "mkt.relReading": "Практика IELTS Reading",
+  "mkt.relListening": "Практика IELTS Listening",
+  "mkt.relSpeaking": "Практика IELTS Speaking",
+  "mkt.relCefr": "CEFR / Multilevel (DTM)",
+  "mkt.relCenters": "Для учебных центров",
+  "mkt.relGrade": "Бесплатная проверка IELTS Writing",
 };

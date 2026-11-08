@@ -14,6 +14,7 @@ export default function IeltsSpeakingPracticePage() {
   return (
     <article>
       <PageTitle
+        path="/ielts-speaking-practice"
         title="IELTS Speaking practice you actually speak to"
         lead="Most IELTS apps hand you a list of questions and a recording button. EngProgress runs the real thing: a three-part mock with an AI examiner that listens, follows up, and pushes you the way a human examiner does — then tells you what your speaking is missing."
       />
