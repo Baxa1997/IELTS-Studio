@@ -11,9 +11,10 @@ import {
 
 import {
   DEFAULT_THEME_MODE,
-  isThemeMode,
+  readThemeCookie,
   resolveTheme,
-  THEME_STORAGE_KEY,
+  THEME_COOKIE,
+  themeCookie,
   type ThemeMode,
 } from "@/lib/theme/mode";
 
@@ -30,7 +31,7 @@ const Ctx = createContext<ThemeCtx | null>(null);
 /* ── the two external stores ───────────────────────────────────────────────
  *
  * ⚠️ `useSyncExternalStore` RATHER THAN `useState` + `useEffect`, and not for
- * style points. The preference lives in `localStorage` and the OS theme in a
+ * style points. The preference lives in a session cookie and the OS theme in a
  * media query: both are state OUTSIDE React that the server cannot read, which
  * is the exact thing this hook exists for. Reading them in an effect and
  * calling `setState` works, but it renders once with the wrong value and again
@@ -57,13 +58,14 @@ function notify() {
 
 function readMode(): ThemeMode {
   try {
-    const raw = localStorage.getItem(THEME_STORAGE_KEY);
-    if (isThemeMode(raw)) return raw;
+    const stored = readThemeCookie(document.cookie);
+    if (stored) return stored;
   } catch {
-    // Site data blocked (private window, embedded webview, a hardened browser).
-    // `ThemeScript` hit the same wall and left the page light; agree with it.
+    // Cookies blocked (embedded webview, a hardened browser). `ThemeScript` hit
+    // the same wall and left the page light; agree with it.
   }
-  // Never chosen: the default, which is light — not the OS. See lib/theme/mode.
+  // Nothing chosen in THIS visit: the default, which is light — not the OS and
+  // not last visit's choice. See lib/theme/mode.
   return DEFAULT_THEME_MODE;
 }
 
@@ -72,26 +74,37 @@ function modeSnapshot(): ThemeMode {
   return cachedMode;
 }
 
-/** The server has no localStorage. The default is also what `ThemeScript`
+/** The server never reads the theme cookie (see lib/theme/mode). The default is also what `ThemeScript`
  *  assumes for a reader who has never chosen, so the first frame agrees with the
  *  class that script already put on <html>. */
 function modeServerSnapshot(): ThemeMode {
   return DEFAULT_THEME_MODE;
 }
 
+/** Lazily opened: `BroadcastChannel` is missing in some embedded webviews. */
+let channel: BroadcastChannel | null | undefined;
+function themeChannel(): BroadcastChannel | null {
+  if (channel === undefined) {
+    channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel(THEME_COOKIE);
+  }
+  return channel;
+}
+
 function subscribeMode(listener: () => void): () => void {
   listeners.add(listener);
   // Another TAB of the same app changing the theme. Same person, same
-  // preference — it should not take a reload to catch up.
-  const onStorage = (e: StorageEvent) => {
-    if (e.key !== THEME_STORAGE_KEY) return;
+  // preference — it should not take a reload to catch up. ⚠️ A cookie write
+  // fires no `storage` event the way `localStorage` did, so the tab that
+  // changed it says so on a channel; the rest re-read the cookie.
+  const ch = themeChannel();
+  const onMessage = () => {
     cachedMode = null;
     listener();
   };
-  window.addEventListener("storage", onStorage);
+  ch?.addEventListener("message", onMessage);
   return () => {
     listeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
+    ch?.removeEventListener("message", onMessage);
   };
 }
 
@@ -139,7 +152,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setMode = useCallback((m: ThemeMode) => {
     cachedMode = m;
     try {
-      localStorage.setItem(THEME_STORAGE_KEY, m);
+      document.cookie = themeCookie(m);
+      themeChannel()?.postMessage(m);
     } catch {
       // Preference will not survive the navigation; this page still flips.
     }

@@ -7,10 +7,10 @@
  * because "there is no i18n layer in this app". This module is that layer, and
  * the order below is the order the picker already shows.
  *
- * ⚠️ LOCALE IS A COOKIE, WHERE THEME IS `localStorage` — the two deliberately do
- * NOT match, and it is worth knowing why before you "fix" the inconsistency.
- * A theme is a CLASS, so a two-line script can apply it before paint and the
- * server never needs to know. A language is TEXT: it has to be chosen before the
+ * ⚠️ LOCALE IS A COOKIE THE SERVER READS; THEME IS A COOKIE IT NEVER READS — the
+ * two deliberately do NOT match, and it is worth knowing why before you "fix"
+ * the inconsistency. A theme is a CLASS, so a small script can apply it before
+ * paint from `document.cookie` and the server never needs to know. A language is TEXT: it has to be chosen before the
  * HTML is generated, or the server sends English and the client has to repaint
  * every string in the page. Only a cookie reaches the server, so locale is a
  * cookie.

@@ -1,22 +1,23 @@
 /**
  * Theme mode: the user's choice, and how it reaches the page before first paint.
  *
- * ⚠️ THE PREFERENCE LIVES IN `localStorage`, NOT A COOKIE, AND THAT IS A
- * PERFORMANCE DECISION RATHER THAN A STYLE ONE.
+ * ⚠️ THE CHOICE LIVES IN A SESSION COOKIE, AND IT IS SUPPOSED TO FORGET.
+ * The owner's call (2026-11-12): pick dark, close the browser, come back — the
+ * site is light again. Every visit starts light. So the store is a cookie with
+ * no `Expires`/`Max-Age`, which the browser drops when it closes, and NOT
+ * `localStorage` (which is where it lived until then, and which remembered the
+ * choice forever). Not `sessionStorage` either: that is per TAB, so a learner who
+ * chose dark would get a light page in every new tab they opened.
  *
- * A cookie would be the obvious store — the server could then read it and
- * render `<html class="dark">` directly, with no client work at all. The cost
- * is that reading a cookie in the ROOT layout opts every route in the app out
- * of static rendering, because `cookies()` makes the whole subtree dynamic. The
- * marketing pages and the front door are the ones that are still cached, and
- * they are precisely the pages a first-time visitor lands on. Trading their
- * cacheability for a class name is a bad trade, and it would be an invisible
- * one — nothing fails, the pages just quietly stop being static.
+ * ⚠️ THE SERVER NEVER READS THIS COOKIE, and must not start. Calling `cookies()`
+ * in the root layout would make every route dynamic and take the cached
+ * marketing pages and front door with it — nothing fails, they just quietly stop
+ * being static. `ThemeScript` reads `document.cookie` in <head> before paint
+ * instead, so the server keeps sending identical HTML to everyone.
  *
- * So the class is applied by `ThemeScript`, a tiny synchronous script in
- * <head>. It runs BEFORE the browser paints, so there is no flash of the wrong
- * theme, and the server keeps rendering identical HTML for everyone — which is
- * also why the markup can still be cached and shared.
+ * Known edge: a browser set to "continue where you left off" restores session
+ * cookies with the tabs, so there the choice survives a restart. That is the
+ * browser's choice to restore the session, not ours to override.
  */
 
 export type ThemeMode = "light" | "dark" | "system";
@@ -36,9 +37,26 @@ export const THEME_MODES: ThemeMode[] = ["light", "dark", "system"];
  */
 export const DEFAULT_THEME_MODE: ThemeMode = "light";
 
-/** The `localStorage` key. `ThemeScript` interpolates it into its source string,
- *  so the two cannot drift. */
-export const THEME_STORAGE_KEY = "ep-theme";
+/** The cookie name. `ThemeScript` interpolates it into its source string, so the
+ *  two cannot drift. Same name as the old `localStorage` key, which the script
+ *  clears so a choice remembered from before the switch cannot linger there. */
+export const THEME_COOKIE = "ep-theme";
+
+/** The theme stored in a `document.cookie` string, or null when none is valid. */
+export function readThemeCookie(cookie: string): ThemeMode | null {
+  for (const part of cookie.split(";")) {
+    const [k, v] = part.trim().split("=");
+    if (k === THEME_COOKIE && isThemeMode(v)) return v;
+  }
+  return null;
+}
+
+/** The `document.cookie` assignment that stores `mode` until the browser closes.
+ *  ⚠️ NO `Expires` / `Max-Age` — adding one makes the choice outlive the visit,
+ *  which is exactly what this cookie exists not to do. */
+export function themeCookie(mode: ThemeMode): string {
+  return `${THEME_COOKIE}=${mode}; Path=/; SameSite=Lax`;
+}
 
 export function isThemeMode(v: unknown): v is ThemeMode {
   return v === "light" || v === "dark" || v === "system";

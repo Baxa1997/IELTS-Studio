@@ -20,7 +20,7 @@ import { FAINT, INK, SANS, WELL } from "@/lib/theme/tokens";
  * for visitors who have no settings page yet).
  *
  * Both controls are client components with no form and no action: the theme is
- * a `localStorage` write and the locale a cookie write, both applied
+ * a session-cookie write (it lasts one visit) and the locale a cookie write, both applied
  * immediately. There is nothing to submit, so there is no Save button and no
  * success message — the page is already showing the result.
  */
