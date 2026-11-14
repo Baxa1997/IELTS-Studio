@@ -113,6 +113,9 @@ const PUBLIC_PATHS = [
   "/ielts-speaking-practice",
   "/cefr-multilevel-practice",
   "/for-education-centers",
+  // The public statement of the prices. `/pricing` itself stays signed-in: it
+  // is the checkout, and it needs the caller's plan and usage to render.
+  "/ielts-practice-pricing",
   // The Task 2 question bank and every topic page under it — QUESTION_BANK_PATH
   // in lib/prompts/question-bank.ts, spelled out because this file imports
   // nothing it does not need; that module's test fails if the two drift.

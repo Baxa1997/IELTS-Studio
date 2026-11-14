@@ -264,8 +264,8 @@ export function LandingPage({ locale }: { locale: Locale }) {
             category: "IELTS practice platform",
             // ⚠️ Not `/pricing`: that route is signed-in only and 307s every
             // crawler to /sign-in (see app/sitemap.ts). The public prices are
-            // the landing page's own section.
-            url: `${site}/#pricing`,
+            // a page of their own, with every limit in one table.
+            url: `${site}/ielts-practice-pricing`,
           };
         }),
       },

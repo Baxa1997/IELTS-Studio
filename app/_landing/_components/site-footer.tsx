@@ -94,7 +94,9 @@ const COLUMNS: { heading: MessageKey; links: { label: MessageKey; href: string }
       { label: "mk.footGrader", href: "/grade" },
       { label: "mk.footCalculator", href: "/ielts-band-score-calculator" },
       { label: "mk.footDemo", href: "/demo" },
-      { label: "mk.footPricing", href: "/#pricing" },
+      // The page, not the landing section: the header's link still scrolls to
+      // `/#pricing`, and a footer is where a crawler finds the page itself.
+      { label: "mk.footPricing", href: "/ielts-practice-pricing" },
     ],
   },
   {

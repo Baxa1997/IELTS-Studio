@@ -220,8 +220,9 @@ const QUESTION_BANK_ROUTES = [
  *
  * ⚠️ /pricing is deliberately absent. It lives under app/(app) and calls
  * requireOrgUser(), so an anonymous request 307s to /sign-in — listing it
- * advertised a URL no crawler could index. The public prices are the landing
- * page's #pricing section. A new public page ALSO needs PUBLIC_PATHS in
+ * advertised a URL no crawler could index. The public prices are
+ * /ielts-practice-pricing (and the landing page's #pricing section). A new
+ * public page ALSO needs PUBLIC_PATHS in
  * lib/supabase/middleware.ts, or every crawler is redirected away from it.
  *
  * `updated` IS THE ONE DATE A PAGE HAS. The sitemap's `lastmod`, the page's
@@ -245,6 +246,8 @@ export const PUBLIC_ROUTES = [
   { path: "/ielts-speaking-practice", label: "IELTS Speaking practice", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-09-27" },
   { path: "/cefr-multilevel-practice", label: "CEFR / Multilevel (Uzbekistan DTM) practice", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-11-08" },
   { path: "/for-education-centers", label: "For education centres — teachers, groups, homework and reports", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-09-05" },
+  // The prices as a page (2026-11-14). NOT `/pricing` — see the note above.
+  { path: "/ielts-practice-pricing", label: "Pricing — the free plan and the paid plans, with every monthly limit", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-11-14" },
   // The two free score calculators. Spelled out because lib/ may not import
   // app/(tools)/_lib/page-meta.ts; app/(tools)/tools-routes.test.ts holds the two in step.
   { path: "/ielts-band-score-calculator", label: "IELTS band score calculator — overall band with the official rounding rule, Listening and Reading score tables, CEFR level", section: "product", priority: 0.85, changeFrequency: "monthly" },

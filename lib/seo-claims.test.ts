@@ -39,6 +39,7 @@ const PUBLIC = [
   "app/(marketing)/ielts-practice/page.tsx",
   "app/(marketing)/ielts-writing-practice/page.tsx",
   "app/(marketing)/ielts-speaking-practice/page.tsx",
+  "app/(marketing)/ielts-practice-pricing/page.tsx",
   // The Task 2 question bank: its pages, and the per-type notes llms-full.txt
   // repeats word for word.
   "app/(marketing)/ielts-writing-task-2-questions/page.tsx",
