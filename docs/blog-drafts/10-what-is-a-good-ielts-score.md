@@ -5,7 +5,7 @@ Title:        What is a good IELTS score? Every band explained
 Slug:         what-is-a-good-ielts-score
 Category:     IELTS
 Practice area: (none)
-Published on: 2026-10-17
+Published on: 2026-11-14
 Author:       EngProgress team
 Cover word:   Good score
 Cover photo:  /blog/what-is-a-good-ielts-score/graduates.jpg
