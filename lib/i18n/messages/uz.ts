@@ -613,6 +613,8 @@ export const uz: Messages = {
   "blog.indexTitle": "EngProgress blogi",
   "blog.indexLead":
     "Imtihon strategiyalari, ingliz soʻzlari ortidagi hikoyalar va bizning yangiliklarimiz. Har bir maqola ingliz tilida — uni oʻqish ham mashq.",
+  "blog.allTopics": "Barcha mavzular",
+  "blog.topics": "Mavzular",
   "blog.latest": "Soʻnggi maqolalar",
   "blog.related": "Keyingi maqolalar",
   "blog.shareTelegram": "Telegramda ulashish",

@@ -610,6 +610,8 @@ export const ru: Messages = {
   "blog.indexTitle": "Блог EngProgress",
   "blog.indexLead":
     "Стратегии экзамена, истории английских слов и наши новости. Каждая статья на английском — читать её тоже практика.",
+  "blog.allTopics": "Все темы",
+  "blog.topics": "Темы",
   "blog.latest": "Свежие статьи",
   "blog.related": "Читайте также",
   "blog.shareTelegram": "Поделиться в Telegram",

@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 
 import { LeadStory, StoryCard } from "@/app/_landing/_components/blog-stories";
 import { DISPLAY_LG, FAINT, INK, LEDE, RULE, eyebrow } from "@/app/_landing/_lib/design";
-import { leadPost, otherPosts } from "@/lib/blog";
+import { CATEGORIES, CATEGORY_LABEL, leadPost, otherPosts } from "@/lib/blog";
 import { loadPosts } from "@/lib/blog/store";
 import { translator } from "@/lib/i18n";
 import { HTML_LANG, SOURCE_LOCALE } from "@/lib/i18n/locales";
 import { absoluteUrl, organization, PREVIEW_IMAGE, previewImage } from "@/lib/seo";
 
+import { TopicFilter, TopicItem } from "./_components/topic-filter";
 import { blogAlternates } from "./_lib/metadata";
 
 /**
@@ -49,6 +50,13 @@ export default async function BlogIndexPage() {
   const posts = await loadPosts();
   const lead = leadPost(posts);
   const rest = otherPosts(posts);
+  // The chips, in the categories' own order, for the ones the grid actually
+  // holds — derived, so a new category appears with its first story.
+  const topics = CATEGORIES.map((id) => ({
+    id,
+    label: t(CATEGORY_LABEL[id]),
+    count: rest.filter((p) => p.category === id).length,
+  })).filter((c) => c.count > 0);
   const site = absoluteUrl("/").replace(/\/$/, "");
   /* `@id`s match the ones the landing page and every article publish, so the
      organisation, this blog and its posts resolve as one set of entities. */
@@ -120,11 +128,24 @@ export default async function BlogIndexPage() {
           >
             {t("blog.latest")}
           </h2>
-          <div className="bl-grid">
-            {rest.map((p) => (
-              <StoryCard key={p.slug} post={p} t={t} lang={LANG} />
-            ))}
-          </div>
+          {/* Chips only when there is a choice to make: one topic is no filter. */}
+          {topics.length > 1 ? (
+            <TopicFilter topics={topics} allLabel={t("blog.allTopics")} groupLabel={t("blog.topics")}>
+              <div className="bl-grid">
+                {rest.map((p) => (
+                  <TopicItem key={p.slug} topic={p.category}>
+                    <StoryCard post={p} t={t} lang={LANG} />
+                  </TopicItem>
+                ))}
+              </div>
+            </TopicFilter>
+          ) : (
+            <div className="bl-grid">
+              {rest.map((p) => (
+                <StoryCard key={p.slug} post={p} t={t} lang={LANG} />
+              ))}
+            </div>
+          )}
         </section>
       ) : null}
 

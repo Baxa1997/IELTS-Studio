@@ -664,6 +664,8 @@ export const en = {
   "blog.indexTitle": "The EngProgress blog",
   "blog.indexLead":
     "Exam strategy, the stories behind English words, and news from us. Every article is in English — reading it is practice too.",
+  "blog.allTopics": "All topics",
+  "blog.topics": "Topics",
   "blog.latest": "Latest stories",
   "blog.related": "Read next",
   "blog.shareTelegram": "Share on Telegram",
