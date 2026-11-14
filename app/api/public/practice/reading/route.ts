@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 import { onTodaysList } from "@/lib/free-practice/assignment";
 import { DONE_COOKIE, DONE_COOKIE_OPTIONS, doneToday, writeDone } from "@/lib/free-practice/visitor";
-import { gradeReadingAttempt, gradeReadingTest, type GradableQuestion } from "@/lib/reading/grade";
+import { gradeReadingTest, type GradableQuestion } from "@/lib/reading/grade";
+import { markLibraryPassage } from "@/lib/reading/mark-library-passage";
 import { READING_DISCLAIMER } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -91,33 +92,10 @@ async function markTest(testId: string, answers: Record<string, string>): Promis
 
 /** One passage — the signed-in /api/reading/[id]/submit's marking and review. */
 async function markPassage(passageId: string, answers: Record<string, string>): Promise<NextResponse> {
-  const admin = createAdminClient();
-  const [{ data: passage }, { data: rows, error }] = await Promise.all([
-    admin.from("reading_passages").select("id, title").eq("id", passageId).eq("is_library", true).maybeSingle(),
-    admin
-      .from("reading_questions")
-      .select("id, question_type, order_index, prompt, options, answer_key, supporting_sentence, explanation")
-      .eq("passage_id", passageId)
-      .is("organization_id", null)
-      .order("order_index", { ascending: true }),
-  ]);
-  if (error) return fail(500, "load_failed");
-  if (!passage) return fail(404, "passage_not_found");
-  if (!rows || rows.length === 0) return fail(422, "no_questions");
-
-  const grade = gradeReadingAttempt(rows as GradableQuestion[], answers);
-  return NextResponse.json({
-    result: {
-      passageTitle: passage.title,
-      total: grade.total,
-      correctCount: grade.correctCount,
-      percent: grade.percent,
-      band: grade.band,
-      typeBreakdown: grade.typeBreakdown,
-      items: grade.items,
-    },
-    disclaimer: READING_DISCLAIMER,
-  });
+  // Shared with the daily challenge's route — lib/reading/mark-library-passage.ts.
+  const marked = await markLibraryPassage(passageId, answers);
+  if (!marked.ok) return fail(marked.status, marked.error);
+  return NextResponse.json({ result: marked.result, disclaimer: READING_DISCLAIMER });
 }
 
 /** Tolerate a missing or garbage body: no practice, and no answers (all wrong). */

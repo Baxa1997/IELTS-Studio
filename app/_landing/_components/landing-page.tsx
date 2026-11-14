@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import { Band9Card } from "@/app/_landing/_components/band9-card";
 import { LeadStory, StoryRow } from "@/app/_landing/_components/blog-stories";
+import { DailyChallenge } from "@/app/_landing/_components/daily-challenge";
 import { SkillPracticeCard } from "@/app/_landing/_components/practice-cards";
 import { PracticePicks } from "@/app/_landing/_components/practice-picks";
 import { BLOG_CSS } from "@/app/_landing/_lib/blog-css";
@@ -285,6 +286,9 @@ export function LandingPage({ locale }: { locale: Locale }) {
             account, so it sits where the hero's second button can jump to it
             in one short scroll, ahead of the stats and the product tour. */}
         <PracticeTodaySection t={t} />
+        {/* The one passage everybody gets today, and its board. Straight after
+            the visitor's own picks: both are things to DO now. */}
+        <DailyChallenge />
         <Stats t={t} />
         <HeroProcessDemo />
         <DemoSection t={t} />
