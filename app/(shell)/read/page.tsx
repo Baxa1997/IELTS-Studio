@@ -3,7 +3,9 @@ import { loadStudentAssignments } from "@/lib/assignments/student";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { composeTestSubtitle, composeTestTitle } from "@/lib/reading/titles";
+import type { AttemptRow } from "@/lib/dashboard/compute";
 import type { ReadingQuestionType } from "@/lib/reading/types";
+import { weakSpot } from "@/lib/reading/weak-spot";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getLibraryQuota } from "@/lib/quota";
@@ -123,7 +125,7 @@ export default async function ReadingHubPage() {
            splitting this across a `+` makes the row type collapse to
            GenericStringError and every field access below fails to compile. */
         .select(
-          "id, test_id, passage_id, status, band, correct_count, total_questions, duration_seconds, submitted_at, cursor_index, seconds_left, answered_count",
+          "id, test_id, passage_id, status, band, correct_count, total_questions, duration_seconds, submitted_at, cursor_index, seconds_left, answered_count, type_breakdown, created_at",
         )
         .eq("student_id", profile.id)
         .in("status", ["graded", "in_progress"])
@@ -308,6 +310,20 @@ export default async function ReadingHubPage() {
       live: liveByPassage.get(c.id) ?? null,
     }));
 
+  // The question type this learner misses most, from their own marked work —
+  // null until there is enough of it (lib/reading/weak-spot.ts). A teacher has
+  // no attempts, so this is null for them without a role check.
+  const weak = weakSpot(
+    (attemptsRes.data ?? [])
+      .filter((a) => a.status === "graded")
+      .map((a) => ({
+        band: (a.band as number | null) ?? null,
+        type_breakdown: (a.type_breakdown ?? null) as AttemptRow["type_breakdown"],
+        submitted_at: (a.submitted_at as string | null) ?? null,
+        created_at: a.created_at as string,
+      })),
+  );
+
   // The shell (sidebar + header) is owned by the (shell) layout; this page only
   // paints its own full-bleed surface inside it.
   return (
@@ -324,6 +340,7 @@ export default async function ReadingHubPage() {
         ownTests={ownTests}
         libraryPassages={libraryPassages}
         ownPassages={ownPassages}
+        weakSpot={weak}
         isTeacher={isTeacher}
         groups={teacherGroups}
         freeUsed={libraryQuota.used}

@@ -103,7 +103,9 @@ const STUDENT: Section[] = [
       { label: "Dashboard", labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
       { label: "Study plan", labelKey: "nav.studyPlan", href: "/plan", icon: Target },
       { label: "Activities", labelKey: "nav.activities", href: "/activities", icon: History },
-      { label: "Referrals", labelKey: "nav.referrals", href: "/referrals", icon: Gift },
+      // Referrals is off the rail for now (owner, 2026-11-14). The page at
+      // /referrals still works for anyone holding its link, and the programme
+      // itself is untouched — this only stops advertising it.
     ],
   },
   {
@@ -462,7 +464,30 @@ function withReportsBadge(sections: Section[], newWork: number): Section[] {
   }));
 }
 
-function sectionsFor(
+/** The learner's own "Practice English with AI" — first on the rail, the way
+ *  the teacher's is on theirs (owner, 2026-11-14: "as main"). */
+function withPracticeAi(sections: Section[]): Section[] {
+  const [home, ...rest] = sections;
+  return [
+    {
+      ...home,
+      items: [
+        {
+          label: "Practice English with AI",
+          labelKey: "nav.practiceWithAi",
+          href: "/learn",
+          icon: WandSparkles,
+          accent: "generate",
+        },
+        ...home.items,
+      ],
+    },
+    ...rest,
+  ];
+}
+
+/** Exported for sidebar-nav.test.ts, which pins who is offered what. */
+export function sectionsFor(
   role: string,
   showAssignments: boolean,
   pending: number,
@@ -478,7 +503,10 @@ function sectionsFor(
       role === "center_admin" ? ADMIN : role === "administrator" ? ADMINISTRATOR : TEACHER;
     return newWork > 0 ? withReportsBadge(rail, newWork) : rail;
   }
-  if (!showAssignments) return STUDENT;
+  // ⚠️ A SOLO LEARNER ONLY. A centre's student practises what their teacher
+  // sets (lib/auth.ts `isHomeworkOnlyStudent`); the engine refuses them a
+  // lesson of their own, so the rail must not offer one.
+  if (!showAssignments) return homeworkOnly ? STUDENT : withPracticeAi(STUDENT);
   const [home, ...rest] = STUDENT;
   const withAssignments: Section = {
     ...home,
@@ -494,7 +522,7 @@ function sectionsFor(
       ...home.items.slice(1),
     ],
   };
-  if (!homeworkOnly) return [withAssignments, ...rest];
+  if (!homeworkOnly) return withPracticeAi([withAssignments, ...rest]);
 
   return [
     withAssignments,

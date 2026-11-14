@@ -101,7 +101,11 @@ export function LessonRunner({
   /** The teaching half, server-rendered — the runner's first tab. */
   explanation,
   title,
+  exitHref = "/assignments",
 }: {
+  /** Where "leave" and "done" go: a centre's student back to their homework
+   *  (the default), a solo learner back to their own lessons (/learn). */
+  exitHref?: string;
   lessonId: string;
   content: LessonContent;
   canSubmit?: boolean;
@@ -275,7 +279,7 @@ export function LessonRunner({
         }}
       >
         <a
-          href="/assignments"
+          href={exitHref}
           aria-label="Leave this lesson"
           className="pa-lift"
           style={{
@@ -614,7 +618,7 @@ export function LessonRunner({
             <div style={{ padding: "20px 22px 24px" }}>
               {done ? (
                 <a
-                  href="/assignments"
+                  href={exitHref}
                   className="pa-dark"
                   style={{ ...railButton, display: "block", textAlign: "center", textDecoration: "none" }}
                 >

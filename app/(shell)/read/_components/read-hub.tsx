@@ -135,11 +135,15 @@ export function ReadingHub({
   ownTests,
   libraryPassages,
   ownPassages,
+  weakSpot = null,
   isTeacher = false,
   groups = [],
   freeUsed = 0,
   freeLimit = null,
 }: {
+  /** The question type this learner misses most, when their marked work shows
+   *  one — the page works it out (lib/reading/weak-spot.ts). */
+  weakSpot?: { type: ReadingQuestionType; attempted: number; correct: number } | null;
   levelBand: number | null;
   levelMeasured: boolean;
   libraryTests: LibraryTest[];
@@ -306,6 +310,20 @@ export function ReadingHub({
           sub={t("read.passageMeta")}
         />
       </div>
+
+      {/* The learner's weak spot, above BOTH tabs: the hub opens on full tests,
+          and a card that only showed under "Passage practice" would be seen by
+          the learners who least need telling. It generates a passage whichever
+          tab is open. The type's name is the exam's own term, in English. */}
+      {weakSpot ? (
+        <div style={{ marginTop: 18 }}>
+          <AiGenerateSection
+            title={t("read.weakTitle", { type: READING_QUESTION_LABELS[weakSpot.type] })}
+            description={t("read.weakBody", { correct: weakSpot.correct, attempted: weakSpot.attempted })}
+            cta={<GeneratePassageButton label={t("read.weakCta")} focusType={weakSpot.type} />}
+          />
+        </div>
+      ) : null}
 
       {/* Panel */}
       {tab === "test" ? (

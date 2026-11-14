@@ -128,7 +128,7 @@ function readCollapsed(fallback: boolean): boolean {
  * collapse is the reader's alone now. This function decides padding only.
  */
 function ownsTheSurface(pathname: string): boolean {
-  return pathname.startsWith("/console/practice-ai") || pathname.startsWith("/learn/");
+  return pathname.startsWith("/console/practice-ai") || pathname === "/learn" || pathname.startsWith("/learn/");
 }
 
 /**

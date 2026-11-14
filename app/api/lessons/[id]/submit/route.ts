@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { gradeClosed, mergeOpenResults, type Answers } from "@/lib/lessons/grade";
 import { markOpenAnswers } from "@/lib/lessons/grade-open";
+import { modelMarksOpenAnswers } from "@/lib/lessons/marking-scope";
 import { loadLesson } from "@/lib/lessons/load";
 import { isOpen, type OpenExercise } from "@/lib/lessons/types";
 import { createClient } from "@/lib/supabase/server";
@@ -47,25 +48,40 @@ export async function POST(
   const lesson = await loadLesson(id);
   if (!lesson) return fail(404, "not_found");
 
-  // Mark the closed half. Open items count toward the ceiling because a signed-in
-  // learner here IS getting them marked — the public page is the surface that
-  // excludes them, and it never reaches this route.
-  const outcome = gradeClosed(lesson.content, answers, { includeOpenInMax: true });
-
   const supabase = await createClient();
+
+  // How many times this learner has already handed this lesson in. Only a solo
+  // learner's answer depends on it (lib/lessons/marking-scope.ts); a failed
+  // count reads as "has attempts", which is the direction that spends nothing.
+  const { count, error: countErr } = await supabase
+    .from("lesson_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("lesson_id", lesson.id)
+    .eq("student_id", profile.id);
+  const modelMarksOpen = modelMarksOpenAnswers({
+    orgKind: profile.org.kind,
+    priorAttempts: countErr ? 1 : (count ?? 0),
+  });
+
+  // Mark the closed half. Open items count toward the ceiling only when a model
+  // is about to mark them; otherwise they stay out of the total and the runner
+  // shows the criteria and a model answer to check against, so an unmarked item
+  // never drags a visible score down.
+  const outcome = gradeClosed(lesson.content, answers, { includeOpenInMax: modelMarksOpen });
+
   const { data: created, error } = await supabase
     .from("lesson_attempts")
     .insert({
       lesson_id: lesson.id,
       student_id: profile.id,
       organization_id: profile.organization_id,
-      source: "assignment",
+      source: profile.org.kind === "personal" ? "self" : "assignment",
       answers,
       results: outcome.results,
       tag_breakdown: outcome.tagBreakdown,
       score: outcome.score,
       max_score: outcome.maxScore,
-      grading_status: outcome.pendingOpenIds.length > 0 ? "pending" : "complete",
+      grading_status: modelMarksOpen && outcome.pendingOpenIds.length > 0 ? "pending" : "complete",
       duration_seconds: body.durationSeconds ?? null,
     })
     .select("id")
@@ -77,8 +93,8 @@ export async function POST(
   }
   const attemptId = created.id as string;
 
-  // Nothing open — they are done.
-  if (outcome.pendingOpenIds.length === 0) {
+  // Nothing open, or nothing here marks it — they are done.
+  if (!modelMarksOpen || outcome.pendingOpenIds.length === 0) {
     return NextResponse.json({
       attemptId,
       score: outcome.score,

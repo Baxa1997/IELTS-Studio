@@ -161,6 +161,10 @@ export const ru: Messages = {
   "read.generateTest": "Создать новый тест",
   "read.passage": "Практика по тексту",
   "read.passageMeta": "1 текст · ~20 мин",
+  "read.weakTitle": "Ваше слабое место: {type}",
+  "read.weakBody":
+    "Пока вы ответили верно на {correct} из {attempted} вопросов. В этом тексте около половины вопросов будет этого типа.",
+  "read.weakCta": "Тренировать слабое место",
   "read.passageBlurb": "Один оригинальный текст с проверяемыми вопросами (~20 мин)",
   "read.generatePassage": "Создать новый текст",
   "read.disclaimer":

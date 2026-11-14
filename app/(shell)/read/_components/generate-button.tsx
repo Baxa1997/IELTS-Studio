@@ -18,7 +18,7 @@ type GenResult = { ok: boolean; id?: string; message?: string };
  * full-test generation. Falls back to the same-origin /api/reading/* route
  * (cookie auth) when no backend URL is configured — fine for local dev.
  */
-async function postReadingGenerate(path: "next" | "test"): Promise<GenResult> {
+async function postReadingGenerate(path: "next" | "test", focusType?: string): Promise<GenResult> {
   const backend = clientEnv.aiBackendUrl;
   if (backend) {
     const supabase = createClient();
@@ -28,9 +28,16 @@ async function postReadingGenerate(path: "next" | "test"): Promise<GenResult> {
     const token = session?.access_token;
     if (!token) return { ok: false, message: "Your session expired — please sign in again." };
 
+    // `focus_type` is the learner's weak question type ("Practise my weak
+    // spot"). Sent only when there is one, so every other press posts exactly
+    // what it always did; an engine from before 2026-11-14 ignores the body.
     const res = await fetch(`${backend}/reading/${path}`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(focusType ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(focusType ? { body: JSON.stringify({ focus_type: focusType }) } : {}),
     });
     const body = (await res.json().catch(() => ({}))) as {
       id?: string;
@@ -52,7 +59,14 @@ async function postReadingGenerate(path: "next" | "test"): Promise<GenResult> {
  * (passage + validated questions, auto-approved) then opens it. The call is two
  * model passes, so it takes ~1 min — we show that wait explicitly.
  */
-export function GeneratePassageButton({ label = "Generate a passage" }: { label?: string }) {
+export function GeneratePassageButton({
+  label = "Generate a passage",
+  focusType,
+}: {
+  label?: string;
+  /** The question type the passage should lean on — see lib/reading/weak-spot.ts. */
+  focusType?: string;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +75,7 @@ export function GeneratePassageButton({ label = "Generate a passage" }: { label?
     setLoading(true);
     setError(null);
     try {
-      const result = await postReadingGenerate("next");
+      const result = await postReadingGenerate("next", focusType);
       if (!result.ok || !result.id) {
         setError(result.message ?? "Couldn't generate a passage. Please try again.");
         setLoading(false);

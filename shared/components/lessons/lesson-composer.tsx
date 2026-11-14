@@ -29,6 +29,10 @@ const callEngine = engineClient("lessons");
 /**
  * Type what your group needs; get a lesson page.
  *
+ * TWO AREAS RENDER THIS — the staff console (/console/practice-ai) and, since
+ * 2026-11-14, a solo learner's own page (/learn). `openIn` is where a built
+ * lesson opens: the staff editor for one, the runner for the other.
+ *
  * THE BOX HOLDS THE BRIEF AND NOTHING ELSE. Level, focus, how many exercises
  * and whether the hard part gets a note in the learner's own language are all
  * behind the gear beside Plan, in a modal. They lived in a panel that expanded
@@ -56,8 +60,12 @@ const PLACEHOLDERS = [
   "Explain the present perfect, with practice",
   "Collocations for the education topic",
   "True / False / Not Given under time pressure",
-  "Articles: a, an, the — my B1 group keeps dropping them",
 ];
+/** The fourth line of the rotation is the one that says who is typing.
+ *  Module constants, not built per render: the typing effect depends on the
+ *  list, and a new array every render would restart its timer every render. */
+const PLACEHOLDERS_STAFF = [...PLACEHOLDERS, "Articles: a, an, the — my B1 group keeps dropping them"];
+const PLACEHOLDERS_LEARNER = [...PLACEHOLDERS, "Articles: a, an, the — I keep dropping them"];
 
 const STARTERS = [
   "Present simple vs continuous",
@@ -196,8 +204,17 @@ function speechCtor(): SpeechCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-export function Composer() {
+export function Composer({
+  openIn = "/console/practice-ai",
+  learner = false,
+}: {
+  /** The route a built lesson opens under: `${openIn}/${id}`. */
+  openIn?: string;
+  /** A learner writing for themselves, not a teacher writing for a class. */
+  learner?: boolean;
+}) {
   const router = useRouter();
+  const placeholders = learner ? PLACEHOLDERS_LEARNER : PLACEHOLDERS_STAFF;
   const [brief, setBrief] = useState("");
   const [planFirst, setPlanFirst] = useState(true);
   const [specsOpen, setSpecsOpen] = useState(false);
@@ -225,7 +242,7 @@ export function Composer() {
     () => false,
   );
 
-  const typed = useTypedPlaceholder(brief === "");
+  const typed = useTypedPlaceholder(brief === "", placeholders);
   const busy = phase.step === "working";
 
   /**
@@ -335,7 +352,7 @@ export function Composer() {
     setPhase({ step: "working", stage: 2, label: `Writing ${count} exercises…` });
     const made = await callEngine<{ id: string }>("build", { plan, brief: text });
     setPhase({ step: "working", stage: 3, label: "Checking every answer key…" });
-    router.push(`/console/practice-ai/${made.id}`);
+    router.push(`${openIn}/${made.id}`);
   }
 
   const guard = (fn: () => Promise<void>) => () =>
@@ -711,7 +728,7 @@ const BODY_INK = SLATE_BODY;
  * Stops dead the moment there is a real brief, so it never competes with what
  * a teacher is actually writing.
  */
-function useTypedPlaceholder(active: boolean): string {
+function useTypedPlaceholder(active: boolean, phrases: readonly string[]): string {
   const [text, setText] = useState("");
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [deleting, setDeleting] = useState(false);
@@ -725,11 +742,11 @@ function useTypedPlaceholder(active: boolean): string {
     // Reading the preference during render instead would be worse: the server
     // cannot know it, so it would hydrate mismatched.
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-      if (text === PLACEHOLDERS[0]) return;
-      const whole = setTimeout(() => setText(PLACEHOLDERS[0]), 0);
+      if (text === phrases[0]) return;
+      const whole = setTimeout(() => setText(phrases[0]), 0);
       return () => clearTimeout(whole);
     }
-    const full = PLACEHOLDERS[phraseIdx % PLACEHOLDERS.length];
+    const full = phrases[phraseIdx % phrases.length];
     let delay = 55;
     if (!deleting && text.length === full.length) delay = 1800;
     else if (deleting) delay = text.length === 0 ? 320 : 22;
@@ -747,7 +764,7 @@ function useTypedPlaceholder(active: boolean): string {
       }
     }, delay);
     return () => clearTimeout(t);
-  }, [active, text, deleting, phraseIdx]);
+  }, [active, text, deleting, phraseIdx, phrases]);
 
   return active ? `${text}▏` : "";
 }

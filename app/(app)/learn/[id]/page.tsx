@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { LessonSections } from "@/shared/components/lessons/lesson-sections";
-import { requireOrgUser } from "@/lib/auth";
+import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { loadLesson } from "@/lib/lessons/load";
 import { INK, READING, SERIF } from "@/lib/lessons/theme";
 
@@ -31,7 +31,10 @@ export const dynamic = "force-dynamic";
  * groups exist only inside centres.
  */
 export default async function LearnPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireOrgUser();
+  const { profile } = await requireOrgUser();
+  // A centre's student came from their homework and goes back to it; a solo
+  // learner made this lesson at /learn and goes back there.
+  const solo = profile.role === "student" && !isHomeworkOnlyStudent(profile);
 
   const { id } = await params;
   const lesson = await loadLesson(id);
@@ -42,6 +45,7 @@ export default async function LearnPage({ params }: { params: Promise<{ id: stri
       lessonId={lesson.id}
       title={lesson.title}
       content={lesson.content}
+      exitHref={solo ? "/learn" : "/assignments"}
       explanation={
         <>
           <h2

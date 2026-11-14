@@ -10,7 +10,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { resolveActiveHref, settingsHrefFor } from "./sidebar-nav";
+import { resolveActiveHref, sectionsFor, settingsHrefFor } from "./sidebar-nav";
 
 const RAIL = [
   { href: "/console" },
@@ -109,5 +109,33 @@ describe("settingsHrefFor", () => {
   it("gives a center student and the platform owner no Settings row", () => {
     expect(settingsHrefFor("student", true)).toBeNull();
     expect(settingsHrefFor("super_admin", false)).toBeNull();
+  });
+});
+
+/**
+ * "Practice English with AI" on the LEARNER's rail (2026-11-14).
+ *
+ * A solo learner makes their own lessons at /learn. A centre's student must
+ * never be offered it: they practise what their teacher sets, and the engine
+ * refuses them a build — a rail item that leads to a refusal is a broken
+ * promise on the most visible surface there is.
+ */
+describe("the learner's rail", () => {
+  const hrefs = (homeworkOnly: boolean, showAssignments: boolean) =>
+    sectionsFor("student", showAssignments, 0, homeworkOnly, 0).flatMap((s) => s.items.map((i) => i.href));
+
+  it("offers a solo learner their own AI lessons, first", () => {
+    expect(hrefs(false, false)[0]).toBe("/learn");
+    expect(hrefs(false, true)[0]).toBe("/learn");
+  });
+
+  it("never offers them to a centre's student", () => {
+    expect(hrefs(true, true)).not.toContain("/learn");
+    expect(hrefs(true, false)).not.toContain("/learn");
+  });
+
+  it("no longer lists Referrals", () => {
+    expect(hrefs(false, false)).not.toContain("/referrals");
+    expect(hrefs(true, true)).not.toContain("/referrals");
   });
 });

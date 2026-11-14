@@ -165,6 +165,10 @@ export const uz: Messages = {
   "read.generateTest": "Yangi test yaratish",
   "read.passage": "Matn mashqi",
   "read.passageMeta": "1 ta matn · ~20 daqiqa",
+  "read.weakTitle": "Zaif tomoningiz: {type}",
+  "read.weakBody":
+    "Hozirgacha {attempted} ta savoldan {correct} tasiga to‘g‘ri javob berdingiz. Bu matndagi savollarning taxminan yarmi shu turdan bo‘ladi.",
+  "read.weakCta": "Zaif tomonimni mashq qilish",
   "read.passageBlurb": "Baholanadigan savollari bilan bitta original matn (~20 daqiqa)",
   "read.generatePassage": "Yangi matn yaratish",
   "read.disclaimer":

@@ -181,6 +181,10 @@ export const en = {
   "read.generateTest": "Generate fresh test",
   "read.passage": "Passage practice",
   "read.passageMeta": "1 passage · ~20 min",
+  "read.weakTitle": "Your weak spot: {type}",
+  "read.weakBody":
+    "You have got {correct} of {attempted} right so far. This passage gives about half its questions to that type.",
+  "read.weakCta": "Practise my weak spot",
   "read.passageBlurb": "One original passage with marked questions (~20 min)",
   "read.generatePassage": "Generate fresh passage",
   "read.disclaimer":
