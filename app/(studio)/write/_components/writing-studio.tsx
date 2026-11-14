@@ -31,6 +31,7 @@ import { cleanAnnotations, type Annotation } from "@/shared/components/writing/a
 import { EssayFeedback } from "@/shared/components/writing/essay-feedback";
 import { FreeTrialCard, FreeTrialStrip } from "@/shared/components/practice/free-trial-nudge";
 import type { FreeTrialCopy } from "@/lib/free-practice/copy";
+import { gradeUpgradeCopy, type GradeUpgradeOffer } from "@/lib/billing/upgrade-offer";
 import { FigureView } from "@/shared/components/writing/figure";
 import type { Figure } from "@/lib/writing/figure";
 import { writeHubHref } from "@/lib/writing/hub-tabs";
@@ -163,6 +164,7 @@ export function WritingStudio({
   learnerContext = "",
   practiceNo = null,
   publicMode,
+  upgradeOffer = null,
 }: {
   prompt: ServedPrompt;
   essayId?: string | null;
@@ -174,8 +176,14 @@ export function WritingStudio({
    *  pitches its help to the right level. Context only — never quoted as a band. */
   learnerContext?: string;
   publicMode?: WritingPublicMode;
+  /** The plan to offer on the result, built by the page from the learner's
+   *  quota. Null when gradings are unmetered (centres, unlimited plans). */
+  upgradeOffer?: GradeUpgradeOffer | null;
 }) {
   const router = useRouter();
+  // Gradings spent in this sitting. The offer was counted when the page loaded
+  // and the studio never reloads between a grade and its revision.
+  const [gradedHere, setGradedHere] = useState(0);
   const taskKind = prompt.task_type;
   const isPublic = Boolean(publicMode);
   const publicGradeUrl = publicMode?.gradeUrl ?? null;
@@ -337,6 +345,7 @@ export function WritingStudio({
       };
       if (res.status === 200 && body.grading) {
         setGrading(body.grading);
+        setGradedHere((n) => n + 1);
         setDisclaimer(body.disclaimer ?? null);
         setLastGraded(contentRef.current);
         setTimed(false);
@@ -493,7 +502,13 @@ export function WritingStudio({
         modelAnswer={!publicMode}
         disclaimer={disclaimer ?? undefined}
       >
-        {publicMode ? <FreeTrialCard copy={publicMode.copy} /> : null}
+        {publicMode ? (
+          <FreeTrialCard copy={publicMode.copy} />
+        ) : upgradeOffer ? (
+          <div style={{ maxWidth: 760, margin: "28px auto 0" }}>
+            <FreeTrialCard copy={gradeUpgradeCopy(upgradeOffer, gradedHere)} />
+          </div>
+        ) : null}
       </EssayFeedback>
     );
     return publicMode ? (

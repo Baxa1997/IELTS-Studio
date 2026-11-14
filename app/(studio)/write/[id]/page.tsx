@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 
 import { AssignToClass } from "@/shared/components/console/assign-to-class";
 import { requireOrgUser } from "@/lib/auth";
+import { gradeUpgradeOffer } from "@/lib/billing/upgrade-offer";
 import { buildCoachLearnerContext } from "@/lib/coach/learner-context";
+import { getUsageSummary } from "@/lib/quota";
 import { createClient } from "@/lib/supabase/server";
 import { PAGE_GRAD_BOTTOM, PAGE_GRAD_TOP } from "@/lib/theme/tokens";
 import { parseFigure } from "@/lib/writing/figure";
@@ -54,11 +56,16 @@ export default async function WriteStudioPage({ params, searchParams }: PageProp
   // help is pitched to the right level — context only, never quoted as a band.
   const learnerContext = await buildCoachLearnerContext(profile.id, "writing");
 
+  // What the result screen may offer once this essay is graded. Null for anyone
+  // whose gradings are not metered — a centre's student above all (see
+  // lib/billing/upgrade-offer.ts).
+  const upgradeOffer = gradeUpgradeOffer(await getUsageSummary(profile.organization_id));
+
   // Full-screen, no sidebar — a focused single detail page for the actual writing.
   // Always a clean, timed attempt: no draft is resumed.
   return (
     <div style={{ minHeight: "100dvh", background: `linear-gradient(180deg,${PAGE_GRAD_TOP},${PAGE_GRAD_BOTTOM})` }}>
-      <WritingStudio prompt={prompt} essayId={null} initialContent="" resumed={false} learnerContext={learnerContext} practiceNo={practiceNo} />
+      <WritingStudio prompt={prompt} essayId={null} initialContent="" resumed={false} learnerContext={learnerContext} practiceNo={practiceNo} upgradeOffer={upgradeOffer} />
       {/* Staff only, and collapsed until used — the runner itself is the same
           page the student gets. */}
       <AssignToClass kind="writing" contentId={prompt.id} />
