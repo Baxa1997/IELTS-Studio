@@ -3,15 +3,18 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Whether this browser holds a session — read in the BROWSER so the public pages
- * stay static and cacheable; `site-nav.tsx` explains why that matters.
+ * Whether this browser holds a session — `null` until the check resolves.
  *
- * `false` until the session resolves, so a static page paints its signed-out
- * form first and a signed-in visitor watches it settle a moment later. The
- * header's button and the blog's account card both take that trade.
+ * Read in the BROWSER so the public pages stay static and cacheable;
+ * `site-nav.tsx` explains why that matters.
+ *
+ * ⚠️ `null` IS NOT `false`. Something that must NEVER reach a signed-in reader
+ * (the blog's ad) has to wait for the answer; collapsing "not known yet" into
+ * "signed out" would fire it at every paying learner for the moment before
+ * the session lands.
  */
-export function useSignedIn(): boolean {
-  const [signedIn, setSignedIn] = useState(false);
+export function useSession(): boolean | null {
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -34,4 +37,13 @@ export function useSignedIn(): boolean {
   }, []);
 
   return signedIn;
+}
+
+/**
+ * `useSession` with "not known yet" read as signed out, so a static page paints
+ * its signed-out form first and a signed-in visitor watches it settle a moment
+ * later. The header's button and the blog's account card both take that trade.
+ */
+export function useSignedIn(): boolean {
+  return useSession() === true;
 }

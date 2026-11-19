@@ -30,6 +30,8 @@ import { HTML_LANG, SOURCE_LOCALE } from "@/lib/i18n/locales";
 
 import { AccountOffer, type AccountOfferCopy } from "./account-offer";
 import { ArticleBody, KeyPoints, Questions } from "./article-body";
+import { YandexAd } from "./yandex-ad";
+import { YANDEX_AD_SLOTS } from "../_lib/ads";
 
 /**
  * One article as a reader sees it: headline, standfirst, byline, cover, the
@@ -128,6 +130,7 @@ export function ArticleView({ post, url, related }: { post: BlogPost; url: strin
           <KeyPoints points={post.summary} title={t("blog.inShort")} />
           <ArticleBody blocks={post.body} />
           {post.faq?.length ? <Questions faq={post.faq} title={t("blog.faqTitle")} /> : null}
+          <YandexAd blockId={YANDEX_AD_SLOTS.article} />
           <FreePracticeNote post={post} />
           <AccountOffer copy={ACCOUNT_OFFER} />
           {post.cta ? <PracticeCta cta={post.cta} /> : null}
