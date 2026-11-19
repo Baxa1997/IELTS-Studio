@@ -4,7 +4,7 @@ import Link from "next/link";
 import { createContext, Fragment, useContext, useEffect, useState } from "react";
 
 import { formatLabel } from "@/lib/free-practice/labels";
-import { PRACTICE_CARD_SKILLS, type PracticeCardSkill } from "@/lib/free-practice/links";
+import { freePracticePage, PRACTICE_CARD_SKILLS, type PracticeCardSkill } from "@/lib/free-practice/links";
 import type { PracticePick } from "@/lib/free-practice/picks";
 import type { FreeSkill } from "@/lib/free-practice/rotation";
 import type { Translate } from "@/lib/i18n";
@@ -200,18 +200,49 @@ export function PickBody({
       <p className="bl-dek lp-pick-facts" style={featured ? FACTS_FEATURED : FACTS}>
         {pick ? factsOf(pick, t) : fallback.meta}
       </p>
-      {/* Decoration: the headline's stretched link covers the card, so this
-          is what to press rather than a second link. */}
-      <span
+      <div
         style={{
-          ...(locked ? outlinePill() : ctaPill()),
-          ...(featured ? { fontSize: 15.5, padding: "12px 24px" } : null),
-          alignSelf: "flex-start",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: "10px 18px",
           marginTop: featured ? 6 : "auto",
         }}
       >
-        {cta} →
-      </span>
+        {/* Decoration: the headline's stretched link covers the card, so this
+            is what to press rather than a second link. */}
+        <span
+          style={{
+            ...(locked ? outlinePill() : ctaPill()),
+            ...(featured ? { fontSize: 15.5, padding: "12px 24px" } : null),
+          }}
+        >
+          {cta} →
+        </span>
+        {/* The skill's whole list. Since the cards became picks (2026-10-17)
+            Start goes straight into ONE practice, and nothing on the landing
+            page reached /practice/<skill> any more — the visitor's twenty
+            practices, and the site's most-visited pages (owner, 2026-11-19).
+            ⚠️ `position: relative` + z-index lift it above the headline's
+            stretched `::after`, which otherwise swallows the click. Rendered
+            in both states, so the row does not jump when the pick arrives. */}
+        {locked ? null : (
+          <Link
+            href={freePracticePage(skill as FreeSkill)}
+            style={{
+              position: "relative",
+              zIndex: 1,
+              fontFamily: SANS,
+              fontSize: featured ? 15.5 : 14.5,
+              fontWeight: 700,
+              color: CTA_LINE,
+              textDecoration: "none",
+            }}
+          >
+            {t("free.allPractices")} →
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

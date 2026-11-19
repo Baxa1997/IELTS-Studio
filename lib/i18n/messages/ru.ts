@@ -302,6 +302,7 @@ export const ru: Messages = {
   "free.freeToday": "Бесплатно сегодня",
   "free.signIn": "Войти",
   "free.seeToday": "Сегодняшнее задание",
+  "free.allPractices": "Все задания",
   "free.signInToPractise": "Войдите, чтобы практиковаться",
   "free.writingMeta": "Task 1 или Task 2 · проверяет AI-экзаменатор",
   "free.readingMeta": "Полные тесты и отдельные тексты · проверка сразу",

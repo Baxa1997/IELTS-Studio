@@ -324,6 +324,7 @@ export const en = {
   "free.freeToday": "Free today",
   "free.signIn": "Sign in",
   "free.seeToday": "See today's practice",
+  "free.allPractices": "See all practices",
   "free.signInToPractise": "Sign in to practise",
   "free.writingMeta": "Task 1 or Task 2 · graded by the AI examiner",
   "free.readingMeta": "Full tests and single passages · marked instantly",
