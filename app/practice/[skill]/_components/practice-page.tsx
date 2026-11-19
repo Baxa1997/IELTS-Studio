@@ -4,6 +4,8 @@ import Link from "next/link";
 import { StoryCard } from "@/app/_landing/_components/blog-stories";
 import { MorePracticeBanner } from "@/app/_landing/_components/practice-cards";
 import { PageUpdated } from "@/app/_landing/_components/page-updated";
+import { YandexAd } from "@/app/_landing/_components/yandex-ad";
+import { YANDEX_AD_SLOTS } from "@/app/_landing/_lib/ads";
 import { BODY, DISPLAY, FAINT, GREEN, INK, LEDE, LINE, RULE, SANS, eyebrow } from "@/app/_landing/_lib/design";
 import { postsForSkill } from "@/lib/blog";
 import { loadPosts } from "@/lib/blog/store";
@@ -211,6 +213,7 @@ export async function FreePracticeView({ skill, locale }: { skill: FreeSkill; lo
       ) : null}
 
       <PracticeFaq faq={faq} title={t("free.faqTitle")} />
+      <YandexAd blockId={YANDEX_AD_SLOTS.practice} />
 
       <p
         style={{

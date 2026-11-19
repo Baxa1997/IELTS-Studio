@@ -2,12 +2,12 @@
 
 import { useEffect, useId, useRef } from "react";
 
-import { useSession } from "@/app/_landing/_hooks/use-signed-in";
+import { useSession } from "../_hooks/use-signed-in";
 
 /**
- * Yandex Advertising Network on the blog — autoplacement for the whole blog,
- * plus a manual unit for a fixed slot. `app/blog/_lib/ads.ts` has the config
- * and why ads live nowhere else.
+ * Yandex Advertising Network on the public site — manual banners in fixed
+ * slots, and autoplacement on the blog. `../_lib/ads.ts` has the config and
+ * where ads may and may not go.
  *
  * Signed-out readers only: whoever has an account is a learner we already
  * have — very likely a paying one — and an ad on their screen is us charging
@@ -90,7 +90,7 @@ export function YandexAutoAds({ pageId }: { pageId: string | null }) {
  * Yandex drains whenever its loader arrives, before or after us — into a
  * container id unique to the mount.
  */
-export function YandexAd({ blockId }: { blockId: string | null }) {
+export function YandexAd({ blockId, style }: { blockId: string | null; style?: React.CSSProperties }) {
   const signedIn = useSession();
   // useId yields ":r1:", which is not a safe id for Yandex's lookup.
   const renderTo = `yandex_rtb_${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
@@ -114,5 +114,7 @@ export function YandexAd({ blockId }: { blockId: string | null }) {
   if (!show) return null;
   // No reserved height: an unfilled unit (common at first, and everywhere an
   // ad blocker runs) would leave a blank hole in the article.
-  return <div id={renderTo} style={{ marginTop: 36 }} />;
+  // `style` is the host page's frame (its column width and spacing) — the
+  // container itself carries no layout of its own.
+  return <div id={renderTo} style={{ marginTop: 36, ...style }} />;
 }
