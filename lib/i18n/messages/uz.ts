@@ -307,6 +307,7 @@ export const uz: Messages = {
   "free.freeToday": "Bugun bepul",
   "free.signIn": "Kirish",
   "free.seeToday": "Bugungi mashqni koʻrish",
+  "free.allPractices": "Barcha mashqlar",
   "free.signInToPractise": "Mashq uchun kiring",
   "free.writingMeta": "Task 1 yoki Task 2 · AI imtihonchi baholaydi",
   "free.readingMeta": "Toʻliq testlar va alohida matnlar · darhol baholanadi",
