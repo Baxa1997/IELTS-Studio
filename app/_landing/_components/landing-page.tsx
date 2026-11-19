@@ -17,6 +17,8 @@ import { DemoTabs } from "@/app/_landing/_components/demo-tabs";
 import { HeroProcessDemo } from "@/app/_landing/_components/hero-process-demo";
 import { LiveStat, LiveStatsStyles } from "@/app/_landing/_components/live-stat";
 import { LocalisedFrame } from "@/app/_landing/_components/localised-frame";
+import { YandexAd } from "@/app/_landing/_components/yandex-ad";
+import { YANDEX_AD_SLOTS } from "@/app/_landing/_lib/ads";
 import {
   BODY,
   BRAND,
@@ -297,6 +299,7 @@ export function LandingPage({ locale }: { locale: Locale }) {
         <Platform t={t} />
         <Pricing t={t} />
         <Faq t={t} />
+        <YandexAd blockId={YANDEX_AD_SLOTS.landing} style={{ ...SHELL, padding: "0 28px" }} />
         <FinalCta t={t} />
       </main>
     </LocalisedFrame>

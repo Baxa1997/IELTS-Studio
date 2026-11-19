@@ -9,12 +9,12 @@ import { sourceFiles } from "@/test/source-files";
 import { parseBlockId, parsePageId } from "./_lib/ads";
 
 /**
- * Yandex ads: where they may load, and for whom. `app/blog/_lib/ads.ts` has
- * the reasons; each block here turns red if one of them is undone.
+ * Yandex ads: where they may load, and for whom. `./_lib/ads.ts` has the
+ * reasons; each block here turns red if one of them is undone.
  */
 
 const session = vi.hoisted(() => ({ value: null as boolean | null }));
-vi.mock("@/app/_landing/_hooks/use-signed-in", () => ({ useSession: () => session.value }));
+vi.mock("./_hooks/use-signed-in", () => ({ useSession: () => session.value }));
 
 const { YandexAd, YandexAutoAds } = await import("./_components/yandex-ad");
 
@@ -27,13 +27,41 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-describe("Yandex ads stay on the blog", () => {
-  // Autoplacement fills any page its script runs on — the script is the fence.
-  it("no file outside app/blog/ names a Yandex ad script", () => {
-    const leaks = sourceFiles("app", "shared", "lib")
-      .filter((f) => /\.(ts|tsx|js|mjs)$/.test(f) && !f.startsWith("app/blog/"))
-      .filter((f) => readFileSync(f, "utf8").includes("yandex.ru/ads"));
+const COMPONENT = "app/_landing/_components/yandex-ad.tsx";
+const code = () => sourceFiles("app", "shared", "lib").filter((f) => /\.(ts|tsx|js|mjs)$/.test(f) && !f.endsWith(".test.tsx"));
+/** Files that actually import `name` from yandex-ad — an import statement,
+ *  not a mention, so a comment naming the component does not count. */
+const importers = (name: string) => {
+  const stmt = new RegExp(`import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from\\s*["'][^"']*yandex-ad["']`);
+  return code().filter((f) => stmt.test(readFileSync(f, "utf8")));
+};
+
+/**
+ * The public pages that may carry a banner (owner, 2026-11-19). Everything
+ * else — the learner app, the studios, the console, /admin, sign-in — may not.
+ * Adding a page here is a product decision, not a refactor.
+ */
+const AD_PAGES = [
+  "app/_landing/_components/landing-page.tsx",
+  "app/blog/_components/article-view.tsx",
+  "app/grade/_components/grade-page.tsx",
+  "app/practice/[skill]/_components/practice-page.tsx",
+];
+
+describe("where Yandex may load", () => {
+  it("only yandex-ad.tsx names a Yandex ad script", () => {
+    const leaks = code().filter((f) => f !== COMPONENT && readFileSync(f, "utf8").includes("yandex.ru/ads"));
     expect(leaks).toEqual([]);
+  });
+
+  it("only the public pages render a banner", () => {
+    expect(importers("YandexAd").sort()).toEqual([...AD_PAGES].sort());
+  });
+
+  // Autoplacement fills any page its script runs on and cannot be unloaded;
+  // its reload-on-leave fence is written for the blog alone.
+  it("autoplacement mounts on the blog only", () => {
+    expect(importers("YandexAutoAds")).toEqual(["app/blog/layout.tsx"]);
   });
 });
 
@@ -102,6 +130,22 @@ describe("YandexAd (manual unit)", () => {
     const { container } = render(<YandexAd blockId="R-A-1-1" />);
     expect(container.querySelector("[id^=yandex_rtb_]")).not.toBeNull();
     expect(yandexScripts().some((s) => s.src.endsWith("/context.js"))).toBe(true);
+  });
+});
+
+describe("slots", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  // One block id must light up every page; a slot's own id overrides it.
+  it("every slot falls back to the article banner", async () => {
+    vi.stubEnv("NEXT_PUBLIC_YANDEX_RTB_ARTICLE", "R-A-1-2");
+    vi.stubEnv("NEXT_PUBLIC_YANDEX_RTB_GRADE", "R-A-1-9");
+    vi.resetModules();
+    const { YANDEX_AD_SLOTS } = await import("./_lib/ads");
+    expect(YANDEX_AD_SLOTS).toEqual({ article: "R-A-1-2", landing: "R-A-1-2", practice: "R-A-1-2", grade: "R-A-1-9" });
   });
 });
 

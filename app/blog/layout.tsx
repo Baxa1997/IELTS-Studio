@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 import { SiteFrame } from "@/app/_landing/_components/site-frame";
+import { YandexAutoAds } from "@/app/_landing/_components/yandex-ad";
+import { YANDEX_AUTO_PAGE_ID } from "@/app/_landing/_lib/ads";
 
-import { YandexAutoAds } from "./_components/yandex-ad";
-import { YANDEX_AUTO_PAGE_ID } from "./_lib/ads";
 
 /**
  * The blog's frame: the public site's full-width frame (header, main, footer).

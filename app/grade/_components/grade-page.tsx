@@ -28,6 +28,8 @@ import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
 import { translator, type MessageKey } from "@/lib/i18n";
 import { HTML_LANG, LOCALES, localePath, SOURCE_LOCALE, type Locale } from "@/lib/i18n/locales";
 import { PageUpdated } from "@/app/_landing/_components/page-updated";
+import { YandexAd } from "@/app/_landing/_components/yandex-ad";
+import { YANDEX_AD_SLOTS } from "@/app/_landing/_lib/ads";
 import { formatPostDate } from "@/lib/blog";
 import { absoluteUrl, getSiteUrl, organization, pageUpdated, PREVIEW_IMAGE, previewImage, SITE_NAME } from "@/lib/seo";
 
@@ -416,6 +418,8 @@ export function GradePage({ locale }: { locale: Locale }) {
           ))}
         </ol>
       </section>
+
+      <YandexAd blockId={YANDEX_AD_SLOTS.grade} style={{ ...SHELL, maxWidth: 900, padding: "0 28px" }} />
 
       {/* ---- FAQ (collapsed — the same list as the FAQPage JSON-LD) ---- */}
       <section

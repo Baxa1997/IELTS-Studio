@@ -21,6 +21,8 @@ import {
   WHITE,
   eyebrow,
 } from "@/app/_landing/_lib/design";
+import { YandexAd } from "@/app/_landing/_components/yandex-ad";
+import { YANDEX_AD_SLOTS } from "@/app/_landing/_lib/ads";
 import { FREE_PLAN_LINES, PAID_FROM } from "@/app/_landing/_lib/free-plan";
 import { CATEGORY_LABEL, formatPostDate, readingMinutes, type BlogPost } from "@/lib/blog";
 import { FREE_PAGE_TITLE, freePracticePage } from "@/lib/free-practice/links";
@@ -30,8 +32,6 @@ import { HTML_LANG, SOURCE_LOCALE } from "@/lib/i18n/locales";
 
 import { AccountOffer, type AccountOfferCopy } from "./account-offer";
 import { ArticleBody, KeyPoints, Questions } from "./article-body";
-import { YandexAd } from "./yandex-ad";
-import { YANDEX_AD_SLOTS } from "../_lib/ads";
 
 /**
  * One article as a reader sees it: headline, standfirst, byline, cover, the
