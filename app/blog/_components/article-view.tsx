@@ -21,7 +21,7 @@ import {
   WHITE,
   eyebrow,
 } from "@/app/_landing/_lib/design";
-import { YandexAd } from "@/app/_landing/_components/yandex-ad";
+import { YandexAd, YandexRail } from "@/app/_landing/_components/yandex-ad";
 import { YANDEX_AD_SLOTS } from "@/app/_landing/_lib/ads";
 import { FREE_PLAN_LINES, PAID_FROM } from "@/app/_landing/_lib/free-plan";
 import { CATEGORY_LABEL, formatPostDate, readingMinutes, type BlogPost } from "@/lib/blog";
@@ -61,7 +61,10 @@ const ACCOUNT_OFFER: AccountOfferCopy = {
 export function ArticleView({ post, url, related }: { post: BlogPost; url: string; related: BlogPost[] }) {
   return (
     <>
-      <article>
+      {/* relative: the rail spans the article and stops where it ends. */}
+      <article style={{ position: "relative" }}>
+        {/* 960 = the cover, the article's widest part — the rail clears it. */}
+        <YandexRail blockId={YANDEX_AD_SLOTS.sidebar} content={960} />
         <header className="bl-col">
           <nav
             aria-label={t("blog.name")}

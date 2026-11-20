@@ -55,4 +55,14 @@ export const YANDEX_AD_SLOTS = {
   practice: parseBlockId(process.env.NEXT_PUBLIC_YANDEX_RTB_PRACTICE) ?? ARTICLE,
   /** /grade, under the grader and above the FAQ. */
   grade: parseBlockId(process.env.NEXT_PUBLIC_YANDEX_RTB_GRADE) ?? ARTICLE,
+  /**
+   * The rail in the right-hand margin of an article and a practice page, wide
+   * screens only (`YandexRail`).
+   *
+   * ⚠️ NO FALLBACK, unlike the slots above. Those are one per page; the rail
+   * shares its page with the bottom banner, and Yandex renders a block id once
+   * per page — falling back to ARTICLE would put the same block on the page
+   * twice and leave one of the two empty. Unset = no rail.
+   */
+  sidebar: parseBlockId(process.env.NEXT_PUBLIC_YANDEX_RTB_SIDEBAR),
 } as const;
