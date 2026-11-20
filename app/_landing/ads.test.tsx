@@ -16,7 +16,7 @@ import { parseBlockId, parsePageId } from "./_lib/ads";
 const session = vi.hoisted(() => ({ value: null as boolean | null }));
 vi.mock("./_hooks/use-signed-in", () => ({ useSession: () => session.value }));
 
-const { YandexAd, YandexAutoAds } = await import("./_components/yandex-ad");
+const { YandexAd, YandexAutoAds, YandexRail, railMinViewport } = await import("./_components/yandex-ad");
 
 const yandexScripts = () =>
   [...document.querySelectorAll<HTMLScriptElement>("script")].filter((s) => s.src.includes("yandex.ru/ads"));
@@ -60,6 +60,13 @@ describe("where Yandex may load", () => {
 
   // Autoplacement fills any page its script runs on and cannot be unloaded;
   // its reload-on-leave fence is written for the blog alone.
+  it("the margin rail is on articles and practice pages only", () => {
+    expect(importers("YandexRail").sort()).toEqual([
+      "app/blog/_components/article-view.tsx",
+      "app/practice/[skill]/_components/practice-page.tsx",
+    ]);
+  });
+
   it("autoplacement mounts on the blog only", () => {
     expect(importers("YandexAutoAds")).toEqual(["app/blog/layout.tsx"]);
   });
@@ -133,6 +140,40 @@ describe("YandexAd (manual unit)", () => {
   });
 });
 
+describe("YandexRail", () => {
+  function screen(width: number) {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: width >= Number(/min-width: (\d+)px/.exec(q)![1]),
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+  }
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("mounts beside the content on a wide screen, for a signed-out reader", () => {
+    screen(1920);
+    session.value = false;
+    const { container } = render(<YandexRail blockId="R-A-1-3" content={1200} />);
+    expect(container.querySelector("aside [id^=yandex_rtb_]")).not.toBeNull();
+  });
+
+  // Hidden-but-mounted would still request an ad nobody can see.
+  it("does not exist at all on a screen too narrow for it", () => {
+    screen(railMinViewport(1200) - 1);
+    session.value = false;
+    const { container } = render(<YandexRail blockId="R-A-1-3" content={1200} />);
+    expect(container.innerHTML).toBe("");
+    expect(yandexScripts()).toEqual([]);
+  });
+
+  it("renders nothing without its own block id", () => {
+    screen(1920);
+    session.value = false;
+    const { container } = render(<YandexRail blockId={null} content={1200} />);
+    expect(container.innerHTML).toBe("");
+  });
+});
+
 describe("slots", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -145,7 +186,16 @@ describe("slots", () => {
     vi.stubEnv("NEXT_PUBLIC_YANDEX_RTB_GRADE", "R-A-1-9");
     vi.resetModules();
     const { YANDEX_AD_SLOTS } = await import("./_lib/ads");
-    expect(YANDEX_AD_SLOTS).toEqual({ article: "R-A-1-2", landing: "R-A-1-2", practice: "R-A-1-2", grade: "R-A-1-9" });
+    expect(YANDEX_AD_SLOTS).toMatchObject({ article: "R-A-1-2", landing: "R-A-1-2", practice: "R-A-1-2", grade: "R-A-1-9" });
+  });
+
+  // The rail shares its page with the bottom banner; one block id renders once
+  // per page, so borrowing the article's would leave one of the two empty.
+  it("the sidebar never falls back to the article banner", async () => {
+    vi.stubEnv("NEXT_PUBLIC_YANDEX_RTB_ARTICLE", "R-A-1-2");
+    vi.resetModules();
+    const { YANDEX_AD_SLOTS } = await import("./_lib/ads");
+    expect(YANDEX_AD_SLOTS.sidebar).toBeNull();
   });
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { useSession } from "../_hooks/use-signed-in";
 
@@ -117,4 +117,69 @@ export function YandexAd({ blockId, style }: { blockId: string | null; style?: R
   // `style` is the host page's frame (its column width and spacing) — the
   // container itself carries no layout of its own.
   return <div id={renderTo} style={{ marginTop: 36, ...style }} />;
+}
+
+/** Gap between the content and the rail, and between the rail and the edge. */
+const RAIL_GAP = 24;
+/** The narrowest Yandex skyscraper (160×600); below it there is no rail. */
+const RAIL_MIN = 160;
+/** The classic sidebar width (300×600); wider margins do not widen the ad. */
+const RAIL_MAX = 300;
+/** Clears the sticky island header (`section[id]` in globals.css uses 96). */
+const RAIL_TOP = 112;
+
+/** The viewport width at which a rail of RAIL_MIN fits beside `content`. */
+export function railMinViewport(content: number): number {
+  return content + 2 * (RAIL_GAP + RAIL_MIN + RAIL_GAP);
+}
+
+function useMinWidth(px: number): boolean {
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(min-width: ${px}px)`);
+    const on = () => setOk(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, [px]);
+  return ok;
+}
+
+/**
+ * A banner in the empty margin to the right of the content, in view from the
+ * first screen and following the reader down (owner, 2026-11-19: "so at the
+ * initial visit it shows an ad").
+ *
+ * Mounted inside the content's own box, which must be `position: relative`
+ * and centred on the viewport: the rail spans that box's height, so its sticky
+ * banner stops where the content ends instead of riding over the related
+ * stories and the footer.
+ *
+ * ⚠️ NOT MOUNTED, NOT MERELY HIDDEN, ON A NARROW SCREEN. A rail behind
+ * `display: none` still asks Yandex for an ad and is "shown" to nobody — a
+ * wasted request at best, an invisible impression Yandex can penalise at
+ * worst. `matchMedia` decides whether it exists at all.
+ *
+ * ⚠️ ITS OWN BLOCK ID — see YANDEX_AD_SLOTS.sidebar: the page already renders
+ * the bottom banner, and one block id may render once per page.
+ */
+export function YandexRail({ blockId, content }: { blockId: string | null; content: number }) {
+  const wide = useMinWidth(railMinViewport(content));
+  if (!blockId || !wide) return null;
+  return (
+    <aside
+      aria-label="Advertisement"
+      style={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        left: `calc(50% + ${content / 2 + RAIL_GAP}px)`,
+        width: `clamp(${RAIL_MIN}px, calc((100vw - ${content}px) / 2 - ${2 * RAIL_GAP}px), ${RAIL_MAX}px)`,
+      }}
+    >
+      <div style={{ position: "sticky", top: RAIL_TOP }}>
+        <YandexAd blockId={blockId} style={{ marginTop: 0 }} />
+      </div>
+    </aside>
+  );
 }
