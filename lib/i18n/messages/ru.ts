@@ -865,5 +865,6 @@ export const ru: Messages = {
   "mkt.relSpeaking": "Практика IELTS Speaking",
   "mkt.relCefr": "CEFR / Multilevel (DTM)",
   "mkt.relCenters": "Для учебных центров",
+  "mkt.relPlatform": "ИИ-платформа для IELTS в Узбекистане",
   "mkt.relGrade": "Бесплатная проверка IELTS Writing",
 };

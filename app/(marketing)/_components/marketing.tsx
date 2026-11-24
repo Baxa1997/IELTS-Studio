@@ -5,11 +5,13 @@
  * Server-safe (no "use client").
  */
 
+import { Fragment } from "react";
 import Link from "next/link";
 
 import { PageUpdated } from "@/app/_landing/_components/page-updated";
 import { webPage, type DatedPath } from "@/lib/seo";
 import { postsForSkill, type BlogSkill } from "@/lib/blog";
+import { parseInline } from "@/lib/blog/inline";
 import { loadPosts } from "@/lib/blog/store";
 import { CONTACT_EMAIL } from "@/lib/contact";
 import { translator, type MessageKey } from "@/lib/i18n";
@@ -112,6 +114,34 @@ export function A({ href, children }: { href: string; children: React.ReactNode 
     <Link href={href} style={{ color: ACCENT, fontWeight: 600, textDecoration: "none", borderBottom: `1px solid ${BRAND_TINT_LINE}` }}>
       {children}
     </Link>
+  );
+}
+
+/**
+ * A line of copy that carries the blog's inline markup — `**bold**`,
+ * `*italic*` and `[label](href)` (lib/blog/inline.ts) — drawn with the
+ * primitives above, so a translated paragraph looks exactly like the English
+ * one. It is what lets a translation move the bold phrase to where its own word
+ * order puts it, which a fixed `<B>` split could not. Shared by the pages whose
+ * copy lives in per-language files (the CEFR page, the platform page).
+ */
+export function Inline({ text }: { text: string }) {
+  return (
+    <>
+      {parseInline(text).map((s, i) =>
+        s.kind === "strong" ? (
+          <B key={i}>{s.text}</B>
+        ) : s.kind === "link" ? (
+          <A key={i} href={s.href}>
+            {s.text}
+          </A>
+        ) : s.kind === "em" ? (
+          <em key={i}>{s.text}</em>
+        ) : (
+          <Fragment key={i}>{s.text}</Fragment>
+        ),
+      )}
+    </>
   );
 }
 
@@ -257,6 +287,7 @@ const RELATED: { href: string; label: MessageKey }[] = [
   { href: "/ielts-speaking-practice", label: "mkt.relSpeaking" },
   { href: "/cefr-multilevel-practice", label: "mkt.relCefr" },
   { href: "/for-education-centers", label: "mkt.relCenters" },
+  { href: "/ielts-ai-platform-uzbekistan", label: "mkt.relPlatform" },
   { href: "/grade", label: "mkt.relGrade" },
 ];
 

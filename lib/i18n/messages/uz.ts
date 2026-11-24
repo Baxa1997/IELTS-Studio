@@ -870,5 +870,6 @@ export const uz: Messages = {
   "mkt.relSpeaking": "IELTS Speaking mashqlari",
   "mkt.relCefr": "CEFR / Multilevel (DTM)",
   "mkt.relCenters": "Oʻquv markazlari uchun",
+  "mkt.relPlatform": "Oʻzbekistonda IELTS uchun AI platforma",
   "mkt.relGrade": "Bepul IELTS Writing tekshiruvi",
 };

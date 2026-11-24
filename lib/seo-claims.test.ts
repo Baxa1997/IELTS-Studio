@@ -40,6 +40,11 @@ const PUBLIC = [
   "app/(marketing)/ielts-writing-practice/page.tsx",
   "app/(marketing)/ielts-speaking-practice/page.tsx",
   "app/(marketing)/ielts-practice-pricing/page.tsx",
+  // The platform page states the grader's speed and criteria in three languages;
+  // its copy is per-language files, not the page module.
+  "app/(marketing)/ielts-ai-platform-uzbekistan/_lib/copy/en.ts",
+  "app/(marketing)/ielts-ai-platform-uzbekistan/_lib/copy/uz.ts",
+  "app/(marketing)/ielts-ai-platform-uzbekistan/_lib/copy/ru.ts",
   // The Task 2 question bank: its pages, and the per-type notes llms-full.txt
   // repeats word for word.
   "app/(marketing)/ielts-writing-task-2-questions/page.tsx",

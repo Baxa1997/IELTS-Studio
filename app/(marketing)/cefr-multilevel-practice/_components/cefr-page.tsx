@@ -1,11 +1,9 @@
-import { Fragment } from "react";
 import type { Metadata } from "next";
 
-import { parseInline } from "@/lib/blog/inline";
 import { HTML_LANG, LOCALES, localePath, SOURCE_LOCALE, type Locale } from "@/lib/i18n/locales";
 import { PREVIEW_IMAGE, previewImage } from "@/lib/seo";
 
-import { A, B, Cta, Faq, FromTheBlog, LI, P, PageTitle, Related, Sec, UL } from "../../_components/marketing";
+import { Cta, Faq, FromTheBlog, Inline, LI, P, PageTitle, Related, Sec, UL } from "../../_components/marketing";
 import { cefrPageCopy } from "../_lib/copy";
 
 /**
@@ -84,27 +82,5 @@ export function CefrPracticeArticle({ locale }: { locale: Locale }) {
       <Cta title={c.cta.title} sub={c.cta.sub} locale={locale} />
       <Related current={CEFR_PAGE_PATH} locale={locale} />
     </article>
-  );
-}
-
-/** The copy's `**bold**` and `[label](href)`, drawn with the marketing
- *  primitives so a translated paragraph looks exactly like the English one. */
-function Inline({ text }: { text: string }) {
-  return (
-    <>
-      {parseInline(text).map((s, i) =>
-        s.kind === "strong" ? (
-          <B key={i}>{s.text}</B>
-        ) : s.kind === "link" ? (
-          <A key={i} href={s.href}>
-            {s.text}
-          </A>
-        ) : s.kind === "em" ? (
-          <em key={i}>{s.text}</em>
-        ) : (
-          <Fragment key={i}>{s.text}</Fragment>
-        ),
-      )}
-    </>
   );
 }

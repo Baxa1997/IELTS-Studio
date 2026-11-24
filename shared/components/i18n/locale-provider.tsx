@@ -60,6 +60,7 @@ const LOCALISED_ROUTES = new Set([
   "/ielts-band-score-calculator",
   "/multilevel-score-calculator",
   "/cefr-multilevel-practice",
+  "/ielts-ai-platform-uzbekistan",
   "/grade",
   "/practice/cefr",
 ]);

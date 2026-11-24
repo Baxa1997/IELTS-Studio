@@ -246,6 +246,9 @@ export const PUBLIC_ROUTES = [
   { path: "/ielts-speaking-practice", label: "IELTS Speaking practice", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-09-27" },
   { path: "/cefr-multilevel-practice", label: "CEFR / Multilevel (Uzbekistan DTM) practice", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-11-08" },
   { path: "/for-education-centers", label: "For education centres — teachers, groups, homework and reports", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-09-05" },
+  // The answer to "the best AI platform for IELTS in Uzbekistan?", in the two
+  // languages that question is asked in (and English). 2026-11-23.
+  { path: "/ielts-ai-platform-uzbekistan", label: "EngProgress in Uzbekistan — all four IELTS skills and CEFR / Multilevel on one AI platform: what it does, prices, grading speed and criteria, education centres (English, Uzbek, Russian)", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-11-23" },
   // The prices as a page (2026-11-14). NOT `/pricing` — see the note above.
   { path: "/ielts-practice-pricing", label: "Pricing — the free plan and the paid plans, with every monthly limit", section: "product", priority: 0.8, changeFrequency: "monthly", updated: "2026-11-14" },
   // The two free score calculators. Spelled out because lib/ may not import

@@ -24,6 +24,9 @@ const LOCALISED = new Set([
   "/multilevel-score-calculator",
   // The one marketing page written for Uzbekistan's own exam (2026-11-08).
   "/cefr-multilevel-practice",
+  // The platform page — the answer to which AI platform to prepare for IELTS on in Uzbekistan (2026-11-23).
+  // ⚠️ No double quotes in a comment inside this set: locale-routes.test.ts reads every quoted string in it as a route.
+  "/ielts-ai-platform-uzbekistan",
   // /grade and /practice/cefr: owner, 2026-11-08 (practice: LOCALISED_PRACTICE).
   "/grade",
   "/practice/cefr",

@@ -923,6 +923,7 @@ export const en = {
   "mkt.relSpeaking": "IELTS Speaking practice",
   "mkt.relCefr": "CEFR / Multilevel (DTM)",
   "mkt.relCenters": "For education centres",
+  "mkt.relPlatform": "AI platform for IELTS in Uzbekistan",
   "mkt.relGrade": "Free IELTS writing checker",
 } as const;
 

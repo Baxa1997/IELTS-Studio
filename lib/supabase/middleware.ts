@@ -113,6 +113,8 @@ const PUBLIC_PATHS = [
   "/ielts-speaking-practice",
   "/cefr-multilevel-practice",
   "/for-education-centers",
+  // The platform page (/uz and /ru versions under the prefixes above).
+  "/ielts-ai-platform-uzbekistan",
   // The public statement of the prices. `/pricing` itself stays signed-in: it
   // is the checkout, and it needs the caller's plan and usage to render.
   "/ielts-practice-pricing",
